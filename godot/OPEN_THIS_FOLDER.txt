@@ -1,0 +1,9 @@
+Open THIS folder in Godot:
+
+  d:\2d_game\godot\project.godot
+
+Then: Project → Reload → F5
+
+You should see gold "CRIMINAL EMPIRE" on a dark purple background.
+
+If black screen: check Output panel for red SCRIPT ERROR lines and paste them in chat.

@@ -1,0 +1,7 @@
+save.json
+save.json.bak
+crash.log
+__pycache__/
+*.pyc
+*.pyo
+graphify-out/

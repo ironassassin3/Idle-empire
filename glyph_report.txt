@@ -1,0 +1,52 @@
+﻿pygame-ce 2.5.7 (SDL 2.32.10, Python 3.14.3)
+======================================================================
+Font path: C:\WINDOWS\Fonts\consola.ttf
+======================================================================
+CHAR  RENDERS    ADV_W    CODEPOINT  CONTEXT
+----------------------------------------------------------------------
+♦     OK         9        U+2666 BLACK DIAMOND SUIT Crimson Kings
+❖     OK         9        U+2756 BLACK DIAMOND MINUS WHITE X Silver Hand
+⚙     OK         9        U+2699 GEAR Iron Union
+◎     OK         9        U+25CE BULLSEYE Network
+⚓     OK         9        U+2693 ANCHOR Blackwater
+▶     OK         9        U+25B6 BLACK RIGHT-POINTING TRIANGLE Dragon HUD / hint arrow
+►     OK         9        U+25BA BLACK RIGHT-POINTING POINTER Alt arrow (Consolas)
+★     OK         9        U+2605 BLACK STAR Achievements / managers
+✦     OK         9        U+2726 BLACK FOUR POINTED STAR Prestige button
+✓     OK         9        U+2713 CHECK MARK Territory / objectives
+○     OK         9        U+25CB WHITE CIRCLE Locked item
+◆     OK         9        U+25C6 BLACK DIAMOND Default rival symbol
+▲     OK         9        U+25B2 BLACK UP-POINTING TRIANGLE Income arrow / territory scroll
+▼     OK         9        U+25BC BLACK DOWN-POINTING TRIANGLE Territory scroll down
+→     OK         9        U+2192 RIGHTWARDS ARROW Various labels
+*     OK         9        U+002A ASTERISK ASCII fallback
+#     OK         9        U+0023 NUMBER SIGN ASCII fallback
+@     OK         9        U+0040 COMMERCIAL AT ASCII fallback @ for ◎
++     OK         9        U+002B PLUS SIGN ASCII fallback
+x     OK         9        U+0078 LATIN SMALL LETTER X ASCII fallback
+^     OK         9        U+005E CIRCUMFLEX ACCENT ASCII fallback
+~     OK         9        U+007E TILDE ASCII fallback
+◇     OK         9        U+25C7 WHITE DIAMOND Candidate for ❖
+◈     OK         9        U+25C8 WHITE DIAMOND CONTAINING BLACK SMALL DIAMOND Candidate for ❖
+⊕     OK         9        U+2295 CIRCLED PLUS Candidate for ◎
+⊙     OK         9        U+2299 CIRCLED DOT OPERATOR Candidate for ◎
+⊗     OK         9        U+2297 CIRCLED TIMES Candidate for ◎
+⊘     OK         9        U+2298 CIRCLED DIVISION SLASH Candidate
+⊚     OK         9        U+229A CIRCLED RING OPERATOR Candidate for ◎
+·     OK         9        U+00B7 MIDDLE DOT ASCII-range fallback
+×     OK         9        U+00D7 MULTIPLICATION SIGN Latin-1 - always available
+°     OK         9        U+00B0 DEGREE SIGN Latin-1 - always available
+¤     OK         9        U+00A4 CURRENCY SIGN Latin-1 - always available
+======================================================================
+
+Consolas path: C:\WINDOWS\Fonts\consola.ttf
+Courier New path: C:\WINDOWS\Fonts\cour.ttf
+Courier path: C:\WINDOWS\Fonts\cour.ttf
+  segoeui: C:\WINDOWS\Fonts\segoeuil.ttf
+  segoeuisymbol: C:\WINDOWS\Fonts\seguisym.ttf
+  segoe ui symbol: C:\WINDOWS\Fonts\seguisym.ttf
+  arialunicode: NOT FOUND
+  arial unicode ms: NOT FOUND
+  noto sans: NOT FOUND
+  dejavusans: C:\WINDOWS\Fonts\arial.ttf
+  freesans: C:\WINDOWS\Fonts\arial.ttf
