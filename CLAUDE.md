@@ -97,3 +97,20 @@ Strings in `_milestone_queue` **must** use `\n` as line separator:
 
 ## Save/Load
 New fields must be added with a migration default in `save_load.py` so old saves don't crash. Check `load_game_preview()` separately — it reads a lightweight subset for the title screen.
+
+## graphify
+
+This project has knowledge graphs under `graphify-out/`:
+
+| Graph | Path | Use for |
+|-------|------|---------|
+| **Port map** (preferred) | `graphify-out/port/graph.json`, `GRAPH_REPORT.md`, `graph.html` | pygame↔Godot layout, save schema, income pipeline, architecture |
+| Full repo | `graphify-out/graph.json` | Broad corpus incl. phase reports/screenshots |
+
+Rules:
+- For cross-cutting architecture questions (save fields, income pipeline, tab layout, pygame↔Godot parity), query the **port map** first: read `graphify-out/port/GRAPH_REPORT.md` or run `python -m graphify query "<question>"` when `graphify-out/graph.json` exists (queries use root graph; for port-specific context read `graphify-out/port/GRAPH_REPORT.md` directly).
+- Use `python -m graphify path "<A>" "<B>"` and `python -m graphify explain "<concept>"` for scoped subgraphs.
+- After modifying **code** in this session, run `python -m graphify update .` (AST-only, no API cost). On Windows use `python -m graphify`, not bare `graphify update`.
+- After large **Godot port** changes under `src/` or `godot/`, refresh the port map: `/graphify` on `src/` + `godot/scripts` with `--update` (or ask the user to run it).
+- Git **post-commit hook** auto-rebuilds the root graph via `graphify_rebuild.py` (code files only).
+- Doc/paper/image changes need manual `/graphify --update` (LLM semantic extraction).
