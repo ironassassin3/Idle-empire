@@ -1,0 +1,366 @@
+{
+  "balance": 3500000.0,
+  "lifetime_earnings": 21500000.0,
+  "prestige_tokens": 14,
+  "influence": 22,
+  "click_count": 1200,
+  "play_time": 2400.0,
+  "coins_caught": 18,
+  "prestige_count": 0,
+  "next_prestige_earnings": 20000000.0,
+  "daily_streak": 1,
+  "last_login_date": "2026-06-11",
+  "perks_purchased": [],
+  "prestige_branch": null,
+  "dragon_patron": null,
+  "dragon_xp": 0,
+  "dragon_ability_cooldowns": {},
+  "dragon_red_elim_count": 0,
+  "arms_influence_frac": 0.0,
+  "managers": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "buildings": [
+    20,
+    10,
+    5,
+    3,
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "upgrades": [
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "achievements": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "save_timestamp": null,
+  "tutorial_step": 99,
+  "shown_milestones": [
+    "money_1000",
+    "money_10000",
+    "money_100000",
+    "money_1000000"
+  ],
+  "shown_raid_tutorial": true,
+  "shown_ops_tutorial": true,
+  "shown_influence_tutorial": true,
+  "shown_heat_warning": true,
+  "shown_prestige_tree_tutorial": false,
+  "shown_syndicate_tutorial": true,
+  "shown_influence_intro": true,
+  "shown_crew_tutorial": true,
+  "shown_territory_tutorial": true,
+  "shown_rivals_tutorial": true,
+  "peak_income": 35000.0,
+  "longest_streak": 1,
+  "total_buildings_purchased": 41,
+  "total_territories_captured": 6,
+  "total_rivals_defeated": 0,
+  "total_ops_completed": 4,
+  "total_heat_generated": 85.0,
+  "total_respect_earned": 22,
+  "total_influence_earned": 22,
+  "highest_cash_held": 4200000.0,
+  "highest_city_control": 0.3,
+  "city_control_milestones": [],
+  "heat": 28.0,
+  "goals_completed": [
+    "earn_1000",
+    "earn_10000",
+    "earn_100000",
+    "own_dealer_5",
+    "own_racket_1"
+  ],
+  "sfx_volume": 1.0,
+  "fps_cap": 60,
+  "music_volume": 0.5,
+  "master_volume": 1.0,
+  "mute_all": false,
+  "analytics_enabled": false,
+  "territories": [
+    {
+      "unlocked": true,
+      "owner": "player"
+    },
+    {
+      "unlocked": true,
+      "owner": "player"
+    },
+    {
+      "unlocked": true,
+      "owner": "player"
+    },
+    {
+      "unlocked": true,
+      "owner": "player"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": true,
+      "owner": "player"
+    },
+    {
+      "unlocked": true,
+      "owner": "player"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    },
+    {
+      "unlocked": false,
+      "owner": "unclaimed"
+    }
+  ],
+  "rivals": [
+    {
+      "turf": 1,
+      "wealth": 1500000.0,
+      "power": 28,
+      "aggression": 0.75,
+      "at_war": false,
+      "status": "Active",
+      "last_action": "Expanding turf"
+    },
+    {
+      "turf": 2,
+      "wealth": 15000000.0,
+      "power": 45,
+      "aggression": 0.4,
+      "at_war": false,
+      "status": "Active",
+      "last_action": "Watching..."
+    },
+    {
+      "turf": 1,
+      "wealth": 800000.0,
+      "power": 30,
+      "aggression": 0.6,
+      "at_war": false,
+      "status": "Weakened",
+      "last_action": "Lost ground"
+    },
+    {
+      "turf": 0,
+      "wealth": 40000000.0,
+      "power": 65,
+      "aggression": 0.45,
+      "at_war": false,
+      "status": "Active",
+      "last_action": "Consolidating"
+    },
+    {
+      "turf": 3,
+      "wealth": 8000000.0,
+      "power": 42,
+      "aggression": 0.35,
+      "at_war": false,
+      "status": "Active",
+      "last_action": "Watching..."
+    }
+  ],
+  "crew": {
+    "protection": 3,
+    "collection": 2,
+    "smuggling": 4,
+    "territory": 2,
+    "heat": 1
+  },
+  "operations": [
+    {
+      "active": false,
+      "start_time": 0.0,
+      "reward": 0.0,
+      "completed": true,
+      "collected": true
+    },
+    {
+      "active": false,
+      "start_time": 0.0,
+      "reward": 0.0,
+      "completed": false,
+      "collected": false
+    },
+    {
+      "active": false,
+      "start_time": 0.0,
+      "reward": 0.0,
+      "completed": false,
+      "collected": false
+    },
+    {
+      "active": false,
+      "start_time": 0.0,
+      "reward": 0.0,
+      "completed": false,
+      "collected": false
+    },
+    {
+      "active": false,
+      "start_time": 0.0,
+      "reward": 0.0,
+      "completed": false,
+      "collected": false
+    }
+  ]
+}

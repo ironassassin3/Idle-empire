@@ -1,0 +1,19 @@
+{"v": 2, "ts": 1781586388.152, "session": "8c9c5c6486e8", "event": "first_influence", "props": {"influence": 1, "session_time_s": 561.8}}
+{"v": 2, "ts": 1781586388.172, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781586917.062, "session": "8c9c5c6486e8", "event": "manager_hired", "props": {"name": "Sticky Pete"}}
+{"v": 2, "ts": 1781586917.062, "session": "8c9c5c6486e8", "event": "first_manager", "props": {"name": "Sticky Pete", "session_time_s": 1090.7}}
+{"v": 2, "ts": 1781586918.428, "session": "8c9c5c6486e8", "event": "manager_hired", "props": {"name": "The Mechanic"}}
+{"v": 2, "ts": 1781586925.324, "session": "8c9c5c6486e8", "event": "manager_hired", "props": {"name": "Lucky Sal"}}
+{"v": 2, "ts": 1781586930.223, "session": "8c9c5c6486e8", "event": "manager_hired", "props": {"name": "The Collector"}}
+{"v": 2, "ts": 1781586986.772, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781587005.299, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781587059.361, "session": "8c9c5c6486e8", "event": "manager_hired", "props": {"name": "Clean Carl"}}
+{"v": 2, "ts": 1781587060.405, "session": "8c9c5c6486e8", "event": "manager_hired", "props": {"name": "The Accountant"}}
+{"v": 2, "ts": 1781587102.803, "session": "8c9c5c6486e8", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 2M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18003603.39, "needed": 20000000.0, "pct": 0.9}}}
+{"v": 2, "ts": 1781587194.972, "session": "8c9c5c6486e8", "event": "session_end", "props": {"duration_s": 1368.6, "prestige_count": 0, "influence": 24, "lifetime_earnings": 946085795.2701963, "near_prestige": false}}
+{"v": 2, "ts": 1781587201.402, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Associate", "influence": 11}}
+{"v": 2, "ts": 1781587219.394, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781587247.31, "session": "8c9c5c6486e8", "event": "session_end", "props": {"duration_s": 1420.9, "prestige_count": 0, "influence": 12, "lifetime_earnings": 2544345972.448916, "near_prestige": false}}
+{"v": 2, "ts": 1781587252.508, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Street Hustler", "influence": 0}}
+{"v": 2, "ts": 1781587253.605, "session": "8c9c5c6486e8", "event": "session_end", "props": {"duration_s": 1427.2, "prestige_count": 0, "influence": 0, "lifetime_earnings": 2585706111.005567, "near_prestige": false}}
+{"v": 2, "ts": 1781587268.134, "session": "8c9c5c6486e8", "event": "session_end", "props": {"duration_s": 1441.8, "prestige_count": 0, "influence": 0, "lifetime_earnings": 3387317521.7587724, "near_prestige": false}}

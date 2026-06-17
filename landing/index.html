@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRIMINAL EMPIRE — An Idle Crime Syndicate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Cinzel:wght@400;600;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#08070a;          /* near-black */
+  --ink-2:#0e0c10;
+  --smoke:#15121a;
+  --gold:#c8a35a;
+  --gold-bright:#ecca7d;
+  --gold-deep:#8a6a2f;
+  --crimson:#9d1c22;
+  --crimson-bright:#c8323a;
+  --bone:#e9e2d4;
+  --bone-dim:#a59c8a;
+  --line:rgba(200,163,90,.22);
+  --line-soft:rgba(200,163,90,.10);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--bone);
+  font-family:'Cormorant Garamond',serif;
+  font-size:19px;
+  line-height:1.55;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Atmosphere: grain + vignette + smoke ───────────────────────── */
+.grain{
+  position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:.05;
+  mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grainShift 7s steps(6) infinite;
+}
+@keyframes grainShift{
+  0%{transform:translate(0,0)}20%{transform:translate(-4%,3%)}
+  40%{transform:translate(3%,-2%)}60%{transform:translate(-2%,4%)}
+  80%{transform:translate(4%,-3%)}100%{transform:translate(0,0)}
+}
+.vignette{
+  position:fixed;inset:0;z-index:8000;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 8%,transparent 40%,rgba(0,0,0,.55) 100%);
+}
+.smoke{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.smoke span{
+  position:absolute;bottom:-30vh;width:48vmax;height:48vmax;border-radius:50%;
+  background:radial-gradient(circle,rgba(157,28,34,.10),transparent 62%);
+  filter:blur(40px);animation:rise 26s linear infinite;
+}
+.smoke span:nth-child(2){left:55%;background:radial-gradient(circle,rgba(200,163,90,.08),transparent 60%);animation-duration:34s;animation-delay:-8s}
+.smoke span:nth-child(3){left:25%;animation-duration:30s;animation-delay:-16s}
+@keyframes rise{
+  0%{transform:translate(-20%,0) scale(.7);opacity:0}
+  20%{opacity:.9}80%{opacity:.5}
+  100%{transform:translate(20%,-130vh) scale(1.4);opacity:0}
+}
+
+/* ── Reusable deco bits ─────────────────────────────────────────── */
+.eyebrow{
+  font-family:'Cinzel',serif;font-weight:600;
+  letter-spacing:.42em;text-transform:uppercase;
+  font-size:.62rem;color:var(--gold);
+  display:inline-flex;align-items:center;gap:.9em;
+}
+.eyebrow::before,.eyebrow::after{content:"";width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+.eyebrow::after{background:linear-gradient(90deg,var(--gold),transparent)}
+
+.deco-diamond{display:inline-block;width:7px;height:7px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 12px var(--gold)}
+
+/* ── Nav ────────────────────────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:7000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem clamp(1.2rem,5vw,4rem);
+  background:linear-gradient(180deg,rgba(8,7,10,.92),rgba(8,7,10,0));
+  backdrop-filter:blur(2px);
+}
+.wordmark{
+  font-family:'Cinzel',serif;font-weight:800;letter-spacing:.22em;
+  font-size:.92rem;color:var(--bone);text-transform:uppercase;
+  display:flex;align-items:center;gap:.7em;
+}
+.wordmark b{color:var(--gold)}
+.nav-links{display:flex;gap:2.2rem;align-items:center}
+.nav-links a{
+  font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--bone-dim);text-decoration:none;
+  transition:color .3s;position:relative;
+}
+.nav-links a:hover{color:var(--gold-bright)}
+.nav-links a::after{content:"";position:absolute;left:0;bottom:-6px;height:1px;width:0;background:var(--gold);transition:width .35s}
+.nav-links a:hover::after{width:100%}
+@media(max-width:760px){.nav-links{display:none}}
+
+/* ── Hero ───────────────────────────────────────────────────────── */
+.hero{
+  position:relative;z-index:10;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:7rem 1.5rem 4rem;
+}
+.hero-frame{
+  position:absolute;inset:clamp(1rem,3vw,2.6rem);
+  border:1px solid var(--line);pointer-events:none;
+}
+.hero-frame::before,.hero-frame::after{
+  content:"";position:absolute;width:26px;height:26px;border:2px solid var(--gold);
+}
+.hero-frame::before{top:-3px;left:-3px;border-right:none;border-bottom:none}
+.hero-frame::after{bottom:-3px;right:-3px;border-left:none;border-top:none}
+.corner-tr,.corner-bl{position:absolute;width:26px;height:26px;border:2px solid var(--gold)}
+.corner-tr{top:calc(clamp(1rem,3vw,2.6rem) - 3px);right:calc(clamp(1rem,3vw,2.6rem) - 3px);border-left:none;border-bottom:none}
+.corner-bl{bottom:calc(clamp(1rem,3vw,2.6rem) - 3px);left:calc(clamp(1rem,3vw,2.6rem) - 3px);border-right:none;border-top:none}
+
+.hero .eyebrow{opacity:0;animation:fadeUp .9s .2s forwards}
+.hero h1{
+  font-family:'Limelight',display;
+  font-size:clamp(2.9rem,11vw,9rem);
+  line-height:.92;letter-spacing:.02em;
+  text-transform:uppercase;margin:1.4rem 0 .2rem;
+  color:var(--bone);
+  text-shadow:0 0 50px rgba(200,163,90,.18);
+}
+.hero h1 .line{display:block;overflow:hidden}
+.hero h1 .line span{display:block;transform:translateY(110%);animation:slideUp 1.1s cubic-bezier(.16,1,.3,1) forwards}
+.hero h1 .line:nth-child(1) span{animation-delay:.35s}
+.hero h1 .line:nth-child(2) span{animation-delay:.5s;color:var(--gold);
+  background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:none;filter:drop-shadow(0 0 30px rgba(200,163,90,.35));}
+.tagline{
+  font-size:clamp(1rem,2.4vw,1.45rem);font-style:italic;
+  color:var(--bone-dim);max-width:34ch;margin:1.6rem auto 0;
+  opacity:0;animation:fadeUp 1s .8s forwards;
+}
+
+/* The signature: live counter */
+.counter-wrap{
+  margin:2.6rem auto 0;opacity:0;animation:fadeUp 1s 1s forwards;
+  display:inline-flex;flex-direction:column;align-items:center;gap:.3rem;
+  padding:1.1rem 2.4rem;position:relative;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+}
+.counter-wrap::before,.counter-wrap::after{
+  content:"◆";position:absolute;top:50%;transform:translateY(-50%);
+  color:var(--gold);font-size:.6rem;
+}
+.counter-wrap::before{left:-4px}.counter-wrap::after{right:-4px}
+.counter-label{
+  font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--bone-dim);
+}
+.counter{
+  font-family:'Space Mono',monospace;font-weight:700;
+  font-size:clamp(1.8rem,5.5vw,3.2rem);
+  color:var(--gold-bright);letter-spacing:-.01em;
+  text-shadow:0 0 26px rgba(236,202,125,.4);font-variant-numeric:tabular-nums;
+}
+.counter .rate{font-size:.42em;color:var(--bone-dim);font-weight:400;margin-left:.3em}
+
+.cta-row{margin-top:2.8rem;display:flex;gap:1.1rem;flex-wrap:wrap;justify-content:center;
+  opacity:0;animation:fadeUp 1s 1.2s forwards}
+.btn{
+  font-family:'Cinzel',serif;font-weight:600;font-size:.72rem;letter-spacing:.24em;
+  text-transform:uppercase;padding:1.05rem 2.3rem;cursor:pointer;
+  text-decoration:none;position:relative;overflow:hidden;transition:.35s;
+  border:1px solid var(--gold);background:transparent;color:var(--gold-bright);
+}
+.btn-primary{
+  background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+  color:var(--ink);border-color:var(--gold-bright);
+  box-shadow:0 0 0 rgba(200,163,90,0),0 14px 34px rgba(200,163,90,.18);
+}
+.btn-primary:hover{box-shadow:0 0 30px rgba(236,202,125,.5),0 14px 40px rgba(200,163,90,.3);transform:translateY(-2px)}
+.btn-ghost:hover{background:rgba(200,163,90,.08);transform:translateY(-2px)}
+.scroll-hint{
+  position:absolute;bottom:2.4rem;left:50%;transform:translateX(-50%);
+  font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.3em;color:var(--bone-dim);
+  text-transform:uppercase;opacity:0;animation:fadeUp 1s 1.6s forwards;
+}
+.scroll-hint::after{content:"";display:block;width:1px;height:34px;margin:.8rem auto 0;
+  background:linear-gradient(var(--gold),transparent);animation:pulse 2s infinite}
+
+/* ── Section scaffolding ────────────────────────────────────────── */
+section{position:relative;z-index:10;padding:clamp(4.5rem,11vw,9rem) clamp(1.2rem,6vw,5rem)}
+.section-head{text-align:center;margin-bottom:4rem}
+.section-head h2{
+  font-family:'Cinzel',serif;font-weight:800;
+  font-size:clamp(1.8rem,5vw,3.4rem);letter-spacing:.04em;text-transform:uppercase;
+  margin:1rem 0 .4rem;color:var(--bone);
+}
+.section-head h2 em{font-style:normal;color:var(--gold)}
+.section-head p{color:var(--bone-dim);font-style:italic;font-size:1.15rem;max-width:48ch;margin:0 auto}
+
+/* reveal on scroll */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1;transform:none}
+
+/* ── Stat strip ─────────────────────────────────────────────────── */
+.stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--line-soft);border:1px solid var(--line);
+  max-width:1100px;margin:0 auto;
+}
+.stat{background:var(--ink-2);padding:2.2rem 1rem;text-align:center}
+.stat .num{font-family:'Space Mono',monospace;font-weight:700;font-size:2.4rem;color:var(--gold-bright);line-height:1}
+.stat .lbl{font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-dim);margin-top:.7rem}
+@media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Systems grid ───────────────────────────────────────────────── */
+.systems{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.4rem;max-width:1180px;margin:0 auto}
+.card{
+  position:relative;background:linear-gradient(160deg,var(--smoke),var(--ink-2));
+  border:1px solid var(--line);padding:2.2rem 1.9rem 2rem;
+  transition:transform .5s cubic-bezier(.16,1,.3,1),border-color .5s,box-shadow .5s;
+  overflow:hidden;
+}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0,rgba(200,163,90,.10),transparent 55%);opacity:0;transition:opacity .5s}
+.card:hover{transform:translateY(-6px);border-color:var(--gold);box-shadow:0 24px 50px rgba(0,0,0,.5)}
+.card:hover::before{opacity:1}
+.card .glyph{font-size:1.7rem;color:var(--gold);margin-bottom:1rem;display:block}
+.card h3{font-family:'Cinzel',serif;font-weight:600;font-size:1.15rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone);margin-bottom:.6rem}
+.card p{color:var(--bone-dim);font-size:1.02rem;line-height:1.5}
+.card .tag{position:absolute;top:1.3rem;right:1.5rem;font-family:'Space Mono',monospace;font-size:.62rem;color:var(--gold-deep);letter-spacing:.1em}
+
+/* ── Rank ladder ────────────────────────────────────────────────── */
+.ladder{max-width:760px;margin:0 auto;position:relative}
+.ladder::before{content:"";position:absolute;left:18px;top:14px;bottom:14px;width:1px;background:linear-gradient(var(--gold),var(--crimson),transparent)}
+.rank{
+  display:flex;align-items:center;gap:1.4rem;padding:.65rem 0;position:relative;
+}
+.rank .dot{
+  flex:none;width:37px;height:37px;border:1px solid var(--line);
+  background:var(--ink-2);transform:rotate(45deg);display:grid;place-items:center;
+  transition:.5s;z-index:2;
+}
+.rank .dot i{transform:rotate(-45deg);font-style:normal;font-family:'Space Mono',monospace;font-size:.7rem;color:var(--bone-dim);transition:.5s}
+.rank .name{font-family:'Cinzel',serif;font-size:1.02rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-dim);transition:.5s}
+.rank .inf{margin-left:auto;font-family:'Space Mono',monospace;font-size:.72rem;color:var(--gold-deep)}
+.rank.in .dot{border-color:var(--gold);box-shadow:0 0 18px rgba(200,163,90,.35)}
+.rank.in .dot i{color:var(--gold-bright)}
+.rank.in .name{color:var(--bone)}
+.rank.peak .dot{background:linear-gradient(135deg,var(--crimson),var(--gold-deep));border-color:var(--gold-bright)}
+.rank.peak .name{color:var(--gold-bright);text-shadow:0 0 20px rgba(236,202,125,.4)}
+
+/* ── Final CTA ──────────────────────────────────────────────────── */
+.finale{text-align:center;padding-bottom:7rem}
+.finale h2{font-family:'Limelight',display;font-size:clamp(2.2rem,8vw,5.5rem);text-transform:uppercase;line-height:1;
+  background:linear-gradient(180deg,var(--bone),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1.4rem}
+.finale p{color:var(--bone-dim);font-style:italic;font-size:1.25rem;margin-bottom:2.4rem}
+.run-line{
+  display:inline-block;font-family:'Space Mono',monospace;font-size:.8rem;
+  color:var(--gold);background:var(--ink-2);border:1px solid var(--line);
+  padding:.7rem 1.4rem;margin-top:2rem;letter-spacing:.05em;
+}
+.run-line b{color:var(--crimson-bright)}
+
+footer{
+  border-top:1px solid var(--line-soft);text-align:center;
+  padding:2.4rem 1rem;color:var(--bone-dim);font-size:.85rem;position:relative;z-index:10;
+}
+footer .deco-diamond{margin:0 .8rem;opacity:.5}
+
+/* coins fired on primary CTA */
+.coin{position:fixed;z-index:9500;pointer-events:none;font-family:'Space Mono',monospace;
+  color:var(--gold-bright);font-weight:700;text-shadow:0 0 10px rgba(236,202,125,.6)}
+
+/* ── Keyframes ──────────────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes slideUp{to{transform:none}}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+
+<div class="smoke"><span></span><span></span><span></span></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<nav>
+  <div class="wordmark"><span class="deco-diamond"></span> Criminal&nbsp;<b>Empire</b></div>
+  <div class="nav-links">
+    <a href="#empire">The Empire</a>
+    <a href="#systems">Systems</a>
+    <a href="#ranks">The Ladder</a>
+    <a href="#play">Play</a>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="hero-frame"></div><div class="corner-tr"></div><div class="corner-bl"></div>
+
+  <span class="eyebrow">An Idle Crime Syndicate</span>
+  <h1>
+    <span class="line"><span>Criminal</span></span>
+    <span class="line"><span>Empire</span></span>
+  </h1>
+  <p class="tagline">Start with a corner. End owning the shadow government. The city never stops paying.</p>
+
+  <div class="counter-wrap">
+    <span class="counter-label">Your empire earns, even while you sleep</span>
+    <div class="counter"><span id="cash">$0</span><span class="rate"></span></div>
+  </div>
+
+  <div class="cta-row">
+    <a href="#play" class="btn btn-primary" id="enterBtn">Enter the Empire</a>
+    <a href="#systems" class="btn btn-ghost">See the Operation</a>
+  </div>
+
+  <div class="scroll-hint">Descend</div>
+</header>
+
+<!-- ── EMPIRE / STATS ──────────────────────────────────── -->
+<section id="empire">
+  <div class="section-head reveal">
+    <span class="eyebrow">The Operation</span>
+    <h2>Eleven Fronts. <em>One Family.</em></h2>
+    <p>From a back-alley corner dealer to a Crime Syndicate HQ the whole city answers to — every dollar compounds into the next.</p>
+  </div>
+  <div class="stats reveal">
+    <div class="stat"><div class="num" data-count="11">0</div><div class="lbl">Criminal Fronts</div></div>
+    <div class="stat"><div class="num" data-count="20">0</div><div class="lbl">City Districts</div></div>
+    <div class="stat"><div class="num" data-count="13">0</div><div class="lbl">Ranks to Climb</div></div>
+    <div class="stat"><div class="num" data-count="5">0</div><div class="lbl">Rival Factions</div></div>
+  </div>
+</section>
+
+<!-- ── SYSTEMS ─────────────────────────────────────────── -->
+<section id="systems">
+  <div class="section-head reveal">
+    <span class="eyebrow">Layered Systems</span>
+    <h2>Run It Like a <em>Real</em> Syndicate</h2>
+    <p>This isn't one number going up. It's a living underworld of pressure, territory, and betrayal.</p>
+  </div>
+  <div class="systems">
+    <div class="card reveal"><span class="tag">0–100</span><span class="glyph">🔥</span><h3>Heat</h3><p>Push too hard and the police take notice. Cross 60% and the raids begin. Launder it through your nightclubs before they kick the door in.</p></div>
+    <div class="card reveal"><span class="tag">20 districts</span><span class="glyph">🗺</span><h3>Territory</h3><p>Attack, bribe, negotiate, or sabotage your way across the map. Each district held feeds a global income bonus. Control the city, control everything.</p></div>
+    <div class="card reveal"><span class="tag">×5</span><span class="glyph">⚔</span><h3>Rivals</h3><p>Five rival factions grow, scheme, and go to war — with you and each other. Wipe them off the map, or watch them collapse on their own.</p></div>
+    <div class="card reveal"><span class="tag">5 roles</span><span class="glyph">👤</span><h3>Crew</h3><p>Assign your people to protection, collection, smuggling, turf, and heat. Your crew pool grows with every building you own.</p></div>
+    <div class="card reveal"><span class="tag">timed</span><span class="glyph">🎯</span><h3>Operations</h3><p>Launch high-stakes illegal jobs that demand crew, cash, and territory. Set the timer, walk away, collect the payday.</p></div>
+    <div class="card reveal"><span class="tag">prestige</span><span class="glyph">♛</span><h3>Influence &amp; Perks</h3><p>Burn it all down to rise a rank and earn Influence. Spend it on a branching perk tree — Kingpin, Warlord, Cartel, or Consigliere.</p></div>
+    <div class="card reveal"><span class="tag">🜂 companions</span><span class="glyph">🐉</span><h3>Dragon Patrons</h3><p>Permanent cross-cycle companions — Red, Jade, and Black — that grow from Egg to Ancient, make requests, and bend the empire to your will.</p></div>
+    <div class="card reveal"><span class="tag">⚡ random</span><span class="glyph">🎲</span><h3>Syndicate Events</h3><p>The underworld throws curveballs. Three-choice dilemmas with real consequences — fortune or funeral, your call.</p></div>
+  </div>
+</section>
+
+<!-- ── RANK LADDER ─────────────────────────────────────── -->
+<section id="ranks">
+  <div class="section-head reveal">
+    <span class="eyebrow">The Hierarchy</span>
+    <h2>From the Gutter to the <em>Shadow Government</em></h2>
+    <p>Thirteen ranks of Influence. Each one rewrites what you're allowed to touch.</p>
+  </div>
+  <div class="ladder" id="ladder"></div>
+</section>
+
+<!-- ── FINALE ──────────────────────────────────────────── -->
+<section id="play" class="finale">
+  <div class="reveal">
+    <h2>Build It.<br>Burn It.<br>Reign.</h2>
+    <p>The corner is waiting. So is the empire.</p>
+    <a href="#" class="btn btn-primary" id="enterBtn2">Enter the Empire</a>
+    <div class="run-line">$ pip install pygame-ce &nbsp;<b>&amp;&amp;</b>&nbsp; python main.py</div>
+  </div>
+</section>
+
+<footer>
+  Criminal Empire <span class="deco-diamond"></span> An idle/incremental syndicate builder <span class="deco-diamond"></span> Built with pygame-ce
+</footer>
+
+<script>
+/* ── Live income counter — the signature element ─────────── */
+const cashEl=document.getElementById('cash');
+const rateEl=document.querySelector('.counter .rate');
+let cash=1240, rate=86.4;             // $/sec, escalates as you "watch"
+const fmt=n=>{
+  if(n>=1e12)return '$'+(n/1e12).toFixed(2)+'T';
+  if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+Math.floor(n).toLocaleString();
+};
+let last=performance.now();
+function tick(now){
+  const dt=(now-last)/1000;last=now;
+  cash+=rate*dt;
+  rate*=(1+0.012*dt);                 // empire compounds while you read
+  cashEl.textContent=fmt(cash);
+  rateEl.textContent='/sec '+fmt(rate).replace('$','+$');
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ── Count-up stats ──────────────────────────────────────── */
+function countUp(el){
+  const target=+el.dataset.count;let v=0;
+  const step=()=>{v+=Math.max(1,target/28);if(v>=target){el.textContent=target}else{el.textContent=Math.floor(v);requestAnimationFrame(step)}};
+  step();
+}
+
+/* ── Scroll reveal ───────────────────────────────────────── */
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      if(e.target.classList.contains('stats'))e.target.querySelectorAll('[data-count]').forEach(countUp);
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:.2});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ── Rank ladder (real game ranks) ───────────────────────── */
+const RANKS=[
+ ["Street Hustler",0],["Crew Member",1],["Associate",5],["Made Man",12],
+ ["Capo",25],["Underboss",45],["Boss",75],["Crime Lord",115],
+ ["Kingpin",165],["City Controller",230],["State Influence",310],
+ ["National Influence",410],["Shadow Government",540]
+];
+const ladder=document.getElementById('ladder');
+RANKS.forEach(([name,inf],i)=>{
+  const row=document.createElement('div');
+  row.className='rank reveal'+(i===RANKS.length-1?' peak':'');
+  row.style.transitionDelay=(i*60)+'ms';
+  row.innerHTML=`<span class="dot"><i>${String(i+1).padStart(2,'0')}</i></span>
+    <span class="name">${name}</span>
+    <span class="inf">${inf} INF</span>`;
+  ladder.appendChild(row);
+  io.observe(row);
+});
+
+/* ── Gold-coin burst on "Enter the Empire" ───────────────── */
+function burst(x,y){
+  for(let i=0;i<16;i++){
+    const c=document.createElement('div');
+    c.className='coin';c.textContent='$';
+    c.style.left=x+'px';c.style.top=y+'px';
+    c.style.fontSize=(10+Math.random()*14)+'px';
+    document.body.appendChild(c);
+    const ang=Math.random()*Math.PI*2,dist=60+Math.random()*120;
+    const dx=Math.cos(ang)*dist,dy=Math.sin(ang)*dist-80;
+    c.animate([
+      {transform:'translate(0,0) rotate(0)',opacity:1},
+      {transform:`translate(${dx}px,${dy}px) rotate(${Math.random()*540}deg)`,opacity:0}
+    ],{duration:900+Math.random()*500,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=()=>c.remove();
+  }
+}
+[...document.querySelectorAll('#enterBtn,#enterBtn2')].forEach(b=>{
+  b.addEventListener('click',e=>burst(e.clientX,e.clientY));
+});
+</script>
+</body>
+</html>
