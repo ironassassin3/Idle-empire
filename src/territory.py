@@ -281,31 +281,52 @@ def get_city_control(territories: List[Territory], rivals: list) -> list[tuple[s
 
 # ─── Income / click / heat multipliers ───────────────────────────────────────
 
-def territory_income_mult(territories: List[Territory]) -> float:
+_TERRITORY_ECONOMY_SCALE_TOKENS = 12  # legacy reference — turf scales on empire route now
+
+
+def territory_economy_scale(state) -> float:
+    """Turf income bonuses ramp with empire-route progress toward next prestige."""
+    if state is None:
+        return 1.0
+    try:
+        import src.prestige as _p
+        required = _p.prestige_earnings_required(state)
+        route = _p.prestige_route_earnings(state)
+    except Exception:
+        return 1.0
+    if required <= 0:
+        return 1.0
+    return min(1.0, (route / required) ** 2)
+
+
+def territory_income_mult(territories: List[Territory], state=None) -> float:
     """Per-district income_bonus from owned territories (existing strategic bonuses)."""
     bonus = sum(t.income_bonus for t in territories if t.unlocked)
-    return 1.0 + bonus
+    scale = territory_economy_scale(state)
+    return 1.0 + min(bonus, 0.25) * scale
 
 
-def territory_click_mult(territories: List[Territory]) -> float:
+def territory_click_mult(territories: List[Territory], state=None) -> float:
     bonus = sum(t.click_bonus for t in territories if t.unlocked)
-    return 1.0 + bonus
+    scale = territory_economy_scale(state)
+    return 1.0 + bonus * scale
 
 
 def territory_heat_resistance(territories: List[Territory]) -> float:
     return sum(t.heat_resistance for t in territories if t.unlocked)
 
 
-# ─── Phase 10: Territory Count Bonus (2% per district) ───────────────────────
+# ─── Phase 10: Territory Count Bonus (0.5% per district, capped) ─────────────
 
-def territory_district_count_bonus(territories: List[Territory]) -> float:
-    """Global income bonus: 2% per player-controlled district.
+def territory_district_count_bonus(territories: List[Territory], state=None) -> float:
+    """Global income bonus: 0.5% per player-controlled district, capped at +10%.
 
     Calculated separately from per-district income_bonus values so both are
     visible and additive rather than hidden inside a single multiplier.
     """
     count = sum(1 for t in territories if t.unlocked)
-    return count * 0.02
+    scale = territory_economy_scale(state)
+    return min(count * 0.005, 0.10) * scale
 
 
 # ─── Phase 10: District Type Bonuses (stacking per type owned) ───────────────
@@ -497,11 +518,10 @@ def perform_action(state, idx: int, action: str) -> str:
     if action == 'attack':
         if success:
             _seize(t)
-            state.prestige_tokens += 1
             gain = _apply_respect_gain(state, 8)
             state.influence = getattr(state, 'influence', 0) + gain
             state.heat = min(100.0, getattr(state, 'heat', 0.0) + 15.0)
-            return f"Seized {t.name} by force! +1 Influence, +{gain} Respect, +15 heat"
+            return f"Seized {t.name} by force! +{gain} Respect, +15 heat"
         else:
             state.heat = min(100.0, getattr(state, 'heat', 0.0) + 12.0)
             loss = state.balance * 0.04
@@ -516,8 +536,7 @@ def perform_action(state, idx: int, action: str) -> str:
         if success:
             _seize(t)
             state.heat = max(0.0, getattr(state, 'heat', 0.0) - 5.0)
-            state.prestige_tokens += 1
-            return f"Bribed your way into {t.name}! +1 Influence, -5 heat"
+            return f"Bribed your way into {t.name}! -5 heat"
         else:
             state.heat = min(100.0, getattr(state, 'heat', 0.0) + 6.0)
             return f"Bribe rejected. +6 heat, lost {theme.format_money(cost)}"
@@ -525,11 +544,10 @@ def perform_action(state, idx: int, action: str) -> str:
     elif action == 'negotiate':
         if success:
             _seize(t)
-            state.prestige_tokens += 1
             gain = _apply_respect_gain(state, 5)
             state.influence = getattr(state, 'influence', 0) + gain
             state.heat = max(0.0, getattr(state, 'heat', 0.0) - 3.0)
-            return f"Negotiated control of {t.name}. +1 Influence, +{gain} Respect, -3 heat"
+            return f"Negotiated control of {t.name}. +{gain} Respect, -3 heat"
         else:
             state.heat = min(100.0, getattr(state, 'heat', 0.0) + 3.0)
             return f"Negotiations failed. +3 heat"
@@ -542,10 +560,9 @@ def perform_action(state, idx: int, action: str) -> str:
         if success:
             _seize(t)
             state.heat = min(100.0, getattr(state, 'heat', 0.0) + 8.0)
-            state.prestige_tokens += 1
             gain = _apply_respect_gain(state, 6)
             state.influence = getattr(state, 'influence', 0) + gain
-            return f"Sabotaged them out of {t.name}! +1 Influence, +{gain} Respect, +8 heat"
+            return f"Sabotaged them out of {t.name}! +{gain} Respect, +8 heat"
         else:
             state.heat = min(100.0, getattr(state, 'heat', 0.0) + 10.0)
             return f"Sabotage discovered. +10 heat, lost ${theme.format_number(cost)}"

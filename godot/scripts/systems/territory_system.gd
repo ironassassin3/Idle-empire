@@ -5,6 +5,8 @@ extends RefCounted
 const _CrewSystem = preload("res://scripts/systems/crew_system.gd")
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
+const _Prestige = preload("res://scripts/systems/prestige.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 const TOTAL_DISTRICTS := 20
 
@@ -219,20 +221,30 @@ static func get_city_control(territories: Array, _rivals: Array) -> Array:
 	return result
 
 
-static func territory_income_mult(territories: Array) -> float:
+static func territory_economy_scale(state) -> float:
+	if state == null:
+		return 1.0
+	var required: float = _Prestige.prestige_earnings_required(
+		int(state.prestige_count), float(state.next_prestige_earnings))
+	if required <= 0.0:
+		return 1.0
+	return minf(1.0, pow(float(state.prestige_route_earnings) / required, 2.0))
+
+
+static func territory_income_mult(territories: Array, state = null) -> float:
 	var bonus := 0.0
 	for t in territories:
 		if typeof(t) == TYPE_DICTIONARY and bool(t.get("unlocked", false)):
 			bonus += float(t.get("income_bonus", 0.0))
-	return 1.0 + bonus
+	return 1.0 + minf(bonus, 0.25) * territory_economy_scale(state)
 
 
-static func territory_click_mult(territories: Array) -> float:
+static func territory_click_mult(territories: Array, state = null) -> float:
 	var bonus := 0.0
 	for t in territories:
 		if typeof(t) == TYPE_DICTIONARY and bool(t.get("unlocked", false)):
 			bonus += float(t.get("click_bonus", 0.0))
-	return 1.0 + bonus
+	return 1.0 + bonus * territory_economy_scale(state)
 
 
 static func territory_heat_resistance(territories: Array) -> float:
@@ -243,12 +255,12 @@ static func territory_heat_resistance(territories: Array) -> float:
 	return total
 
 
-static func territory_district_count_bonus(territories: Array) -> float:
+static func territory_district_count_bonus(territories: Array, state = null) -> float:
 	var count := 0
 	for t in territories:
 		if typeof(t) == TYPE_DICTIONARY and bool(t.get("unlocked", false)):
 			count += 1
-	return float(count) * 0.02
+	return minf(float(count) * 0.005, 0.10) * territory_economy_scale(state)
 
 
 static func milestone_income_mult(state) -> float:
@@ -334,6 +346,7 @@ static func success_chance(state, territory: Dictionary, action: String) -> floa
 	var crew_bonus: float = _CrewSystem.territory_action_bonus(state.crew)
 	crew_bonus += _ManagerSystem.territory_success_bonus(state)
 	crew_bonus += _PrestigeTree.territory_action_bonus(state)
+	crew_bonus += _DragonSystem.territory_action_modifier(state, action)
 	var inf_bonus: float = minf(float(state.prestige_tokens) * 0.01, 0.25)
 	inf_bonus += Prestige.rank_territory_bonus(state.prestige_tokens)
 	inf_bonus += state.bw_negotiate_bonus if action == "negotiate" else 0.0
@@ -384,9 +397,12 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 	if state.prestige_tokens < int(t.get("unlock_cost", 0)):
 		return "Need %d Influence to act here." % int(t.get("unlock_cost", 0))
 
-	var success: bool = rng.randf() < success_chance(state, t, action)
-	if not success:
-		if _ManagerSystem.broker_retry_ready(state):
+	var success: bool = false
+	if _DragonSystem.consume_guaranteed_territory(state):
+		success = true
+	else:
+		success = rng.randf() < success_chance(state, t, action)
+		if not success and _ManagerSystem.broker_retry_ready(state):
 			state.broker_retry_cd = _ManagerSystem.BROKER_RETRY_CD
 			if rng.randf() < success_chance(state, t, action):
 				success = true
@@ -395,11 +411,10 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 	if action == "attack":
 		if success:
 			_seize_territory(state, t)
-			state.prestige_tokens += 1
 			var gain: int = _apply_respect_gain(state, 8)
 			state.influence += gain
 			state.heat = minf(100.0, state.heat + 15.0)
-			return "Seized %s by force! +1 Influence, +%d Respect, +15 heat" % [t["name"], gain]
+			return "Seized %s by force! +%d Respect, +15 heat" % [t["name"], gain]
 		state.heat = minf(100.0, state.heat + 12.0)
 		var loss: float = state.balance * 0.04
 		state.balance = maxf(0.0, state.balance - loss)
@@ -413,19 +428,17 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 		if success:
 			_seize_territory(state, t)
 			state.heat = maxf(0.0, state.heat - 5.0)
-			state.prestige_tokens += 1
-			return "Bribed your way into %s! +1 Influence, -5 heat" % t["name"]
+			return "Bribed your way into %s! -5 heat" % t["name"]
 		state.heat = minf(100.0, state.heat + 6.0)
 		return "Bribe rejected. +6 heat, lost %s" % FormatUtil.format_money(cost)
 
 	if action == "negotiate":
 		if success:
 			_seize_territory(state, t)
-			state.prestige_tokens += 1
 			var gain: int = _apply_respect_gain(state, 5)
 			state.influence += gain
 			state.heat = maxf(0.0, state.heat - 3.0)
-			return "Negotiated control of %s. +1 Influence, +%d Respect, -3 heat" % [t["name"], gain]
+			return "Negotiated control of %s. +%d Respect, -3 heat" % [t["name"], gain]
 		state.heat = minf(100.0, state.heat + 3.0)
 		return "Negotiations failed. +3 heat"
 
@@ -437,10 +450,9 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 		if success:
 			_seize_territory(state, t)
 			state.heat = minf(100.0, state.heat + 8.0)
-			state.prestige_tokens += 1
 			var gain: int = _apply_respect_gain(state, 6)
 			state.influence += gain
-			return "Sabotaged them out of %s! +1 Influence, +%d Respect, +8 heat" % [t["name"], gain]
+			return "Sabotaged them out of %s! +%d Respect, +8 heat" % [t["name"], gain]
 		state.heat = minf(100.0, state.heat + 10.0)
 		return "Sabotage discovered. +10 heat, lost %s" % FormatUtil.format_money(cost)
 
@@ -452,3 +464,4 @@ static func _seize_territory(state, t: Dictionary) -> void:
 	t["owner"] = "player"
 	t["contested"] = false
 	state.total_territories_captured += 1
+	_DragonSystem.on_territory_captured(state)

@@ -13,9 +13,9 @@ import config
 #   - Made Man (12 Influence) is reached at ~6-10 min purely from the starter
 #     economic goals (goals.py) — NO rival/op grind required. This breaks the
 #     old circular deadlock (see AUDIT.md).
-#   - The $20M lifetime earnings gate is the actual pacing control; with the
-#     rebalanced exponential economy it resolves at ~31 min (sim) / ~35-45 min
-#     (real player), comfortably inside the target window.
+#   - The $20M empire-route earnings gate is the actual pacing control; with the
+#     rebalanced exponential economy it resolves at ~25-35 min (sim) depending on
+#     whether the player engages territory early (~18 min) or focuses buildings (~25 min).
 import os as _os
 
 def _env_float(key: str, default: float) -> float:
@@ -61,6 +61,15 @@ def prestige_earnings_required(state) -> float:
     return float(getattr(state, '_next_prestige_earnings', FIRST_PRESTIGE_EARNINGS))
 
 
+def prestige_route_earnings(state) -> float:
+    """Income that counts toward the prestige earnings gate.
+
+    Only passive building income and manual clicks — not goal/territory bonus
+    cash, jackpots, loan interest, operations, events, or offline payouts.
+    """
+    return float(getattr(state, '_prestige_route_earnings', 0.0))
+
+
 def check_requirements(state) -> dict:
     """
     Return a dict describing whether each requirement is met.
@@ -70,9 +79,9 @@ def check_requirements(state) -> dict:
     Values: (current, required, met: bool)
     """
     required = prestige_earnings_required(state)
+    route = prestige_route_earnings(state)
     reqs = {
-        'earnings': (state.lifetime_earnings, required,
-                     state.lifetime_earnings >= required),
+        'earnings': (route, required, route >= required),
     }
     if getattr(state, '_prestige_count', 0) <= 0:
         dealers = state.buildings[_IDX_DEALER].owned if len(state.buildings) > _IDX_DEALER else 0
@@ -423,7 +432,7 @@ class PrestigeManager:
         # Set the escalating bar for the NEXT prestige: a full run ahead of where
         # the player is now. This paces prestiges apart and makes each a bigger
         # goal (the head start would otherwise allow instant re-prestige).
-        state._next_prestige_earnings = state.lifetime_earnings * PRESTIGE_EARNINGS_GROWTH
+        state._next_prestige_earnings = prestige_route_earnings(state) * PRESTIGE_EARNINGS_GROWTH
 
         # Reset balance (lifetime_earnings keeps accumulating across prestiges)
         state.balance = 0.0

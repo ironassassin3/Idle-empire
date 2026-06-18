@@ -14,9 +14,9 @@ static func make_buildings() -> Array[Building]:
 static func global_special_mult(buildings: Array[Building]) -> float:
 	var mult := 1.0
 	if buildings.size() > 8 and buildings[8].owned > 0:
-		mult *= pow(1.02, buildings[8].owned)
+		mult *= pow(1.015, buildings[8].owned)
 	if buildings.size() > 10 and buildings[10].owned > 0:
-		mult *= pow(1.1, buildings[10].owned)
+		mult *= pow(1.06, buildings[10].owned)
 	return mult
 
 
@@ -73,7 +73,7 @@ const _RAW: Array = [
 	["Nightclub", 80000000.0, 2160000.0, 1.20, "Laundromat with a dance floor", "club",
 		"Launders heat: -0.5 heat per second per nightclub"],
 	["Dock Smuggling Op", 600000000.0, 23400000.0, 1.20, "Containers of plausible deniability", "dock",
-		"Multiplies all passive income by ×1.02 per dock"],
+		"Multiplies all passive income by ×1.015 per dock"],
 	["Arms Broker", 5000000000.0, 283000000.0, 1.20, "Supply and demand, emphasis supply", "arms",
 		"Generates 0.1 Influence fragments per hour per broker"],
 	["Crime Syndicate HQ", 40000000000.0, 3290000000.0, 1.20, "The whole city answers to you", "hq",

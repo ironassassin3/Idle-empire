@@ -71,6 +71,7 @@ class PlayingState(GameState):
         super().__init__(state_manager)
         self.balance = 0.0
         self.lifetime_earnings = 0.0
+        self._prestige_route_earnings = 0.0
         self.prestige_tokens = 0
         self.influence = 0
         self._click_count = 0
@@ -257,9 +258,9 @@ class PlayingState(GameState):
         mult *= heat_mod.heat_income_mult(getattr(self, 'heat', 0.0))
         # Territory: per-district strategic bonuses (income_bonus fields)
         territories = getattr(self, 'territories', [])
-        mult *= territory_mod.territory_income_mult(territories)
-        # Territory: global count bonus (2% per district controlled — Phase 10)
-        mult *= 1.0 + territory_mod.territory_district_count_bonus(territories)
+        mult *= territory_mod.territory_income_mult(territories, self)
+        # Territory: global count bonus (0.5% per district — Phase 10)
+        mult *= 1.0 + territory_mod.territory_district_count_bonus(territories, self)
         # Territory: 100% city-control milestone (+50% income)
         mult *= territory_mod.milestone_income_mult(self)
         # Syndicate income buffs
@@ -303,7 +304,7 @@ class PlayingState(GameState):
         mult *= heat_mod.heat_click_bonus(getattr(self, 'heat', 0.0))
         # Territory click bonus
         territories = getattr(self, 'territories', [])
-        mult *= territory_mod.territory_click_mult(territories)
+        mult *= territory_mod.territory_click_mult(territories, self)
         # Dealer click bonus (flat addition per dealer owned, treated as multiplier on base)
         dealer_bonus = bld.dealer_click_bonus(self.buildings)
         # Phase 94 — progression-linked term: each click also pays a small fraction
@@ -485,6 +486,7 @@ class PlayingState(GameState):
                 cv = pre_crit
             self.balance += cv
             self.lifetime_earnings += cv
+            self._prestige_route_earnings = float(getattr(self, '_prestige_route_earnings', 0.0)) + cv
             money_debug.credit_click(self, cv, pre_crit=pre_crit,
                                      had_crit=crit, had_hustle=had_hustle)
             self._click_count += 1
@@ -571,6 +573,7 @@ class PlayingState(GameState):
         if self.balance != self.balance or self.balance == float('inf'):
             self.balance = min(self.balance, 1e36)
         self.lifetime_earnings += passive
+        self._prestige_route_earnings = float(getattr(self, '_prestige_route_earnings', 0.0)) + passive
         money_debug.credit(self, passive, 'money_from_buildings')
         if self.lifetime_earnings != self.lifetime_earnings or self.lifetime_earnings == float('inf'):
             self.lifetime_earnings = min(self.lifetime_earnings, 1e36)

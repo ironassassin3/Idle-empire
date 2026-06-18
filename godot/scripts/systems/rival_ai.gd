@@ -3,6 +3,7 @@ extends RefCounted
 
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 const ACTION_INTERVAL_MIN := 90.0
 const ACTION_INTERVAL_MAX := 180.0
@@ -46,6 +47,7 @@ static func _grow(state, r: Dictionary, rng: RandomNumberGenerator) -> void:
 	var base_wealth_gain: float = float(turf) * 200000.0
 	var catch_up: float = maxf(1.0, player_balance / maxf(1.0, wealth * 10.0))
 	var wealth_gain: float = base_wealth_gain * minf(catch_up, 5.0)
+	wealth_gain *= _DragonSystem.rival_growth_mult(state)
 
 	if trait_text in ["Wealthy", "Corrupt"]:
 		wealth_gain *= 2.5
@@ -165,7 +167,7 @@ static func _take_action(state, r: Dictionary, rng: RandomNumberGenerator) -> Ar
 	if trait_text in ["Aggressive", "Violent"]:
 		raid_threshold = 0.70
 
-	var effective_aggression: float = aggression
+	var effective_aggression: float = aggression * _DragonSystem.rival_aggression_mult(state)
 
 	if wealth > 500000.0 and roll < 0.25:
 		r["turf"] = mini(8, turf + 1)
@@ -190,9 +192,11 @@ static func _take_action(state, r: Dictionary, rng: RandomNumberGenerator) -> Ar
 		var ips: float = state.income_per_second()
 		var balance: float = state.balance
 		var raw_penalty: float = minf(balance * 0.06, maxf(500.0, ips * 45.0))
+		raw_penalty *= _DragonSystem.raid_damage_mult(state)
 		var result: Dictionary = _ManagerSystem.apply_raid_penalty(state, raw_penalty)
 		var actual: float = float(result.get("actual", 0.0))
 		var absorbed: bool = bool(result.get("absorbed", false))
+		var counter: bool = _DragonSystem.try_counterattack(state, r)
 		var heat_gain: float = 10.0 if trait_text == "Aggressive" else 8.0
 		state.heat = minf(100.0, state.heat + heat_gain)
 		r["wealth"] = minf(float(r.get("wealth", 0.0)) + actual, RAID_LOOT_CAP)
@@ -203,6 +207,8 @@ static func _take_action(state, r: Dictionary, rng: RandomNumberGenerator) -> Ar
 			event_msg = "RAID: %s%s struck — Collector handled it!" % [sym_prefix, name]
 		else:
 			event_msg = "RAID: %s%s hit you for %s!" % [sym_prefix, name, FormatUtil.format_money(actual)]
+		if counter:
+			event_msg += " Counterattack weakened %s!" % name
 		_log(state, "%s raided your operations." % name)
 		events.append(event_msg.strip_edges())
 
@@ -266,4 +272,5 @@ static func update_rivals(state, dt: float, rng: RandomNumberGenerator) -> Array
 		if typeof(r) != TYPE_DICTIONARY:
 			continue
 		events.append_array(_tick_rival(state, r, dt, rng))
+	events.append_array(_DragonSystem.try_jade_de_escalate(state, rng))
 	return events

@@ -55,11 +55,12 @@ static func prestige_earnings_required(prestige_count: int, next_prestige_earnin
 
 static func check_requirements(state) -> Dictionary:
 	var required := prestige_earnings_required(state.prestige_count, state.next_prestige_earnings)
+	var route: float = float(state.prestige_route_earnings)
 	var reqs := {
 		"earnings": {
-			"current": state.lifetime_earnings,
+			"current": route,
 			"required": required,
-			"met": state.lifetime_earnings >= required,
+			"met": route >= required,
 		},
 	}
 	if state.prestige_count <= 0:
@@ -85,8 +86,51 @@ static func _rank_index(label: String) -> int:
 	return rank_index(label)
 
 
-static func rank_territory_bonus(_tokens: int) -> float:
-	return 0.0  # rank perk table — full port in P3
+# Per-rank perk bonuses (cumulative — all ranks at/below current stack).
+# Mirror of src/prestige.py _RANK_PERK_TABLE. Keys: territory_success,
+# operation_reward (additive fractions), heat_decay (/s), income_bonus (additive).
+const _RANK_PERK_TABLE: Dictionary = {
+	"Crew Member": {"territory_success": 0.05},
+	"Associate": {"operation_reward": 0.05},
+	"Made Man": {},
+	"Capo": {"heat_decay": 0.05},
+	"Underboss": {"operation_reward": 0.10},
+	"Boss": {"territory_success": 0.10},
+	"Crime Lord": {"income_bonus": 0.05},
+	"Kingpin": {"heat_decay": 0.05},
+	"City Controller": {"operation_reward": 0.15},
+	"State Influence": {"territory_success": 0.10},
+	"National Influence": {"income_bonus": 0.05},
+	"Shadow Government": {"operation_reward": 0.20},
+}
+
+
+static func get_cumulative_rank_perks(influence: int) -> Dictionary:
+	var totals: Dictionary = {}
+	for entry in HIERARCHY:
+		var threshold: int = int(entry[0])
+		var label: String = entry[1]
+		if influence >= threshold and _RANK_PERK_TABLE.has(label):
+			var perks: Dictionary = _RANK_PERK_TABLE[label]
+			for k in perks:
+				totals[k] = float(totals.get(k, 0.0)) + float(perks[k])
+	return totals
+
+
+static func rank_territory_bonus(tokens: int) -> float:
+	return float(get_cumulative_rank_perks(tokens).get("territory_success", 0.0))
+
+
+static func rank_operation_reward_bonus(tokens: int) -> float:
+	return float(get_cumulative_rank_perks(tokens).get("operation_reward", 0.0))
+
+
+static func rank_heat_decay_bonus(tokens: int) -> float:
+	return float(get_cumulative_rank_perks(tokens).get("heat_decay", 0.0))
+
+
+static func rank_income_bonus(tokens: int) -> float:
+	return float(get_cumulative_rank_perks(tokens).get("income_bonus", 0.0))
 
 
 static func get_next_rank(tokens: int) -> Variant:

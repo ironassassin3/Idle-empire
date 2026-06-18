@@ -44,17 +44,23 @@ surf = pygame.Surface((900,720))
 ps.draw(surf)
 print("[OK] full frame rendered without error")
 
-# 4. Drive ~12 min of updates to confirm the Influence faucet fires (no deadlock)
+# 4. Drive ~20 min of updates to confirm the Influence faucet fires (no deadlock)
 import src.goals as goals_mod
-for _ in range(1500):  # 1500 * 0.5s = 12.5 min
+for _ in range(2400):  # 2400 * 0.5s = 20 min
     ps.update(0.5)
+    # Simulate light clicking (empire route counts clicks + passive).
+    cv = ps.click_value
+    ps.balance += cv
+    ps.lifetime_earnings += cv
+    ps._prestige_route_earnings = float(getattr(ps, '_prestige_route_earnings', 0.0)) + cv
     # auto-buy cheapest affordable building to simulate progress
     for b in ps.buildings:
         if ps.balance >= b.current_cost:
             ps.balance -= b.current_cost; b.owned += 1
             break
-print(f"[OK] after ~12 min sim: influence={ps.prestige_tokens}  rank={prestige.get_rank(ps.prestige_tokens)}  "
-      f"lifetime={ps.lifetime_earnings:,.0f}  buildings={sum(b.owned for b in ps.buildings)}")
+print(f"[OK] after ~20 min sim: influence={ps.prestige_tokens}  rank={prestige.get_rank(ps.prestige_tokens)}  "
+      f"route={getattr(ps, '_prestige_route_earnings', 0.0):,.0f}  "
+      f"buildings={sum(b.owned for b in ps.buildings)}")
 assert ps.prestige_tokens >= 1, "DEADLOCK: no Influence earned from fresh save!"
 print("[OK] DEADLOCK BROKEN: fresh player earned Influence with no dev save")
 

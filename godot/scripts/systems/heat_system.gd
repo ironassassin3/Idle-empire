@@ -4,6 +4,7 @@ extends RefCounted
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 const HEAT_MIN := 0.0
 const HEAT_MAX := 100.0
 const RAID_THRESHOLD := 60.0
@@ -43,7 +44,13 @@ static func update(state, dt: float, rng: RandomNumberGenerator) -> Array[String
 		var clubs: int = state.buildings[7].owned
 		if clubs > 0:
 			rise -= 0.5 * float(clubs) * dt
-	var decay := (_NATURAL_DECAY + _PrestigeTree.heat_decay_bonus(state)) * dt
+	var decay := (
+		_NATURAL_DECAY
+		+ Prestige.rank_heat_decay_bonus(state.prestige_tokens)
+		+ _PrestigeTree.heat_decay_bonus(state)
+		+ _DragonSystem.heat_decay_bonus(state)
+		- _DragonSystem.heat_decay_penalty(state)
+	) * dt
 	var delta := rise - decay
 	if delta > 0.0:
 		state.total_heat_generated += delta

@@ -21,6 +21,7 @@ signal notification(message: String, color: Color)
 
 var balance: float = 0.0
 var lifetime_earnings: float = 0.0
+var prestige_route_earnings: float = 0.0  # passive + clicks only — prestige gate
 var prestige_tokens: int = 0
 var prestige_count: int = 0
 var next_prestige_earnings: float = 0.0
@@ -254,6 +255,7 @@ func reset_new_game() -> void:
 	_ManagerSystem.reset_runtime(self)
 	balance = 0.0
 	lifetime_earnings = 0.0
+	prestige_route_earnings = 0.0
 	prestige_tokens = 0
 	arms_influence_frac = 0.0
 	prestige_count = 0
@@ -317,6 +319,7 @@ func _process(delta: float) -> void:
 	if is_finite(passive):
 		balance += passive
 		lifetime_earnings += passive
+		prestige_route_earnings += passive
 	_tick_building_specials(delta)
 	_tick_loan_interest(delta)
 	_BuffSystem.tick_buffs(self, delta)
@@ -391,8 +394,8 @@ func income_per_second() -> float:
 	mult *= _PrestigeTree.turf_intimidation_income_mult(self)
 	mult *= _PrestigeTree.district_income_mult(self)
 	mult *= HeatSystem.heat_income_mult(heat)
-	mult *= _TerritorySystem.territory_income_mult(territories)
-	mult *= 1.0 + _TerritorySystem.territory_district_count_bonus(territories)
+	mult *= _TerritorySystem.territory_income_mult(territories, self)
+	mult *= 1.0 + _TerritorySystem.territory_district_count_bonus(territories, self)
 	mult *= _TerritorySystem.milestone_income_mult(self)
 	mult *= _CrewSystem.collection_income_mult(crew, self)
 	mult *= _AchievementSystem.income_mult(achievements)
@@ -417,7 +420,7 @@ func click_value() -> float:
 	value *= UpgradeDefs.click_multiplier(upgrades)
 	value *= perk_click_mult
 	value *= HeatSystem.heat_click_mult(heat)
-	value *= _TerritorySystem.territory_click_mult(territories)
+	value *= _TerritorySystem.territory_click_mult(territories, self)
 	if _BuffSystem.has_buff(self, "hustle"):
 		value *= GameConfig.CLICK_HUSTLE_MULT
 	if _BuffSystem.has_buff(self, "click_storm"):
@@ -456,6 +459,7 @@ func do_click() -> float:
 		_play_sfx("click")
 	balance += value
 	lifetime_earnings += value
+	prestige_route_earnings += value
 	_register_active_click()
 	_mark_ips_dirty()
 	stats_changed.emit()
@@ -539,9 +543,13 @@ func do_prestige() -> bool:
 	if prestige_count == 1:
 		next_prestige_earnings = GameConfig.FIRST_PRESTIGE_EARNINGS * GameConfig.PRESTIGE_EARNINGS_GROWTH
 	else:
-		next_prestige_earnings = maxf(next_prestige_earnings * GameConfig.PRESTIGE_EARNINGS_GROWTH, lifetime_earnings * 0.5)
+		next_prestige_earnings = maxf(
+			next_prestige_earnings * GameConfig.PRESTIGE_EARNINGS_GROWTH,
+			prestige_route_earnings * 0.5,
+		)
 	balance = 0.0
 	lifetime_earnings = 0.0
+	prestige_route_earnings = 0.0
 	for b in buildings:
 		b.owned = 0
 		b.income_multiplier = 1.0
@@ -652,6 +660,7 @@ func apply_save_data(data: Dictionary) -> void:
 	var prev_timestamp: float = _f(data, "save_timestamp", 0.0)
 	balance = _f(data, "balance", 0.0)
 	lifetime_earnings = _f(data, "lifetime_earnings", 0.0)
+	prestige_route_earnings = _f(data, "prestige_route_earnings", lifetime_earnings)
 	prestige_tokens = _i(data, "prestige_tokens", 0)
 	arms_influence_frac = _f(data, "arms_influence_frac", 0.0)
 	prestige_count = _i(data, "prestige_count", 0)
@@ -799,6 +808,7 @@ func to_save_data() -> Dictionary:
 	return {
 		"balance": balance,
 		"lifetime_earnings": lifetime_earnings,
+		"prestige_route_earnings": prestige_route_earnings,
 		"prestige_tokens": prestige_tokens,
 		"arms_influence_frac": arms_influence_frac,
 		"prestige_count": prestige_count,

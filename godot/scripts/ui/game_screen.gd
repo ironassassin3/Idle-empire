@@ -11,6 +11,8 @@ const _EventSystem = preload("res://scripts/systems/event_system.gd")
 const _GoalSystem = preload("res://scripts/systems/goal_system.gd")
 const _TutorialSystem = preload("res://scripts/systems/tutorial_system.gd")
 const _BuffSystem = preload("res://scripts/systems/buff_system.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
+const StatsDashboard = preload("res://scripts/ui/stats_dashboard.gd")
 
 const BUILDING_ROW := preload("res://scenes/building_row.tscn")
 const UPGRADE_ROW := preload("res://scenes/upgrade_row.tscn")
@@ -27,20 +29,25 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _rank: Label = $Root/VBox/Header/Rank
 @onready var _heat_bar: ProgressBar = $Root/VBox/Body/Left/HeatBar
 @onready var _heat_label: Label = $Root/VBox/Body/Left/HeatLabel
+@onready var _coin_btn: Button = $Root/VBox/Body/Left/CoinBtn
 @onready var _shield_label: Label = $Root/VBox/Body/Left/ShieldLabel
 @onready var _hustle: Button = $Root/VBox/Body/Left/HustleBtn
 @onready var _click_info: Label = $Root/VBox/Body/Left/ClickInfo
 @onready var _prestige_btn: Button = $Root/VBox/Body/Left/PrestigeBtn
 @onready var _prestige_info: Label = $Root/VBox/Body/Left/PrestigeInfo
-@onready var _tab_bldgs: Button = $Root/VBox/Body/Right/TabScroll/TabBar/BldgsBtn
-@onready var _tab_upgrs: Button = $Root/VBox/Body/Right/TabScroll/TabBar/UpgrsBtn
-@onready var _tab_turf: Button = $Root/VBox/Body/Right/TabScroll/TabBar/TurfBtn
-@onready var _tab_rivals: Button = $Root/VBox/Body/Right/TabScroll/TabBar/RivalsBtn
-@onready var _tab_crew: Button = $Root/VBox/Body/Right/TabScroll/TabBar/CrewBtn
-@onready var _tab_ops: Button = $Root/VBox/Body/Right/TabScroll/TabBar/OpsBtn
-@onready var _tab_stats: Button = $Root/VBox/Body/Right/TabScroll/TabBar/StatsBtn
-@onready var _tab_mgrs: Button = $Root/VBox/Body/Right/TabScroll/TabBar/MgrsBtn
-@onready var _tab_cfg: Button = $Root/VBox/Body/Right/TabScroll/TabBar/CfgBtn
+@onready var _buff_label: Label = $Root/VBox/Body/Left/BuffLabel
+# Bottom nav bar (5 primary tabs) + Turf subtab bar + header gear.
+@onready var _tab_bldgs: Button = $Root/VBox/BottomBar/BldgsBtn
+@onready var _tab_upgrs: Button = $Root/VBox/BottomBar/UpgrsBtn
+@onready var _tab_mgrs: Button = $Root/VBox/BottomBar/MgrsBtn
+@onready var _tab_turf: Button = $Root/VBox/BottomBar/TurfBtn
+@onready var _tab_stats: Button = $Root/VBox/BottomBar/StatsBtn
+@onready var _cfg_btn: Button = $Root/VBox/Header/CfgBtn
+@onready var _turf_subbar: HBoxContainer = $Root/VBox/Body/Right/TurfSubBar
+@onready var _sub_territory: Button = $Root/VBox/Body/Right/TurfSubBar/TerritoryBtn
+@onready var _sub_rivals: Button = $Root/VBox/Body/Right/TurfSubBar/RivalsBtn
+@onready var _sub_crew: Button = $Root/VBox/Body/Right/TurfSubBar/CrewBtn
+@onready var _sub_ops: Button = $Root/VBox/Body/Right/TurfSubBar/OpsBtn
 @onready var _config_scroll: ScrollContainer = $Root/VBox/Body/Right/ConfigScroll
 @onready var _config_body: VBoxContainer = $Root/VBox/Body/Right/ConfigScroll/ConfigBody
 @onready var _bldgs_scroll: ScrollContainer = $Root/VBox/Body/Right/BldgsScroll
@@ -67,7 +74,7 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _ops_summary: Label = $Root/VBox/Body/Right/OpsScroll/VBox/Header/SummaryLabel
 @onready var _ops_lock: Label = $Root/VBox/Body/Right/OpsScroll/VBox/Header/LockLabel
 @onready var _ops_list: VBoxContainer = $Root/VBox/Body/Right/OpsScroll/VBox/List
-@onready var _stats_body: Label = $Root/VBox/Body/Right/StatsScroll/VBox/Body
+@onready var _stats_dashboard: VBoxContainer = $Root/VBox/Body/Right/StatsScroll/VBox/StatsDashboard
 @onready var _stats_ach_btn: Button = $Root/VBox/Body/Right/StatsScroll/VBox/AchBtn
 @onready var _stats_ach_panel: VBoxContainer = $Root/VBox/Body/Right/StatsScroll/VBox/AchPanel
 @onready var _stats_ach_list: Label = $Root/VBox/Body/Right/StatsScroll/VBox/AchPanel/AchList
@@ -75,6 +82,14 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _notif: Label = $Root/VBox/Notif
 @onready var _menu_btn: Button = $Root/VBox/Header/MenuBtn
 @onready var _prestige_tree: CanvasLayer = $PrestigeTreeOverlay
+@onready var _dragon_patron: CanvasLayer = $DragonPatronOverlay
+@onready var _dragon_hud: PanelContainer = $Root/VBox/Body/Left/DragonHud
+@onready var _dragon_name: Label = $Root/VBox/Body/Left/DragonHud/VBox/Header/Name
+@onready var _dragon_mood: Label = $Root/VBox/Body/Left/DragonHud/VBox/Header/Mood
+@onready var _dragon_stage: Label = $Root/VBox/Body/Left/DragonHud/VBox/Stage
+@onready var _dragon_xp_bar: ProgressBar = $Root/VBox/Body/Left/DragonHud/VBox/XpBar
+@onready var _dragon_request: Label = $Root/VBox/Body/Left/DragonHud/VBox/Request
+@onready var _dragon_abilities: HBoxContainer = $Root/VBox/Body/Left/DragonHud/VBox/AbilityRow
 @onready var _overlay_dim: ColorRect = $OverlayLayer/Dim
 @onready var _milestone_panel: PanelContainer = $OverlayLayer/MilestonePanel
 @onready var _milestone_title: Label = $OverlayLayer/MilestonePanel/VBox/Title
@@ -96,15 +111,51 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 
 var _tab: Tab = Tab.BLDGS
 var _notif_timer: float = 0.0
-var _stats_refresh_timer: float = 0.0
-var _last_event_key: String = ""
 var _ui_time: float = 0.0
+var _click_scale: float = 1.0
+const _CLICK_SCALE_MIN := 0.92
+const _CLICK_SCALE_RATE := (1.0 - 0.92) / 0.15
+var _float_layer: Control
+const _MAX_FLOATS := 24
+var _stats_refresh_timer: float = 0.0
+# Throttle the header/left-panel refresh: the sim emits stats_changed every frame,
+# but rebuilding ~15 labels + tab badges + advice at 60fps wastes mobile CPU/battery.
+# 10fps is imperceptible for idle numbers (matches pygame's ~5fps stats throttle).
+var _stats_dirty: bool = true
+var _stats_ui_timer: float = 0.0
+const _STATS_UI_INTERVAL := 0.1
+var _last_event_key: String = ""
 var _notif_default_font_size: int = 0
 const STATS_REFRESH_INTERVAL := 0.2
+const _BASE_MARGIN := 12
+
+
+## Inset the root container by the device safe area (notch / home bar). Safe-area
+## coords are native screen px; scale to viewport px. No-op on desktop (safe area
+## == screen). Needs on-device verification (P8 device matrix).
+func _apply_safe_area() -> void:
+	var safe := DisplayServer.get_display_safe_area()
+	var screen := DisplayServer.screen_get_size()
+	if screen.x <= 0 or screen.y <= 0:
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var sx := vp.x / float(screen.x)
+	var sy := vp.y / float(screen.y)
+	var left := _BASE_MARGIN + int(maxf(0.0, float(safe.position.x)) * sx)
+	var top := _BASE_MARGIN + int(maxf(0.0, float(safe.position.y)) * sy)
+	var right := _BASE_MARGIN + int(maxf(0.0, float(screen.x - (safe.position.x + safe.size.x))) * sx)
+	var bottom := _BASE_MARGIN + int(maxf(0.0, float(screen.y - (safe.position.y + safe.size.y))) * sy)
+	var root := $Root
+	root.add_theme_constant_override("margin_left", left)
+	root.add_theme_constant_override("margin_top", top)
+	root.add_theme_constant_override("margin_right", right)
+	root.add_theme_constant_override("margin_bottom", bottom)
 
 
 func _ready() -> void:
 	GameState.set_simulation_active(true)
+	_apply_safe_area()
+	get_viewport().size_changed.connect(_apply_safe_area)
 	_heat_bar.max_value = 100.0
 	_populate_buildings()
 	_populate_upgrades()
@@ -114,24 +165,27 @@ func _ready() -> void:
 	_populate_crew()
 	_populate_operations()
 	_set_tab(Tab.BLDGS)
-	GameState.stats_changed.connect(_refresh_all)
+	GameState.stats_changed.connect(func(): _stats_dirty = true)
 	GameState.notification.connect(_on_notification)
 	_hustle.pressed.connect(_on_hustle)
+	_coin_btn.pressed.connect(_on_coin)
 	_prestige_btn.pressed.connect(_on_prestige)
 	_menu_btn.pressed.connect(_on_menu)
 	_tab_bldgs.pressed.connect(func(): _set_tab(Tab.BLDGS))
 	_tab_upgrs.pressed.connect(func(): _set_tab(Tab.UPGRS))
-	_tab_turf.pressed.connect(func(): _set_tab(Tab.TURF))
-	_tab_rivals.pressed.connect(func(): _set_tab(Tab.RIVALS))
-	_tab_crew.pressed.connect(func(): _set_tab(Tab.CREW))
-	_tab_ops.pressed.connect(func(): _set_tab(Tab.OPS))
-	_tab_stats.pressed.connect(func(): _set_tab(Tab.STATS))
 	_tab_mgrs.pressed.connect(func(): _set_tab(Tab.MGRS))
-	_tab_cfg.pressed.connect(func(): _set_tab(Tab.CONFIG))
+	_tab_turf.pressed.connect(_open_turf)
+	_tab_stats.pressed.connect(func(): _set_tab(Tab.STATS))
+	_cfg_btn.pressed.connect(func(): _set_tab(Tab.CONFIG))
+	_sub_territory.pressed.connect(func(): _set_turf_subtab(Tab.TURF))
+	_sub_rivals.pressed.connect(func(): _set_turf_subtab(Tab.RIVALS))
+	_sub_crew.pressed.connect(func(): _set_turf_subtab(Tab.CREW))
+	_sub_ops.pressed.connect(func(): _set_turf_subtab(Tab.OPS))
 	_milestone_dismiss.pressed.connect(_dismiss_milestone)
 	_offline_continue.pressed.connect(_dismiss_offline)
 	_elim_dismiss.pressed.connect(_dismiss_elim)
 	_notif_default_font_size = _notif.get_theme_font_size("font_size")
+	call_deferred("_init_hustle_pivot")
 	_build_config_tab()
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
@@ -196,8 +250,39 @@ func _populate_operations() -> void:
 		row.action_pressed.connect(_on_operation_action)
 
 
+func _init_hustle_pivot() -> void:
+	_hustle.pivot_offset = _hustle.size * 0.5
+
+
+const _TURF_TABS: Array = [Tab.TURF, Tab.RIVALS, Tab.CREW, Tab.OPS]
+var _turf_subtab: Tab = Tab.TURF
+
+
+# Pressing the Turf bottom-bar button restores the last-used Turf subtab.
+func _open_turf() -> void:
+	_set_tab(_turf_subtab if _turf_subtab in _TURF_TABS else Tab.TURF)
+
+
+func _set_turf_subtab(tab: Tab) -> void:
+	if tab == Tab.CREW and not _CrewSystem.is_unlocked(GameState):
+		return
+	if tab == Tab.OPS and not _OperationSystem.is_unlocked(GameState):
+		return
+	_set_tab(tab)
+
+
+func _refresh_turf_subbar() -> void:
+	var crew_unlocked: bool = _CrewSystem.is_unlocked(GameState)
+	var ops_unlocked: bool = _OperationSystem.is_unlocked(GameState)
+	_sub_territory.disabled = _tab == Tab.TURF
+	_sub_rivals.disabled = _tab == Tab.RIVALS
+	_sub_crew.disabled = (_tab == Tab.CREW) or not crew_unlocked
+	_sub_ops.disabled = (_tab == Tab.OPS) or not ops_unlocked
+
+
 func _set_tab(tab: Tab) -> void:
 	_tab = tab
+	var is_turf: bool = tab in _TURF_TABS
 	_bldgs_scroll.visible = tab == Tab.BLDGS
 	_upgrs_scroll.visible = tab == Tab.UPGRS
 	_turf_scroll.visible = tab == Tab.TURF
@@ -207,15 +292,15 @@ func _set_tab(tab: Tab) -> void:
 	_stats_scroll.visible = tab == Tab.STATS
 	_mgrs_scroll.visible = tab == Tab.MGRS
 	_config_scroll.visible = tab == Tab.CONFIG
+	_turf_subbar.visible = is_turf
 	_tab_bldgs.disabled = tab == Tab.BLDGS
 	_tab_upgrs.disabled = tab == Tab.UPGRS
-	_tab_turf.disabled = tab == Tab.TURF
-	_tab_rivals.disabled = tab == Tab.RIVALS
-	_tab_crew.disabled = tab == Tab.CREW
-	_tab_ops.disabled = tab == Tab.OPS
-	_tab_stats.disabled = tab == Tab.STATS
 	_tab_mgrs.disabled = tab == Tab.MGRS
-	_tab_cfg.disabled = tab == Tab.CONFIG
+	_tab_turf.disabled = is_turf
+	_tab_stats.disabled = tab == Tab.STATS
+	if is_turf:
+		_turf_subtab = tab
+		_refresh_turf_subbar()
 	match tab:
 		Tab.UPGRS:
 			if GameState.tutorial_step == 2:
@@ -242,6 +327,11 @@ func _set_tab(tab: Tab) -> void:
 
 func _process(delta: float) -> void:
 	_ui_time += delta
+	_stats_ui_timer -= delta
+	if _stats_dirty and _stats_ui_timer <= 0.0:
+		_stats_ui_timer = _STATS_UI_INTERVAL
+		_stats_dirty = false
+		_refresh_all()
 	if _notif_timer > 0.0:
 		_notif_timer -= delta
 		if _notif_timer <= 0.0:
@@ -254,19 +344,25 @@ func _process(delta: float) -> void:
 			_refresh_stats_tab()
 	_update_motion_cues()
 	_refresh_overlays()
+	if _click_scale < 1.0:
+		_click_scale = minf(1.0, _click_scale + _CLICK_SCALE_RATE * delta)
+		_hustle.scale = Vector2(_click_scale, _click_scale)
 
 
 func _refresh_overlays() -> void:
 	var blocking := false
-	if GameState.show_offline_overlay:
+	if GameState.show_offline_overlay or GameState.show_daily_overlay:
 		blocking = true
 		_offline_panel.visible = true
 		var hours: int = int(GameState.offline_secs_away / 3600.0)
 		var mins: int = int(int(GameState.offline_secs_away) % 3600 / 60.0)
 		var away: String = "Away for %dh %dm" % [hours, mins] if hours > 0 else "Away for %dm" % mins
 		var cap_note: String = "\nCap reached — check in sooner for more" if GameState.offline_capped else ""
-		_offline_body.text = (
-			"%s\n\nCash earned: +%s%s\n\nOps ready: %d\nTerritory: %d / %d\nRivals active: %d (%d at war)"
+		var rival_news: String = ""
+		if not GameState.offline_rival_events.is_empty():
+			rival_news = "\n\nWhile you were away:\n• " + "\n• ".join(GameState.offline_rival_events)
+		var body_text: String = (
+			"%s\n\nCash earned: +%s%s\n\nOps ready: %d\nTerritory: %d / %d\nRivals active: %d (%d at war)%s"
 			% [
 				away,
 				FormatUtil.format_money(GameState.offline_gain),
@@ -276,8 +372,14 @@ func _refresh_overlays() -> void:
 				GameState.return_territory_total,
 				GameState.return_rival_active,
 				GameState.return_rival_at_war,
+				rival_news,
 			]
 		)
+		if GameState.show_daily_overlay:
+			body_text += "\n\n★ Daily reward — day %d streak: +%s" % [
+				GameState.daily_streak, FormatUtil.format_money(GameState.daily_reward),
+			]
+		_offline_body.text = body_text
 	elif GameState.elim_overlay_active:
 		blocking = true
 		_elim_panel.visible = true
@@ -383,6 +485,29 @@ func _update_motion_cues() -> void:
 	else:
 		_hustle.modulate = Color.WHITE
 		_hustle.text = "HUSTLE"
+	var buff_lines: PackedStringArray = PackedStringArray()
+	if _BuffSystem.has_buff(GameState, "frenzy"):
+		var rem: float = _buff_remaining("frenzy")
+		buff_lines.append("FRENZY 7× income  %.0fs" % rem)
+	if _BuffSystem.has_buff(GameState, "click_storm"):
+		var storm_rem: float = _buff_remaining("click_storm")
+		buff_lines.append("CLICK STORM 10×  %.0fs" % storm_rem)
+	_buff_label.text = "\n".join(buff_lines)
+	var show_coin: bool = (
+		GameState.has_golden_coin()
+		and not _ManagerSystem.manager_active(GameState, "Lucky Sal")
+	)
+	_coin_btn.visible = show_coin
+	if show_coin:
+		var coin_pulse: float = 0.65 + 0.35 * sin(_ui_time * 6.0)
+		_coin_btn.modulate = Color(1.0, 0.88, 0.35, coin_pulse)
+
+
+func _buff_remaining(name: String) -> float:
+	for b in GameState.buffs:
+		if typeof(b) == TYPE_DICTIONARY and str(b.get("name", "")) == name:
+			return float(b.get("remaining", 0.0))
+	return 0.0
 
 
 func _refresh_all() -> void:
@@ -391,20 +516,81 @@ func _refresh_all() -> void:
 	_rank.text = "%s  ·  %d Influence" % [GameState.rank_label(), GameState.prestige_tokens]
 	_heat_bar.value = GameState.heat
 	var heat_col := GameTheme.GREEN if GameState.heat < 60.0 else GameTheme.RED
-	_heat_label.text = "Heat %.0f%%" % GameState.heat
+	var heat_txt := "Heat %.0f%%" % GameState.heat
+	if _ManagerSystem.manager_active(GameState, "The Promoter"):
+		heat_txt += "  ·  autopilot ≤%.0f%%" % _ManagerSystem.promoter_heat_target(GameState)
+	_heat_label.text = heat_txt
 	_heat_label.add_theme_color_override("font_color", heat_col)
 	_click_info.text = "Click: %s" % FormatUtil.format_money(GameState.click_value())
 	_prestige_btn.disabled = not GameState.can_prestige()
 	var req := Prestige.prestige_earnings_required(GameState.prestige_count, GameState.next_prestige_earnings)
-	_prestige_info.text = "Prestige: %s / %s lifetime" % [
-		FormatUtil.format_money(GameState.lifetime_earnings),
-		FormatUtil.format_money(req),
-	]
+	var prestige_lines: PackedStringArray = PackedStringArray([
+		"Prestige: %s / %s lifetime" % [
+			FormatUtil.format_money(GameState.lifetime_earnings),
+			FormatUtil.format_money(req),
+		],
+	])
+	var adv: Dictionary = _ManagerSystem.prestige_advice(GameState)
+	if not adv.is_empty():
+		prestige_lines.append("%s — %s" % [adv.get("source", "Advisor"), adv.get("recommend", "")])
+		if adv.has("summary"):
+			prestige_lines.append(str(adv.get("summary")))
+	_prestige_info.text = "\n".join(prestige_lines)
 	_refresh_turf_header()
 	_refresh_rivals_tab()
 	_refresh_crew_tab()
 	_refresh_ops_tab()
 	_refresh_tab_badges()
+	_refresh_dragon_hud()
+
+
+func _refresh_dragon_hud() -> void:
+	var patron: String = _DragonSystem.active_dragon(GameState)
+	if patron.is_empty():
+		_dragon_hud.visible = false
+		return
+	_dragon_hud.visible = true
+	var meta: Dictionary = _DragonSystem.DRAGON_META[patron]
+	var col: Color = meta.get("color", GameTheme.GOLD)
+	_dragon_name.text = str(meta.get("title", patron))
+	_dragon_name.add_theme_color_override("font_color", col)
+	var stage: String = _DragonSystem.get_stage(GameState)
+	_dragon_stage.text = _DragonSystem.STAGE_LABELS.get(stage, stage)
+	var mood: String = _DragonSystem.get_mood(GameState)
+	_dragon_mood.text = _DragonSystem.MOOD_LABELS.get(mood, mood)
+	_dragon_mood.add_theme_color_override("font_color", _DragonSystem.MOOD_COLORS.get(mood, GameTheme.TEXT_MUTED))
+	var prog: Dictionary = _DragonSystem.stage_xp_progress(GameState)
+	var needed: int = int(prog.get("needed", 0))
+	if needed > 0:
+		_dragon_xp_bar.max_value = float(needed)
+		_dragon_xp_bar.value = float(prog.get("progress", 0))
+	else:
+		_dragon_xp_bar.max_value = 1.0
+		_dragon_xp_bar.value = 1.0
+	var req: Dictionary = _DragonSystem.get_active_request(GameState)
+	if req.is_empty():
+		if float(GameState.dragon_request_cooldown) > 1.0:
+			_dragon_request.text = "Dragon is resting…"
+		else:
+			_dragon_request.text = ""
+	else:
+		_dragon_request.text = "%s\n▸ %s" % [req.get("title", ""), req.get("goal", "")]
+	for child in _dragon_abilities.get_children():
+		child.queue_free()
+	for ab_key in _DragonSystem.get_available_abilities(GameState):
+		var ab: Array = _DragonSystem.ABILITIES[ab_key]
+		var btn := Button.new()
+		var cd: float = _DragonSystem.ability_cooldown_remaining(GameState, ab_key)
+		btn.custom_minimum_size = Vector2(0, 24)
+		btn.add_theme_font_size_override("font_size", 9)
+		if cd > 0.0:
+			btn.text = "%s %ds" % [str(ab[2]).substr(0, 8), int(ceil(cd))]
+			btn.disabled = true
+		else:
+			btn.text = str(ab[2]).substr(0, 10)
+			var key: String = ab_key
+			btn.pressed.connect(func(): GameState.activate_dragon_ability(key))
+		_dragon_abilities.add_child(btn)
 
 
 func _refresh_crew_tab() -> void:
@@ -438,102 +624,14 @@ func _refresh_ops_tab() -> void:
 
 
 func _refresh_stats_tab() -> void:
-	var terr: int = _TerritorySystem.player_district_count(GameState.territories)
-	var total_t: int = maxi(1, GameState.territories.size())
-	var ctrl_pct: float = float(terr) / float(total_t)
-	var play_secs: int = int(GameState.play_time)
-	var ph: int = int(play_secs / 3600.0)
-	var pm: int = int(play_secs % 3600 / 60.0)
-	var time_str: String = "%dh %dm" % [ph, pm] if ph > 0 else "%dm" % pm
 	var ach_earned: int = _AchievementSystem.earned_count(GameState.achievements)
 	var ach_total: int = GameState.achievements.size()
-	var respect_bonus: float = Prestige.respect_income_bonus(GameState.influence)
-	var pmult: float = Prestige.income_mult(GameState.prestige_tokens)
 	var ach_mult: float = _AchievementSystem.income_mult(GameState.achievements)
-	var goal_lines: PackedStringArray = PackedStringArray(["ACTIVE GOALS"])
-	for g in _GoalSystem.current_goals(GameState, 4):
-		if typeof(g) != TYPE_DICTIONARY:
-			continue
-		var prog: Dictionary = _GoalSystem.progress_for(GameState, g)
-		var target: float = float(prog.get("target", 1.0))
-		var cur: float = float(prog.get("current", 0.0))
-		var pct: int = int(mini(100.0, cur / maxf(1.0, target) * 100.0))
-		goal_lines.append("• %s  (%d%%)" % [g.get("label", "?"), pct])
-
-	var rank_lines: PackedStringArray = PackedStringArray()
-	rank_lines.append("RANK: %s" % GameState.rank_label())
-	var nri: Variant = Prestige.get_next_rank(GameState.prestige_tokens)
-	if nri != null:
-		var nr_label: String = str(nri[0])
-		var nr_thresh: int = int(nri[1])
-		var cur_thresh: int = 0
-		for entry in Prestige.HIERARCHY:
-			if GameState.prestige_tokens >= int(entry[0]):
-				cur_thresh = int(entry[0])
-		var span: int = maxi(1, nr_thresh - cur_thresh)
-		var pct: int = int(mini(1.0, float(GameState.prestige_tokens - cur_thresh) / float(span)) * 100.0)
-		rank_lines.append("Next: %s  (%d/%d, %d%%)" % [nr_label, GameState.prestige_tokens, nr_thresh, pct])
-
-	_stats_body.text = (
-		"SESSION\n"
-		+ "Balance: %s\n"
-		+ "Income / sec: %s\n"
-		+ "Peak income / sec: %s\n"
-		+ "Click value: %s\n"
-		+ "Prestige mult: %.2fx  ·  Achievement bonus: +%.0f%%\n\n"
-		+ "RESOURCES\n"
-		+ "Influence (perks/turf): %d\n"
-		+ "Respect (street rep): %d  ·  income bonus +%.0f%%\n\n"
-		+ "LIFETIME STATISTICS\n"
-		+ "Cash earned (this run): %s\n"
-		+ "Highest cash held: %s\n"
-		+ "Play time: %s\n"
-		+ "Buildings bought: %s\n"
-		+ "Districts controlled: %d  ·  captured (lifetime): %d\n"
-		+ "Rivals defeated: %d  ·  Ops completed: %d\n"
-		+ "Total heat generated: %.0f\n"
-		+ "Total clicks: %s\n"
-		+ "Prestiges (all time): %d\n"
-		+ "Achievements: %d / %d\n\n"
-		+ "%s\n\n"
-		+ "%s\n\n"
-		+ "CITY DOMINATION\n"
-		+ "Control: %d / %d districts (%d%%)\n"
-		+ "Peak city control: %d%%\n"
-		+ "Crew assigned: %d / %d"
-	) % [
-		FormatUtil.format_money(GameState.balance),
-		FormatUtil.format_money(GameState.income_per_second()),
-		FormatUtil.format_money(GameState.peak_income),
-		FormatUtil.format_money(GameState.click_value()),
-		pmult,
-		(ach_mult - 1.0) * 100.0,
-		GameState.prestige_tokens,
-		GameState.influence,
-		respect_bonus * 100.0,
-		FormatUtil.format_money(GameState.lifetime_earnings),
-		FormatUtil.format_money(GameState.highest_cash_held),
-		time_str,
-		"%d" % GameState.total_buildings_purchased,
-		terr,
-		GameState.total_territories_captured,
-		GameState.total_rivals_defeated,
-		GameState.total_ops_completed,
-		GameState.total_heat_generated,
-		"%d" % GameState.click_count,
-		GameState.prestige_count,
-		ach_earned,
-		ach_total,
-		"\n".join(rank_lines),
-		"\n".join(goal_lines),
-		terr,
-		total_t,
-		int(round(ctrl_pct * 100.0)),
-		int(round(GameState.highest_city_control * 100.0)),
-		_CrewSystem.crew_total(GameState.crew),
-		_CrewSystem.available(GameState),
+	_stats_ach_btn.text = "★ Achievements  %d / %d  ·  +%.0f%% income" % [
+		ach_earned, ach_total, (ach_mult - 1.0) * 100.0,
 	]
-	_stats_ach_btn.text = "View Achievements  %d/%d" % [ach_earned, ach_total]
+	_stats_ach_btn.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	StatsDashboard.rebuild(_stats_dashboard, GameState)
 	if _stats_ach_panel.visible:
 		_refresh_achievements_list()
 
@@ -650,7 +748,54 @@ func _refresh_upgrade_list() -> void:
 func _on_hustle() -> void:
 	if GameState.tutorial_step == 0:
 		_TutorialSystem.advance_tutorial(GameState)
-	GameState.do_click()
+	var gained: float = GameState.do_click()
+	_click_scale = _CLICK_SCALE_MIN
+	_spawn_click_float(gained, GameState.last_click_crit)
+
+
+func _ensure_float_layer() -> void:
+	if _float_layer and is_instance_valid(_float_layer):
+		return
+	_float_layer = Control.new()
+	_float_layer.name = "ClickFloats"
+	_float_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_float_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_float_layer)
+
+
+## Floating "+$X" / "CRIT +$X" that drifts up and fades — port of the pygame
+## click float particles. Cosmetic only; skipped on headless.
+func _spawn_click_float(amount: float, crit: bool) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	_ensure_float_layer()
+	if _float_layer.get_child_count() >= _MAX_FLOATS:
+		return
+	var lbl := Label.new()
+	var money: String = FormatUtil.format_money(amount)
+	lbl.text = ("CRIT +%s" % money) if crit else ("+%s" % money)
+	lbl.add_theme_font_size_override("font_size", 22 if crit else 16)
+	lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT if crit else GameTheme.GREEN)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_float_layer.add_child(lbl)
+	var origin: Vector2 = _hustle.global_position + _hustle.size * 0.5
+	origin.x += randf_range(-24.0, 24.0)
+	origin.y += randf_range(-6.0, 6.0)
+	lbl.global_position = origin
+	var rise: float = 64.0 if crit else 44.0
+	var dur: float = 0.9 if crit else 0.7
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "global_position:y", origin.y - rise, dur) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, dur).set_ease(Tween.EASE_IN)
+	tw.set_parallel(false)
+	tw.tween_callback(lbl.queue_free)
+
+
+func _on_coin() -> void:
+	if GameState.has_golden_coin() and not _ManagerSystem.manager_active(GameState, "Lucky Sal"):
+		GameState.collect_golden_coin(false)
 
 
 func _on_buy(index: int, qty: int) -> void:
@@ -670,9 +815,12 @@ func _on_hire(index: int) -> void:
 
 
 func _on_territory_action(index: int, action: String) -> void:
+	var was_unlocked: bool = bool(GameState.territories[index].get("unlocked", false))
 	var outcome := GameState.perform_territory_action(index, action)
 	var color := GameTheme.GREEN if GameState.territories[index].get("unlocked", false) else GameTheme.GOLD
 	_on_notification(outcome, color)
+	if not was_unlocked and bool(GameState.territories[index].get("unlocked", false)):
+		AudioManager.play("territory")
 
 
 func _on_rival_action(index: int, action: String) -> void:
@@ -692,9 +840,12 @@ func _on_operation_action(index: int) -> void:
 	var op: Dictionary = GameState.operations[index]
 	var outcome: String
 	if _OperationSystem.is_ready(GameState, op):
+		var first_op: bool = GameState.total_ops_completed == 0
 		outcome = GameState.collect_operation(index)
 		var color := GameTheme.GREEN if outcome.contains("Complete") else GameTheme.RED
 		_on_notification(outcome.replace("\n", "  "), color)
+		if outcome.contains("Complete") and not outcome.contains("FAILED"):
+			AudioManager.play("manager" if first_op else "achievement")
 	else:
 		outcome = GameState.start_operation(index)
 		_on_notification(outcome, GameTheme.GOLD)
@@ -719,12 +870,18 @@ func _on_notification(message: String, color: Color) -> void:
 	_notif.text = message
 	_notif.add_theme_color_override("font_color", color)
 	var is_goal: bool = _is_goal_notification(message, color)
-	if is_goal:
+	var is_autobuy: bool = AudioManager.is_autobuy_message(message)
+	if is_goal or is_autobuy:
 		_notif.add_theme_font_size_override("font_size", maxi(_notif_default_font_size + 2, 15))
-		_notif_timer = 4.0
+		_notif_timer = 4.0 if is_goal else 3.5
+		if is_autobuy:
+			_notif.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	else:
 		_notif.add_theme_font_size_override("font_size", _notif_default_font_size)
 		_notif_timer = 2.5
+	var cue := AudioManager.cue_for_notification(message, color)
+	if not cue.is_empty() and cue != "rankup":
+		AudioManager.play(cue)
 
 
 func _is_goal_notification(message: String, color: Color) -> bool:
@@ -738,26 +895,32 @@ func _refresh_tab_badges() -> void:
 	var bld: int = GameState.total_buildings_owned()
 	_tab_bldgs.text = "Bldgs"
 	_tab_upgrs.text = "Upgrs"
-	_tab_turf.text = "Turf"
-	_tab_rivals.text = "Rivals"
+	_tab_mgrs.text = "Mgrs"
+	_tab_stats.text = "Stats"
+	# Turf subtab badges (Crew/Ops lock progress).
+	_sub_territory.text = "Territory"
+	_sub_rivals.text = "Rivals"
 	if _CrewSystem.is_unlocked(GameState):
-		_tab_crew.text = "Crew"
+		_sub_crew.text = "Crew"
 	else:
-		_tab_crew.text = "Crew %d/5" % mini(bld, 5)
+		_sub_crew.text = "Crew %d/5" % mini(bld, 5)
 	var ready_ops := 0
 	for op in GameState.operations:
 		if typeof(op) == TYPE_DICTIONARY and _OperationSystem.is_ready(GameState, op):
 			ready_ops += 1
-	if _OperationSystem.is_unlocked(GameState):
-		_tab_ops.text = "Ops*" if ready_ops > 0 else "Ops"
+	var ops_unlocked: bool = _OperationSystem.is_unlocked(GameState)
+	if ops_unlocked:
+		_sub_ops.text = "Ops*" if ready_ops > 0 else "Ops"
 	else:
 		var terr: int = _TerritorySystem.player_district_count(GameState.territories)
-		_tab_ops.text = "Ops %d/2" % mini(terr, 2)
+		_sub_ops.text = "Ops %d/2" % mini(terr, 2)
+	# Turf bottom-bar button rolls up its subtabs' status.
+	var turf_label := "Turf"
 	if _ManagerSystem.manager_active(GameState, "The Broker"):
-		_tab_turf.text = "Turf ★"
-	_tab_stats.text = "Stats"
-	_tab_mgrs.text = "Mgrs"
-	_tab_cfg.text = "Cfg"
+		turf_label = "Turf ★"
+	elif ops_unlocked and ready_ops > 0:
+		turf_label = "Turf •"
+	_tab_turf.text = turf_label
 
 
 func _build_config_tab() -> void:
@@ -767,7 +930,10 @@ func _build_config_tab() -> void:
 	_add_cycle_row("Master Volume", ["0%", "25%", "50%", "75%", "100%"], _vol_index(GameState.master_volume), func(i): _set_master_volume(i))
 	_add_cycle_row("SFX Volume", ["0%", "25%", "50%", "75%", "100%"], _vol_index(GameState.sfx_volume), func(i): _set_sfx_volume(i))
 	_add_cycle_row("Music Volume", ["0%", "25%", "50%", "75%", "100%"], _vol_index(GameState.music_volume), func(i): _set_music_volume(i))
-	_add_cycle_row("Mute All", ["OFF", "ON"], 1 if GameState.mute_all else 0, func(i): GameState.mute_all = i == 1)
+	_add_cycle_row("Mute All", ["OFF", "ON"], 1 if GameState.mute_all else 0, func(i):
+		GameState.mute_all = i == 1
+		AudioManager.apply_from_state(GameState)
+	)
 	_add_config_header("DISPLAY")
 	_add_cycle_row("FPS Cap", ["30", "60", "120"], [30, 60, 120].find(GameState.fps_cap), func(i): _set_fps_cap(i))
 	_add_cycle_row("Particles", ["ON", "OFF"], 0 if GameState.show_particles else 1, func(i): GameState.show_particles = i == 0)
@@ -825,14 +991,17 @@ func _vol_index(v: float) -> int:
 
 func _set_master_volume(i: int) -> void:
 	GameState.master_volume = [0.0, 0.25, 0.5, 0.75, 1.0][i]
+	AudioManager.apply_from_state(GameState)
 
 
 func _set_sfx_volume(i: int) -> void:
 	GameState.sfx_volume = [0.0, 0.25, 0.5, 0.75, 1.0][i]
+	AudioManager.apply_from_state(GameState)
 
 
 func _set_music_volume(i: int) -> void:
 	GameState.music_volume = [0.0, 0.25, 0.5, 0.75, 1.0][i]
+	AudioManager.apply_from_state(GameState)
 
 
 func _set_fps_cap(i: int) -> void:

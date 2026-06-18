@@ -159,7 +159,7 @@ _DEFS = [
      "Launders heat: -0.5 heat per second per nightclub"),
     ("Dock Smuggling Op",   600_000_000.0,  23_400_000.0, 1.20,
      "Containers of plausible deniability", "dock",
-     "Multiplies all passive income by ×1.02 per dock"),
+     "Multiplies all passive income by ×1.015 per dock"),
     ("Arms Broker",         5_000_000_000.0, 283_000_000.0, 1.20,
      "Supply and demand, emphasis supply",  "arms",
      "Generates 0.1 Influence fragments per hour per broker"),
@@ -175,9 +175,9 @@ def global_special_mult(buildings: List['Building']) -> float:
     hq   = buildings[10] if len(buildings) > 10 else None
     mult = 1.0
     if dock and dock.owned > 0:
-        mult *= 1.02 ** dock.owned
+        mult *= 1.015 ** dock.owned
     if hq and hq.owned > 0:
-        mult *= 1.1 ** hq.owned
+        mult *= 1.06 ** hq.owned
     return mult
 
 

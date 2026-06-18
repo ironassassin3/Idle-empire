@@ -1,5 +1,7 @@
 extends Control
 
+const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
+
 signal buy_pressed(index: int, qty: int)
 
 var building_index: int = -1
@@ -33,6 +35,13 @@ func _refresh() -> void:
 	if building_index < 0 or building_index >= GameState.buildings.size():
 		return
 	_building = GameState.buildings[building_index]
+	var pete_pick := _ManagerSystem.pete_recommends_index(GameState)
+	if pete_pick == building_index:
+		_name.text = "★ %s" % _building.display_name
+		modulate = Color(1.0, 0.92, 0.55)
+	else:
+		_name.text = _building.display_name
+		modulate = Color.WHITE
 	_owned.text = "Owned: %d" % _building.owned
 	_income.text = "%s/s" % FormatUtil.format_money(_building.income_per_second())
 	var cost1 := _building.current_cost()

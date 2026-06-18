@@ -2,6 +2,7 @@ extends CanvasLayer
 ## Full-screen prestige tree — Godot-native overlay (mirrors PrestigeTreeState).
 
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 @onready var _dim: ColorRect = $Dim
 @onready var _panel: PanelContainer = $Panel
@@ -14,6 +15,7 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 @onready var _lock_label: Label = $Panel/Margin/VBox/LockLabel
 @onready var _back_btn: Button = $Panel/Margin/VBox/BottomRow/BackBtn
 @onready var _prestige_btn: Button = $Panel/Margin/VBox/BottomRow/PrestigeBtn
+@onready var _dragon_patron_btn: Button = $Panel/Margin/VBox/BottomRow/DragonPatronBtn
 @onready var _branch_dialog: PanelContainer = $BranchDialog
 @onready var _branch_dialog_title: Label = $BranchDialog/Margin/VBox/Title
 @onready var _branch_dialog_body: Label = $BranchDialog/Margin/VBox/Body
@@ -27,6 +29,16 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 
 var _pending_branch: String = ""
 var _branch_buttons: Dictionary = {}
+var _ui_time: float = 0.0
+
+
+func _process(delta: float) -> void:
+	_ui_time += delta
+	if _prestige_dialog.visible:
+		var pulse: float = 0.85 + 0.15 * sin(_ui_time * 4.0)
+		_prestige_dialog.modulate = Color(1.0, 0.92, 0.55, pulse)
+	else:
+		_prestige_dialog.modulate = Color.WHITE
 
 
 func _ready() -> void:
@@ -35,6 +47,7 @@ func _ready() -> void:
 	_build_branch_buttons()
 	_back_btn.pressed.connect(close)
 	_prestige_btn.pressed.connect(_on_prestige_pressed)
+	_dragon_patron_btn.pressed.connect(_on_dragon_patron_pressed)
 	_branch_yes.pressed.connect(_confirm_branch)
 	_branch_no.pressed.connect(_cancel_branch_dialog)
 	_prestige_yes.pressed.connect(_confirm_prestige)
@@ -91,6 +104,27 @@ func _refresh() -> void:
 	_refresh_branch_buttons(committed)
 	_refresh_lock_strip()
 	_refresh_prestige_button()
+	_refresh_dragon_patron_button()
+
+
+func _refresh_dragon_patron_button() -> void:
+	var unlocked: bool = _DragonSystem.dragon_unlocked(GameState)
+	_dragon_patron_btn.disabled = not unlocked
+	var patron: String = _DragonSystem.active_dragon(GameState)
+	if not unlocked:
+		_dragon_patron_btn.text = "DRAGON (locked)"
+	elif patron.is_empty():
+		_dragon_patron_btn.text = "DRAGON PATRON"
+	else:
+		var meta: Dictionary = _DragonSystem.DRAGON_META[patron]
+		_dragon_patron_btn.text = meta.get("title", "DRAGON")
+		_dragon_patron_btn.add_theme_color_override("font_color", meta.get("color", GameTheme.GOLD))
+
+
+func _on_dragon_patron_pressed() -> void:
+	var dragon := get_node_or_null("../DragonPatronOverlay")
+	if dragon:
+		dragon.open()
 
 
 func _refresh_branch_buttons(committed: String) -> void:
@@ -159,6 +193,12 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 	var detail: String = PrestigeTree.perk_detail(key)
 	if not detail.is_empty():
 		btn.tooltip_text = detail
+		var detail_l := Label.new()
+		detail_l.text = detail
+		detail_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		detail_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+		detail_l.add_theme_font_size_override("font_size", 11)
+		vbox.add_child(detail_l)
 	return panel
 
 
@@ -169,7 +209,7 @@ func _refresh_lock_strip() -> void:
 	var reqs: Dictionary = Prestige.check_requirements(GameState)
 	var earn: Dictionary = reqs["earnings"]
 	var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
-	var line := "PRESTIGE LOCKED — Lifetime %s / %s" % [
+	var line := "PRESTIGE LOCKED — Empire %s / %s" % [
 		FormatUtil.format_money(float(earn.get("current", 0.0))),
 		FormatUtil.format_money(float(earn.get("required", 0.0))),
 	]
