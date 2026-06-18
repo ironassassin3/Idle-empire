@@ -270,7 +270,13 @@ func reset_new_game() -> void:
 
 
 func _audio() -> Node:
-	return get_node_or_null("/root/AudioManager")
+	# Resolve via the active main loop's root with a relative lookup, not an
+	# absolute get_node on self: in headless soak/probe harnesses self may not be
+	# in the active scene tree yet, which makes get_node("/root/...") log an error.
+	var loop := Engine.get_main_loop()
+	if loop is SceneTree:
+		return (loop as SceneTree).root.get_node_or_null("AudioManager")
+	return null
 
 
 func _play_sfx(cue: String) -> void:
