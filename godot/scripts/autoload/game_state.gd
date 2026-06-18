@@ -14,6 +14,7 @@ const _EventSystem = preload("res://scripts/systems/event_system.gd")
 const _GoalSystem = preload("res://scripts/systems/goal_system.gd")
 const _TutorialSystem = preload("res://scripts/systems/tutorial_system.gd")
 const _OfflineSystem = preload("res://scripts/systems/offline_system.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 signal stats_changed
 signal notification(message: String, color: Color)
@@ -23,6 +24,7 @@ var lifetime_earnings: float = 0.0
 var prestige_tokens: int = 0
 var prestige_count: int = 0
 var next_prestige_earnings: float = 0.0
+var arms_influence_frac: float = 0.0  # Arms Broker special: fractional Influence accrual
 var click_count: int = 0
 var play_time: float = 0.0
 var heat: float = 0.0
@@ -64,7 +66,12 @@ var highest_cash_held: float = 0.0
 var total_buildings_purchased: int = 0
 var achievements: Array = []
 var coins_caught: int = 0
+var golden_coin_active: bool = false
+var golden_coin_lifetime: float = 0.0
+var golden_coin_timer: float = 0.0
+var promoter_heat_target: float = 50.0
 var offline_gain: float = 0.0
+var offline_rival_events: Array[String] = []  # runtime-only; rebuilt on load
 
 # Manager runtime (P1 behaviors)
 var collector_shield_cd: float = 0.0
@@ -102,6 +109,9 @@ var elim_overlay_flavor: String = ""
 var elim_overlay_rewards: String = ""
 var elim_overlay_timer: float = 0.0
 var recent_clicks: Array = []
+var last_click_crit: bool = false
+var _last_rank: String = ""
+var _rank_tracking_ready: bool = false
 
 # Settings (Config tab)
 var master_volume: float = 1.0
@@ -116,16 +126,30 @@ var show_offline_overlay: bool = false
 var offline_secs_away: float = 0.0
 var offline_capped: bool = false
 var return_ops_ready: int = 0
+# Daily login reward (port of src/save_load.py). Persisted: last_login_date, daily_streak.
+var last_login_date: String = ""
+var daily_streak: int = 0
+var daily_reward: float = 0.0
+var show_daily_overlay: bool = false
 var return_territory_player: int = 0
 var return_territory_total: int = 0
 var return_rival_active: int = 0
 var return_rival_at_war: int = 0
 
-# Dragon patron stubs (save-compatible, not playable yet)
-var dragon_key: String = ""
+# Dragon patron (P5 — ROADMAP parity with src/dragon.py)
+var dragon_patron: String = ""
 var dragon_xp: int = 0
-var dragon_stage: String = "egg"
-var dragon_abilities: Array = []
+var dragon_ability_cooldowns: Dictionary = {}
+var dragon_red_elim_count: int = 0
+var dragon_request_key: String = ""
+var dragon_req_snapshot: Dictionary = {}
+var dragon_request_cooldown: float = 15.0
+var dragon_recent_requests: Array = []
+var dragon_mood_timer: float = 0.0
+var dragon_rage_timer: float = 0.0
+var dragon_logistics_timer: float = 0.0
+var dragon_guaranteed_territory: bool = false
+var dragon_black_last_op_time: float = -1.0
 
 var simulation_active: bool = false
 
@@ -135,6 +159,9 @@ var _autosave_timer: float = 0.0
 var _ach_check_timer: float = 0.0
 var _goal_check_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
+
+const COIN_SPAWN_MIN := 30.0
+const COIN_SPAWN_MAX := 60.0
 
 
 func set_simulation_active(active: bool) -> void:
@@ -173,7 +200,12 @@ func reset_new_game() -> void:
 	achievements = _AchievementSystem.make_achievements()
 	goals = _GoalSystem.make_goals()
 	coins_caught = 0
+	golden_coin_active = false
+	golden_coin_lifetime = 0.0
+	golden_coin_timer = _rng.randf_range(COIN_SPAWN_MIN, COIN_SPAWN_MAX)
+	promoter_heat_target = 50.0
 	offline_gain = 0.0
+	offline_rival_events = []
 	buffs.clear()
 	event_timer = -1.0
 	pending_event = {}
@@ -201,15 +233,29 @@ func reset_new_game() -> void:
 	show_offline_overlay = false
 	offline_secs_away = 0.0
 	offline_capped = false
-	dragon_key = ""
+	last_login_date = ""
+	daily_streak = 0
+	daily_reward = 0.0
+	show_daily_overlay = false
+	dragon_patron = ""
 	dragon_xp = 0
-	dragon_stage = "egg"
-	dragon_abilities = []
+	dragon_ability_cooldowns = {}
+	dragon_red_elim_count = 0
+	dragon_request_key = ""
+	dragon_req_snapshot = {}
+	dragon_request_cooldown = 15.0
+	dragon_recent_requests = []
+	dragon_mood_timer = 0.0
+	dragon_rage_timer = 0.0
+	dragon_logistics_timer = 0.0
+	dragon_guaranteed_territory = false
+	dragon_black_last_op_time = -1.0
 	influence = 0
 	_ManagerSystem.reset_runtime(self)
 	balance = 0.0
 	lifetime_earnings = 0.0
 	prestige_tokens = 0
+	arms_influence_frac = 0.0
 	prestige_count = 0
 	next_prestige_earnings = 0.0
 	click_count = 0
@@ -219,12 +265,48 @@ func reset_new_game() -> void:
 	_PrestigeTree.apply_perks(self)
 	_mark_ips_dirty()
 	stats_changed.emit()
+	_sync_rank_tracking()
+	_apply_audio_settings()
+
+
+func _audio() -> Node:
+	return get_node_or_null("/root/AudioManager")
+
+
+func _play_sfx(cue: String) -> void:
+	var am := _audio()
+	if am:
+		am.play(cue)
+
+
+func _apply_audio_settings() -> void:
+	var am := _audio()
+	if am:
+		am.apply_from_state(self)
+
+
+func _sync_rank_tracking() -> void:
+	_last_rank = Prestige.get_rank(prestige_tokens)
+	_rank_tracking_ready = true
+
+
+func _check_rank_up() -> void:
+	if not _rank_tracking_ready or not simulation_active:
+		return
+	var current := Prestige.get_rank(prestige_tokens)
+	if current == _last_rank:
+		return
+	_last_rank = current
+	notification.emit("Rank Up → %s" % current, GameTheme.GOLD_BRIGHT)
+	_TutorialSystem.push_milestone(self, "RANK UP\n%s" % current, 6.0)
+	_play_sfx("rankup")
 
 
 func _process(delta: float) -> void:
 	if not simulation_active:
 		return
 	play_time += delta
+	_tick_golden_coin(delta)
 	var passive := income_per_second() * delta
 	if is_finite(passive):
 		balance += passive
@@ -254,6 +336,7 @@ func _process(delta: float) -> void:
 	var crew_heat_decay: float = _CrewSystem.heat_reduction_per_sec(crew) * delta
 	if crew_heat_decay > 0.0:
 		heat = maxf(0.0, heat - crew_heat_decay)
+	_DragonSystem.dragon_update(self, delta, _rng)
 	for msg in _RivalSystem.update_rivals(self, delta, _rng):
 		if msg.is_empty():
 			continue
@@ -282,6 +365,7 @@ func _process(delta: float) -> void:
 	if _autosave_timer >= GameConfig.AUTOSAVE_INTERVAL:
 		_autosave_timer = 0.0
 		SaveManager.save_game()
+	_check_rank_up()
 	_mark_ips_dirty()
 	stats_changed.emit()
 
@@ -307,7 +391,13 @@ func income_per_second() -> float:
 	mult *= _CrewSystem.collection_income_mult(crew, self)
 	mult *= _AchievementSystem.income_mult(achievements)
 	mult *= _BuffSystem.income_mult(self)
+	if _BuffSystem.has_buff(self, "frenzy"):
+		mult *= 7.0
+	mult *= _DragonSystem.rival_presence_income_mult(self)
+	mult *= _DragonSystem.eliminated_rival_income_mult(self)
+	mult *= 1.0 + _DragonSystem.active_ops_income_bonus(self)
 	mult *= 1.0 + Prestige.respect_income_bonus(influence) * _PrestigeTree.respect_income_mult(self)
+	mult *= 1.0 + Prestige.rank_income_bonus(prestige_tokens)
 	_ips_cached = base * mult
 	_ips_dirty = false
 	return _ips_cached
@@ -324,6 +414,8 @@ func click_value() -> float:
 	value *= _TerritorySystem.territory_click_mult(territories)
 	if _BuffSystem.has_buff(self, "hustle"):
 		value *= GameConfig.CLICK_HUSTLE_MULT
+	if _BuffSystem.has_buff(self, "click_storm"):
+		value *= 10.0
 	return value
 
 
@@ -349,9 +441,13 @@ func _register_active_click() -> void:
 func do_click() -> float:
 	click_count += 1
 	var value := click_value()
+	last_click_crit = false
 	if _rng.randf() < GameConfig.CLICK_CRIT_CHANCE:
 		value *= _rng.randf_range(GameConfig.CLICK_CRIT_MIN, GameConfig.CLICK_CRIT_MAX)
+		last_click_crit = true
 		notification.emit("Critical hit!", GameTheme.GOLD_BRIGHT)
+	else:
+		_play_sfx("click")
 	balance += value
 	lifetime_earnings += value
 	_register_active_click()
@@ -376,6 +472,7 @@ func buy_building(index: int, qty: int = 1) -> bool:
 	BuildingDefs.sync_racket_multiplier(buildings)
 	_mark_ips_dirty()
 	stats_changed.emit()
+	_play_sfx("purchase")
 	return true
 
 
@@ -428,6 +525,7 @@ func do_prestige() -> bool:
 	var raw_gain: float = float(Prestige.calc_influence_gain(lifetime_earnings))
 	raw_gain *= _ManagerSystem.influence_gain_mult(self)
 	raw_gain *= _PrestigeTree.influence_gain_mult(self)
+	raw_gain *= _DragonSystem.prestige_influence_mult(self)
 	var gain := maxi(1, int(round(raw_gain)))
 	prestige_tokens += gain
 	influence += gain
@@ -444,6 +542,7 @@ func do_prestige() -> bool:
 	for u in upgrades:
 		u.purchased = false
 	_ManagerSystem.reset_runtime(self)
+	promoter_heat_target = 50.0
 	_TerritorySystem.partial_territory_reset(territories, self)
 	_RivalSystem.reconstitute_eliminated_rivals(rivals, _rng)
 	crew = _CrewSystem.default_crew()
@@ -453,6 +552,8 @@ func do_prestige() -> bool:
 	_PrestigeTree.reset_branch(self)
 	perk_autobuy_timer = 0.0
 	perk_autoupg_timer = 0.0
+	_DragonSystem.on_prestige(self)
+	_DragonSystem.reset_for_prestige(self)
 	_PrestigeTree.apply_perks(self)
 	notification.emit("Prestige! +%d Influence" % gain, GameTheme.GOLD_BRIGHT)
 	_mark_ips_dirty()
@@ -507,6 +608,30 @@ func _reset_perk_runtime() -> void:
 	perk_autoupg_timer = 0.0
 
 
+## Null-safe save-field readers. Dictionary.get(key, default) only returns
+## `default` when the key is ABSENT; a present-but-null value (older saves, or
+## saves produced elsewhere) would reach float()/int()/bool() and raise
+## "Nonexistent constructor". These coalesce both absent and null to the default.
+func _f(data: Dictionary, key: String, def: float = 0.0) -> float:
+	var v = data.get(key)
+	return float(v) if v != null else def
+
+
+func _i(data: Dictionary, key: String, def: int = 0) -> int:
+	var v = data.get(key)
+	return int(v) if v != null else def
+
+
+func _b(data: Dictionary, key: String, def: bool = false) -> bool:
+	var v = data.get(key)
+	return bool(v) if v != null else def
+
+
+func _arr(data: Dictionary, key: String) -> Array:
+	var v = data.get(key)
+	return v if v is Array else []
+
+
 func apply_save_data(data: Dictionary) -> void:
 	buildings = BuildingDefs.make_buildings()
 	managers = ManagerDefs.make_managers()
@@ -518,21 +643,22 @@ func apply_save_data(data: Dictionary) -> void:
 	perks_purchased = []
 	achievements = _AchievementSystem.make_achievements()
 	goals = _GoalSystem.make_goals()
-	var prev_timestamp: float = float(data.get("save_timestamp", 0.0))
-	balance = float(data.get("balance", 0.0))
-	lifetime_earnings = float(data.get("lifetime_earnings", 0.0))
-	prestige_tokens = int(data.get("prestige_tokens", 0))
-	prestige_count = int(data.get("prestige_count", 0))
-	next_prestige_earnings = float(data.get("next_prestige_earnings", 0.0))
-	click_count = int(data.get("click_count", 0))
-	play_time = float(data.get("play_time", 0.0))
-	heat = float(data.get("heat", 0.0))
-	total_heat_generated = float(data.get("total_heat_generated", 0.0))
-	influence = int(data.get("influence", 0))
-	collector_shield_cd = float(data.get("collector_shield_cd", 0.0))
-	carl_emergency_used = bool(data.get("carl_emergency_used", false))
-	mechanic_timer = float(data.get("mechanic_timer", 0.0))
-	autobuy_timer = float(data.get("autobuy_timer", 0.0))
+	var prev_timestamp: float = _f(data, "save_timestamp", 0.0)
+	balance = _f(data, "balance", 0.0)
+	lifetime_earnings = _f(data, "lifetime_earnings", 0.0)
+	prestige_tokens = _i(data, "prestige_tokens", 0)
+	arms_influence_frac = _f(data, "arms_influence_frac", 0.0)
+	prestige_count = _i(data, "prestige_count", 0)
+	next_prestige_earnings = _f(data, "next_prestige_earnings", 0.0)
+	click_count = _i(data, "click_count", 0)
+	play_time = _f(data, "play_time", 0.0)
+	heat = _f(data, "heat", 0.0)
+	total_heat_generated = _f(data, "total_heat_generated", 0.0)
+	influence = _i(data, "influence", 0)
+	collector_shield_cd = _f(data, "collector_shield_cd", 0.0)
+	carl_emergency_used = _b(data, "carl_emergency_used", false)
+	mechanic_timer = _f(data, "mechanic_timer", 0.0)
+	autobuy_timer = _f(data, "autobuy_timer", 0.0)
 	if data.has("territories"):
 		_TerritorySystem.merge_save_territories(territories, data["territories"])
 	if data.has("rivals"):
@@ -551,61 +677,107 @@ func apply_save_data(data: Dictionary) -> void:
 	city_control_milestones = []
 	for key in data.get("city_control_milestones", []):
 		city_control_milestones.append(str(key))
-	total_territories_captured = int(data.get("total_territories_captured", 0))
-	highest_city_control = float(data.get("highest_city_control", 0.0))
-	total_rivals_defeated = int(data.get("total_rivals_defeated", 0))
-	total_ops_completed = int(data.get("total_ops_completed", 0))
-	peak_income = float(data.get("peak_income", 0.0))
-	highest_cash_held = float(data.get("highest_cash_held", 0.0))
-	total_buildings_purchased = int(data.get("total_buildings_purchased", 0))
-	coins_caught = int(data.get("coins_caught", 0))
-	offline_gain = float(data.get("offline_gain", 0.0))
+	total_territories_captured = _i(data, "total_territories_captured", 0)
+	highest_city_control = _f(data, "highest_city_control", 0.0)
+	total_rivals_defeated = _i(data, "total_rivals_defeated", 0)
+	total_ops_completed = _i(data, "total_ops_completed", 0)
+	peak_income = _f(data, "peak_income", 0.0)
+	highest_cash_held = _f(data, "highest_cash_held", 0.0)
+	total_buildings_purchased = _i(data, "total_buildings_purchased", 0)
+	coins_caught = _i(data, "coins_caught", 0)
+	promoter_heat_target = _f(data, "promoter_heat_target", 50.0)
+	offline_gain = _f(data, "offline_gain", 0.0)
 	if data.has("achievements"):
 		_AchievementSystem.merge_save(achievements, data["achievements"])
 	if data.has("goals_completed"):
 		_GoalSystem.merge_completed(goals, data["goals_completed"])
-	tutorial_step = int(data.get("tutorial_step", 0))
-	shown_raid_tutorial = bool(data.get("shown_raid_tutorial", false))
-	shown_ops_tutorial = bool(data.get("shown_ops_tutorial", false))
-	shown_influence_tutorial = bool(data.get("shown_influence_tutorial", false))
-	shown_syndicate_tutorial = bool(data.get("shown_syndicate_tutorial", false))
-	shown_crew_tutorial = bool(data.get("shown_crew_tutorial", false))
-	shown_territory_tutorial = bool(data.get("shown_territory_tutorial", false))
-	shown_rivals_tutorial = bool(data.get("shown_rivals_tutorial", false))
-	shown_heat_warning = bool(data.get("shown_heat_warning", false))
-	master_volume = float(data.get("master_volume", 1.0))
-	sfx_volume = float(data.get("sfx_volume", 1.0))
-	music_volume = float(data.get("music_volume", 0.5))
-	mute_all = bool(data.get("mute_all", false))
-	fps_cap = int(data.get("fps_cap", 60))
-	show_particles = bool(data.get("show_particles", true))
-	dragon_key = str(data.get("dragon_key", ""))
-	dragon_xp = int(data.get("dragon_xp", 0))
-	dragon_stage = str(data.get("dragon_stage", "egg"))
-	if data.has("dragon_abilities") and typeof(data["dragon_abilities"]) == TYPE_ARRAY:
-		dragon_abilities = data["dragon_abilities"]
+	tutorial_step = _i(data, "tutorial_step", 0)
+	shown_raid_tutorial = _b(data, "shown_raid_tutorial", false)
+	shown_ops_tutorial = _b(data, "shown_ops_tutorial", false)
+	shown_influence_tutorial = _b(data, "shown_influence_tutorial", false)
+	shown_syndicate_tutorial = _b(data, "shown_syndicate_tutorial", false)
+	shown_crew_tutorial = _b(data, "shown_crew_tutorial", false)
+	shown_territory_tutorial = _b(data, "shown_territory_tutorial", false)
+	shown_rivals_tutorial = _b(data, "shown_rivals_tutorial", false)
+	shown_heat_warning = _b(data, "shown_heat_warning", false)
+	master_volume = _f(data, "master_volume", 1.0)
+	sfx_volume = _f(data, "sfx_volume", 1.0)
+	music_volume = _f(data, "music_volume", 0.5)
+	mute_all = _b(data, "mute_all", false)
+	fps_cap = _i(data, "fps_cap", 60)
+	show_particles = _b(data, "show_particles", true)
+	var patron_raw = data.get("dragon_patron", data.get("dragon_key", null))
+	if patron_raw != null and str(patron_raw) in _DragonSystem.DRAGON_META:
+		dragon_patron = str(patron_raw)
+	else:
+		dragon_patron = ""
+	dragon_xp = maxi(0, _i(data, "dragon_xp", 0))
+	dragon_red_elim_count = _i(data, "dragon_red_elim_count", 0)
+	dragon_ability_cooldowns = {}
+	var raw_cds = data.get("dragon_ability_cooldowns", {})
+	if typeof(raw_cds) == TYPE_DICTIONARY:
+		for k in raw_cds.keys():
+			if str(k) in _DragonSystem.ABILITIES and raw_cds[k] != null:
+				dragon_ability_cooldowns[str(k)] = float(raw_cds[k])
+	dragon_request_key = ""
+	dragon_req_snapshot = {}
+	dragon_request_cooldown = 15.0
+	dragon_recent_requests = []
+	dragon_mood_timer = 0.0
+	dragon_rage_timer = 0.0
+	dragon_logistics_timer = 0.0
+	dragon_guaranteed_territory = false
+	dragon_black_last_op_time = -1.0
 	buffs.clear()
 	event_timer = -1.0
 	pending_event = {}
 	show_offline_overlay = false
-	var owned: Array = data.get("buildings", [])
+	var owned: Array = _arr(data, "buildings")
 	for i in mini(owned.size(), buildings.size()):
-		buildings[i].owned = int(owned[i])
-	var mgr: Array = data.get("managers", [])
+		buildings[i].owned = int(owned[i]) if owned[i] != null else 0
+	var mgr: Array = _arr(data, "managers")
 	for i in mini(mgr.size(), managers.size()):
-		managers[i].hired = bool(mgr[i])
-	var upg: Array = data.get("upgrades", [])
+		managers[i].hired = bool(mgr[i]) if mgr[i] != null else false
+	var upg: Array = _arr(data, "upgrades")
 	for i in mini(upg.size(), upgrades.size()):
-		if bool(upg[i]):
+		if upg[i] != null and bool(upg[i]):
 			upgrades[i].purchased = true
 			UpgradeDefs.apply_effect(upgrades[i], self)
 	BuildingDefs.sync_racket_multiplier(buildings)
 	_PrestigeTree.apply_perks(self)
+	var login_raw = data.get("last_login_date")
+	last_login_date = str(login_raw) if login_raw != null else ""
+	daily_streak = _i(data, "daily_streak", 0)
 	if prev_timestamp > 0.0:
 		var away: float = float(Time.get_unix_time_from_system()) - prev_timestamp
 		_OfflineSystem.apply_offline_return(self, away)
+	_apply_daily_reward()
 	_mark_ips_dirty()
 	stats_changed.emit()
+	_sync_rank_tracking()
+	_apply_audio_settings()
+
+
+# Once-per-calendar-day login reward (port of src/save_load.py). Streak +1 on a
+# consecutive day (cap 7), else reset to 1. Reward = max(3× cheapest building,
+# 5 min of income × streak). Granted silently into balance; overlay flagged so the
+# return screen can surface the streak.
+func _apply_daily_reward() -> void:
+	var today := Time.get_date_string_from_system()
+	if last_login_date == today:
+		return
+	var yesterday := Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 86400)
+	if last_login_date == yesterday:
+		daily_streak = mini(7, daily_streak + 1)
+	else:
+		daily_streak = 1
+	last_login_date = today
+	var cheapest: float = buildings[0].current_cost() if buildings.size() > 0 else 30.0
+	var reward: float = maxf(cheapest * 3.0, income_per_second() * 300.0 * float(daily_streak))
+	daily_reward = reward
+	balance += reward
+	lifetime_earnings += reward
+	show_daily_overlay = true
 
 
 func to_save_data() -> Dictionary:
@@ -622,6 +794,7 @@ func to_save_data() -> Dictionary:
 		"balance": balance,
 		"lifetime_earnings": lifetime_earnings,
 		"prestige_tokens": prestige_tokens,
+		"arms_influence_frac": arms_influence_frac,
 		"prestige_count": prestige_count,
 		"next_prestige_earnings": next_prestige_earnings,
 		"click_count": click_count,
@@ -642,6 +815,7 @@ func to_save_data() -> Dictionary:
 		"highest_cash_held": highest_cash_held,
 		"total_buildings_purchased": total_buildings_purchased,
 		"coins_caught": coins_caught,
+		"promoter_heat_target": promoter_heat_target,
 		"offline_gain": offline_gain,
 		"achievements": _AchievementSystem.to_save(achievements),
 		"rivals": _RivalSystem.rivals_to_save(rivals),
@@ -654,6 +828,8 @@ func to_save_data() -> Dictionary:
 		"mechanic_timer": mechanic_timer,
 		"autobuy_timer": autobuy_timer,
 		"goals_completed": _goals_completed_keys(),
+		"last_login_date": last_login_date,
+		"daily_streak": daily_streak,
 		"tutorial_step": tutorial_step,
 		"shown_raid_tutorial": shown_raid_tutorial,
 		"shown_ops_tutorial": shown_ops_tutorial,
@@ -669,10 +845,10 @@ func to_save_data() -> Dictionary:
 		"mute_all": mute_all,
 		"fps_cap": fps_cap,
 		"show_particles": show_particles,
-		"dragon_key": dragon_key if not dragon_key.is_empty() else null,
+		"dragon_patron": dragon_patron if not dragon_patron.is_empty() else null,
 		"dragon_xp": dragon_xp,
-		"dragon_stage": dragon_stage,
-		"dragon_abilities": dragon_abilities,
+		"dragon_ability_cooldowns": dragon_ability_cooldowns.duplicate(),
+		"dragon_red_elim_count": dragon_red_elim_count,
 		"save_timestamp": Time.get_unix_time_from_system(),
 		"godot_port": true,
 	}
@@ -684,24 +860,33 @@ func _tick_building_specials(dt: float) -> void:
 	var chop := buildings[2]
 	if chop.owned > 0:
 		chop.special_timer += dt
-		while chop.special_timer >= 1.0:
+		if chop.special_timer >= 1.0:
 			chop.special_timer -= 1.0
 			if _rng.randf() < 0.08:
 				var bonus := chop.income_per_second() * 2.0
 				balance += bonus
 				lifetime_earnings += bonus
 	if buildings.size() > 3:
+		# Betting Ring jackpot every 60–150s: 30s of the building's own income.
 		var betting := buildings[3]
 		if betting.owned > 0:
-			if betting.special_timer <= 0.0:
-				betting.special_timer = _rng.randf_range(30.0, 90.0)
 			betting.special_timer -= dt
 			if betting.special_timer <= 0.0:
-				betting.special_timer = _rng.randf_range(30.0, 90.0)
-				var jackpot := income_per_second() * 60.0
+				var jackpot := betting.income_per_second() * 30.0
 				balance += jackpot
 				lifetime_earnings += jackpot
-				notification.emit("Jackpot! +%s" % FormatUtil.format_money(jackpot), GameTheme.GOLD_BRIGHT)
+				notification.emit("Betting jackpot! +%s" % FormatUtil.format_money(jackpot), GameTheme.GOLD_BRIGHT)
+				betting.special_timer = _rng.randf_range(60.0, 150.0)
+	# Arms Broker: 0.1 Influence/hour per broker, accrued as a fraction.
+	if buildings.size() > 9:
+		var arms := buildings[9]
+		if arms.owned > 0:
+			arms_influence_frac += float(arms.owned) * (0.1 / 3600.0) * dt
+			if arms_influence_frac >= 1.0:
+				var whole := int(arms_influence_frac)
+				prestige_tokens += whole
+				arms_influence_frac -= float(whole)
+				_mark_ips_dirty()
 
 
 func _tick_loan_interest(dt: float) -> void:
@@ -710,7 +895,9 @@ func _tick_loan_interest(dt: float) -> void:
 	var loan := buildings[5]
 	if loan.owned <= 0:
 		return
-	var interest := balance * 0.005 * (dt / 60.0)
+	# +0.05%/min balance per office, capped at 2 offices (matches src/buildings.py).
+	var offices := mini(loan.owned, 2)
+	var interest := balance * (0.0005 / 60.0) * float(offices) * dt
 	if interest > 0.0:
 		balance += interest
 		lifetime_earnings += interest
@@ -757,6 +944,14 @@ func collect_operation(index: int) -> String:
 	return outcome
 
 
+func activate_dragon_ability(key: String) -> bool:
+	if not _DragonSystem.activate_ability(self, key):
+		return false
+	_mark_ips_dirty()
+	stats_changed.emit()
+	return true
+
+
 func _goals_completed_keys() -> Array:
 	var out: Array = []
 	for g in goals:
@@ -765,8 +960,64 @@ func _goals_completed_keys() -> Array:
 	return out
 
 
+func _tick_golden_coin(dt: float) -> void:
+	if not golden_coin_active:
+		golden_coin_timer -= dt
+		if golden_coin_timer <= 0.0:
+			_spawn_golden_coin()
+		return
+	golden_coin_lifetime += dt
+	if _ManagerSystem.manager_active(self, "Lucky Sal"):
+		if golden_coin_lifetime >= _ManagerSystem.sal_autocollect_delay(self):
+			collect_golden_coin(true)
+	elif golden_coin_lifetime >= _ManagerSystem.COIN_LIFETIME:
+		golden_coin_active = false
+		golden_coin_timer = _next_coin_timer()
+
+
+func _spawn_golden_coin() -> void:
+	golden_coin_active = true
+	golden_coin_lifetime = 0.0
+
+
+func _next_coin_timer() -> float:
+	return _rng.randf_range(COIN_SPAWN_MIN, COIN_SPAWN_MAX)
+
+
+func has_golden_coin() -> bool:
+	return golden_coin_active
+
+
+func collect_golden_coin(auto: bool = false) -> void:
+	if not golden_coin_active:
+		return
+	golden_coin_active = false
+	golden_coin_timer = _next_coin_timer()
+	coins_caught += 1
+	_play_sfx("coin")
+	if auto:
+		notification.emit("Sal caught a golden coin!", GameTheme.GOLD)
+	var effects: Array[String] = ["frenzy", "lucky", "click_storm"]
+	var effect: String = effects[_rng.randi() % effects.size()]
+	match effect:
+		"frenzy":
+			_BuffSystem.add_buff(self, "frenzy", 15.0)
+			notification.emit("FRENZY! 7× income for 15s", GameTheme.GOLD_BRIGHT)
+		"lucky":
+			var gain: float = minf(income_per_second() * 60.0, maxf(balance * 0.15, 1.0))
+			balance += gain
+			lifetime_earnings += gain
+			notification.emit("Lucky! +%s" % FormatUtil.format_money(gain), GameTheme.GREEN)
+		"click_storm":
+			_BuffSystem.add_buff(self, "click_storm", 20.0)
+			notification.emit("CLICK STORM! 10× clicks for 20s", GameTheme.GOLD_BRIGHT)
+	_mark_ips_dirty()
+	stats_changed.emit()
+
+
 func dismiss_offline_overlay() -> void:
 	show_offline_overlay = false
+	show_daily_overlay = false
 
 
 func show_elimination_overlay(name: String, flavor: String, rewards: String) -> void:
@@ -775,6 +1026,7 @@ func show_elimination_overlay(name: String, flavor: String, rewards: String) -> 
 	elim_overlay_rewards = rewards
 	elim_overlay_active = true
 	elim_overlay_timer = 5.0
+	_play_sfx("rival")
 	stats_changed.emit()
 
 
