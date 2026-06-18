@@ -7,6 +7,7 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _BuffSystem = preload("res://scripts/systems/buff_system.gd")
 const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 const SMUGGLER_CHECK_INTERVAL := 2.0
 
@@ -91,7 +92,10 @@ static func effective_duration(op: Dictionary) -> float:
 static func elapsed(state, op: Dictionary) -> float:
 	if not bool(op.get("active", false)):
 		return 0.0
-	return maxf(0.0, state.play_time - float(op.get("start_play_time", 0.0)))
+	var el: float = maxf(0.0, state.play_time - float(op.get("start_play_time", 0.0)))
+	if _DragonSystem.dragon_logistics_active(state):
+		el *= 2.0
+	return el
 
 
 static func progress(state, op: Dictionary) -> float:
@@ -146,6 +150,8 @@ static func operation_reward_mult(state) -> float:
 		if str(t.get("district_type", "")) == "industrial":
 			mult *= 1.02
 	mult *= _BuffSystem.operation_reward_mult(state)
+	mult *= _DragonSystem.op_reward_mult(state)
+	mult *= 1.0 + Prestige.rank_operation_reward_bonus(state.prestige_tokens)
 	return mult
 
 
@@ -203,7 +209,7 @@ static func collect_operation(state, index: int, rng: RandomNumberGenerator) -> 
 		var reward: float = float(op.get("reward", 0.0))
 		state.balance += reward
 		state.lifetime_earnings += reward
-		var heat_gain: float = float(op.get("heat_gain", 0.0))
+		var heat_gain: float = float(op.get("heat_gain", 0.0)) * _DragonSystem.op_heat_gain_mult(state)
 		if heat_gain < 0.0:
 			state.heat = maxf(0.0, state.heat + heat_gain)
 		else:
@@ -211,10 +217,14 @@ static func collect_operation(state, index: int, rng: RandomNumberGenerator) -> 
 		state.prestige_tokens += 1
 		state.influence += 5
 		state.total_ops_completed += 1
+		_DragonSystem.on_op_collected(state)
 		return "%s Complete\n+%s\n+5 Respect" % [op_name, FormatUtil.format_money(reward)]
 	var penalty: float = float(op.get("money_cost", 0.0)) * 0.5
 	state.balance = maxf(0.0, state.balance - penalty)
-	state.heat = minf(100.0, state.heat + float(op.get("heat_gain", 0.0)) * 0.5 + 5.0)
+	state.heat = minf(
+		100.0,
+		state.heat + float(op.get("heat_gain", 0.0)) * _DragonSystem.op_heat_gain_mult(state) * 0.5 + 5.0,
+	)
 	return "%s FAILED\nLost %s  +heat" % [op_name, FormatUtil.format_money(penalty)]
 
 

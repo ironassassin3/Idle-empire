@@ -52,54 +52,55 @@ def _territories_total(state) -> int:
     return len(getattr(state, 'territories', []))
 
 
+def _route_earnings(state) -> float:
+    return float(getattr(state, '_prestige_route_earnings', 0.0))
+
+
 def make_goals() -> List[Goal]:
     """Return the full ordered goal list. Completed state is set externally."""
     return [
         # ── Starter Influence faucet ───────────────────────────────────
-        # These grant the FIRST 12 Influence (= Made Man) from pure economic
-        # play, with NO dependency on territory/rivals — breaking the circular
-        # deadlock (see AUDIT.md). Thresholds are LIFETIME-earnings based so they
-        # require idle TIME to reach (not just instant tapping/buying), pacing
-        # the road to first prestige into the ~30-45 min window.
+        # These grant the FIRST 12 Influence (= Made Man) from empire income
+        # (passive + clicks only — same metric as the prestige earnings gate).
         Goal(
             key='start_cash_5k', label='First Real Money ($5K)', phase='early',
-            desc='Reach $5,000 lifetime earnings. Earns your first Influence.',
-            progress=lambda s: (s.lifetime_earnings, 5_000),
-            reward_cash=500, reward_influence=1,
+            desc='Earn $5,000 from your empire (passive + clicks). First Influence.',
+            progress=lambda s: (_route_earnings(s), 5_000),
+            reward_cash=500, reward_influence=2,
             color=theme.PRESTIGE_LABEL,
         ),
         Goal(
             key='start_cash_25k', label='Getting Noticed ($25K)', phase='early',
-            desc='Reach $25,000 lifetime earnings. +1 Influence.',
-            progress=lambda s: (s.lifetime_earnings, 25_000),
+            desc='Earn $25,000 from your empire. +1 Influence.',
+            progress=lambda s: (_route_earnings(s), 25_000),
             reward_cash=2_000, reward_influence=1,
             color=theme.PRESTIGE_LABEL,
         ),
         Goal(
             key='start_cash_100k', label='Six Figures ($100K)', phase='early',
-            desc='Reach $100,000 lifetime earnings. +2 Influence.',
-            progress=lambda s: (s.lifetime_earnings, 100_000),
+            desc='Earn $100,000 from your empire. +2 Influence.',
+            progress=lambda s: (_route_earnings(s), 100_000),
             reward_cash=8_000, reward_influence=2,
             color=theme.PRESTIGE_LABEL,
         ),
         Goal(
             key='start_cash_250k', label='Connected ($250K)', phase='early',
-            desc='Reach $250,000 lifetime earnings. +2 Influence.',
-            progress=lambda s: (s.lifetime_earnings, 250_000),
+            desc='Earn $250,000 from your empire. +2 Influence.',
+            progress=lambda s: (_route_earnings(s), 250_000),
             reward_cash=20_000, reward_influence=2,
             color=theme.PRESTIGE_LABEL,
         ),
         Goal(
             key='start_cash_500k', label='Respected ($500K)', phase='early',
-            desc='Reach $500,000 lifetime earnings. +3 Influence.',
-            progress=lambda s: (s.lifetime_earnings, 500_000),
+            desc='Earn $500,000 from your empire. +3 Influence.',
+            progress=lambda s: (_route_earnings(s), 500_000),
             reward_cash=40_000, reward_influence=3,
             color=theme.PRESTIGE_LABEL,
         ),
         Goal(
-            key='start_cash_1m_inf', label='Made (lifetime $1M)', phase='early',
-            desc='Reach $1,000,000 lifetime earnings. +3 Influence — you are Made.',
-            progress=lambda s: (s.lifetime_earnings, 1_000_000),
+            key='start_cash_1m_inf', label='Made (empire $1M)', phase='early',
+            desc='Earn $1,000,000 from your empire. +3 Influence — you are Made.',
+            progress=lambda s: (_route_earnings(s), 1_000_000),
             reward_cash=80_000, reward_influence=3,
             color=theme.PRESTIGE_LABEL,
         ),
@@ -136,7 +137,7 @@ def make_goals() -> List[Goal]:
             key='first_territory', label='Capture First District', phase='early',
             desc='Seize any territory beyond South Side.',
             progress=lambda s: (max(0, _territories_owned(s) - 1), 1),
-            reward_cash=30_000, reward_respect=12,
+            reward_cash=5_000, reward_respect=12,
             color=theme.BLUE_BRIGHT,
         ),
         # ── Mid game ───────────────────────────────────────────────────
@@ -157,7 +158,7 @@ def make_goals() -> List[Goal]:
                          for t in getattr(s, 'territories', [])) else 0,
                 1
             ),
-            reward_cash=200_000, reward_respect=25, reward_influence=2,
+            reward_cash=25_000, reward_respect=25, reward_influence=2,
             color=theme.BLUE_BRIGHT,
         ),
         Goal(
@@ -251,7 +252,8 @@ def check_goals(state) -> list[str]:
             # Apply rewards
             if g.reward_cash > 0:
                 state.balance = float(getattr(state, 'balance', 0.0)) + g.reward_cash
-                state.lifetime_earnings = float(getattr(state, 'lifetime_earnings', 0.0)) + g.reward_cash
+                # Bonus payouts spend freely but do not advance the prestige gate
+                # or lifetime-gated Influence goals (P9 pacing fix).
                 import src.money_debug as _md
                 _md.credit(state, g.reward_cash, 'money_from_other')
             if g.reward_respect > 0:
@@ -294,6 +296,7 @@ def next_focus_hint(state) -> str:
     """
     try:
         influence = int(getattr(state, 'prestige_tokens', 0) or 0)
+        route     = float(getattr(state, '_prestige_route_earnings', 0.0) or 0.0)
         lifetime  = float(getattr(state, 'lifetime_earnings', 0.0) or 0.0)
         balance   = float(getattr(state, 'balance', 0.0) or 0.0)
         heat      = float(getattr(state, 'heat', 0.0) or 0.0)
@@ -308,14 +311,14 @@ def next_focus_hint(state) -> str:
 
         import src.prestige as _p
         can_prestige = _p.can_prestige(state)
-        near_prestige = lifetime >= _p.FIRST_PRESTIGE_EARNINGS * 0.7 if influence == 0 else False
+        near_prestige = route >= _p.FIRST_PRESTIGE_EARNINGS * 0.7 if influence == 0 else False
 
         # Priority order: unblock the next gate first
         if can_prestige:
             return "Ready to PRESTIGE — open Prestige panel now"
         if near_prestige:
             return "Almost at prestige — keep buying buildings"
-        if influence == 0 and lifetime < 1_000_000:
+        if influence == 0 and route < 1_000_000:
             # Forward-looking: each hint names the NEXT system and why it matters,
             # so the player always sees what they're working toward (Phase 102).
             if total_bld < 5:

@@ -762,8 +762,8 @@ def _territory_income_mult(state) -> float:
         import src.territory as _terr
         import src.prestige_tree as _ptree
         return (
-            _terr.territory_income_mult(territories)
-            * (1.0 + _terr.territory_district_count_bonus(territories))
+            _terr.territory_income_mult(territories, state)
+            * (1.0 + _terr.territory_district_count_bonus(territories, state))
             * _terr.milestone_income_mult(state)
             * _ptree.district_income_mult(state)
         )

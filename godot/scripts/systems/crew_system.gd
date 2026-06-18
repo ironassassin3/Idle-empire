@@ -2,6 +2,8 @@ class_name CrewSystem
 extends RefCounted
 ## Crew assignments — port of src/crew.py (mechanics only).
 
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
+
 const UNLOCK_BUILDINGS := 5
 
 const ROLES: Array = [
@@ -42,7 +44,9 @@ static func crew_total(crew: Dictionary) -> int:
 
 
 static func available(state) -> int:
-	return maxi(0, state.total_buildings_owned())
+	var base: int = maxi(0, state.total_buildings_owned())
+	base = int(float(base) * _DragonSystem.crew_capacity_mult(state))
+	return maxi(0, base)
 
 
 static func unassigned(state) -> int:
@@ -101,9 +105,12 @@ static func protection_damage_mult(crew: Dictionary) -> float:
 	return maxf(0.30, 1.0 - float(count) * 0.015)
 
 
-static func collection_income_mult(crew: Dictionary, _state = null) -> float:
+static func collection_income_mult(crew: Dictionary, state = null) -> float:
+	var per_unit := 0.008
+	if state != null:
+		per_unit *= _DragonSystem.collection_efficiency_mult(state)
 	var count: int = int(crew.get("collection", 0))
-	return 1.0 + minf(float(count) * 0.008, 0.60)
+	return 1.0 + minf(float(count) * per_unit, 0.60)
 
 
 static func smuggling_op_mult(crew: Dictionary) -> float:

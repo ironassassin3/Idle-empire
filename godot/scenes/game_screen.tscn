@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://gamescreen001"]
+[gd_scene load_steps=4 format=3 uid="uid://gamescreen001"]
 
 [ext_resource type="Script" path="res://scripts/ui/game_screen.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://prestigetreeoverlay" path="res://scenes/prestige_tree_overlay.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/dragon_patron_overlay.tscn" id="3"]
 
 [node name="GameScreen" type="CanvasLayer"]
 layer = 1
@@ -57,18 +58,24 @@ theme_override_colors/font_color = Color(0.75, 0.7, 0.62, 1)
 theme_override_font_sizes/font_size = 14
 text = "Street Hustler"
 
+[node name="CfgBtn" type="Button" parent="Root/VBox/Header"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+text = "⚙"
+
 [node name="MenuBtn" type="Button" parent="Root/VBox/Header"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 text = "Menu"
 
-[node name="Body" type="HBoxContainer" parent="Root/VBox"]
+[node name="Body" type="VBoxContainer" parent="Root/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
 [node name="Left" type="VBoxContainer" parent="Root/VBox/Body"]
-custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
 [node name="HeatLabel" type="Label" parent="Root/VBox/Body/Left"]
@@ -81,6 +88,60 @@ custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 max_value = 100.0
 show_percentage = false
+
+[node name="CoinBtn" type="Button" parent="Root/VBox/Body/Left"]
+visible = false
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.49, 1)
+theme_override_font_sizes/font_size = 14
+text = "★ GOLDEN COIN ★"
+
+[node name="DragonHud" type="PanelContainer" parent="Root/VBox/Body/Left"]
+visible = false
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Root/VBox/Body/Left/DragonHud"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="Header" type="HBoxContainer" parent="Root/VBox/Body/Left/DragonHud/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Root/VBox/Body/Left/DragonHud/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Red Dragon"
+
+[node name="Mood" type="Label" parent="Root/VBox/Body/Left/DragonHud/VBox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Pleased"
+
+[node name="Stage" type="Label" parent="Root/VBox/Body/Left/DragonHud/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
+theme_override_font_sizes/font_size = 10
+text = "Hatchling"
+
+[node name="XpBar" type="ProgressBar" parent="Root/VBox/Body/Left/DragonHud/VBox"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+max_value = 100.0
+show_percentage = false
+
+[node name="Request" type="Label" parent="Root/VBox/Body/Left/DragonHud/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
+autowrap_mode = 2
+text = ""
+
+[node name="AbilityRow" type="HBoxContainer" parent="Root/VBox/Body/Left/DragonHud/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="ShieldLabel" type="Label" parent="Root/VBox/Body/Left"]
 visible = false
@@ -112,65 +173,47 @@ theme_override_font_sizes/font_size = 11
 text = "Prestige requirements"
 autowrap_mode = 2
 
+[node name="BuffLabel" type="Label" parent="Root/VBox/Body/Left"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.49, 1)
+theme_override_font_sizes/font_size = 11
+text = ""
+
 [node name="Right" type="VBoxContainer" parent="Root/VBox/Body"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 6
 
-[node name="TabScroll" type="ScrollContainer" parent="Root/VBox/Body/Right"]
-custom_minimum_size = Vector2(0, 36)
-layout_mode = 2
-horizontal_scroll_mode = 2
-vertical_scroll_mode = 0
-
-[node name="TabBar" type="HBoxContainer" parent="Root/VBox/Body/Right/TabScroll"]
+[node name="TurfSubBar" type="HBoxContainer" parent="Root/VBox/Body/Right"]
+visible = false
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="BldgsBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
+[node name="TerritoryBtn" type="Button" parent="Root/VBox/Body/Right/TurfSubBar"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "Bldgs"
+size_flags_horizontal = 3
+text = "Territory"
 
-[node name="UpgrsBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
+[node name="RivalsBtn" type="Button" parent="Root/VBox/Body/Right/TurfSubBar"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "Upgrs"
-
-[node name="TurfBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
-layout_mode = 2
-text = "Turf"
-
-[node name="RivalsBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
-layout_mode = 2
+size_flags_horizontal = 3
 text = "Rivals"
 
-[node name="CrewBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
+[node name="CrewBtn" type="Button" parent="Root/VBox/Body/Right/TurfSubBar"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Crew"
 
-[node name="OpsBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
+[node name="OpsBtn" type="Button" parent="Root/VBox/Body/Right/TurfSubBar"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Ops"
-
-[node name="StatsBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
-layout_mode = 2
-text = "Stats"
-
-[node name="MgrsBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
-layout_mode = 2
-text = "Mgrs"
-
-[node name="CfgBtn" type="Button" parent="Root/VBox/Body/Right/TabScroll/TabBar"]
-custom_minimum_size = Vector2(56, 32)
-layout_mode = 2
-text = "Cfg"
 
 [node name="BldgsScroll" type="ScrollContainer" parent="Root/VBox/Body/Right"]
 layout_mode = 2
@@ -334,17 +377,17 @@ size_flags_vertical = 3
 [node name="VBox" type="VBoxContainer" parent="Root/VBox/Body/Right/StatsScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="Body" type="Label" parent="Root/VBox/Body/Right/StatsScroll/VBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.75, 0.7, 0.62, 1)
-autowrap_mode = 3
+theme_override_constants/separation = 10
 
 [node name="AchBtn" type="Button" parent="Root/VBox/Body/Right/StatsScroll/VBox"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 48)
 text = "View Achievements  0/0"
+
+[node name="StatsDashboard" type="VBoxContainer" parent="Root/VBox/Body/Right/StatsScroll/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
 
 [node name="AchPanel" type="VBoxContainer" parent="Root/VBox/Body/Right/StatsScroll/VBox"]
 visible = false
@@ -395,7 +438,44 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.84, 0.49, 1)
 horizontal_alignment = 1
 
+[node name="BottomBar" type="HBoxContainer" parent="Root/VBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BldgsBtn" type="Button" parent="Root/VBox/BottomBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Bldgs"
+
+[node name="UpgrsBtn" type="Button" parent="Root/VBox/BottomBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Upgrs"
+
+[node name="MgrsBtn" type="Button" parent="Root/VBox/BottomBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Mgrs"
+
+[node name="TurfBtn" type="Button" parent="Root/VBox/BottomBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Turf"
+
+[node name="StatsBtn" type="Button" parent="Root/VBox/BottomBar"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Stats"
+
 [node name="PrestigeTreeOverlay" parent="." instance=ExtResource("2")]
+
+[node name="DragonPatronOverlay" parent="." instance=ExtResource("3")]
 
 [node name="OverlayLayer" type="CanvasLayer" parent="."]
 layer = 10
@@ -561,14 +641,15 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -120.0
-offset_right = 200.0
-offset_bottom = -80.0
+offset_left = -250.0
+offset_top = -176.0
+offset_right = 250.0
+offset_bottom = -86.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.91, 0.88, 0.83, 1)
 theme_override_colors/font_outline_color = Color(0.29, 0.38, 0.54, 1)
 theme_override_constants/outline_size = 2
 horizontal_alignment = 1
+vertical_alignment = 2
 autowrap_mode = 3

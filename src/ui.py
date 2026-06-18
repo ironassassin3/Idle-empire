@@ -1801,14 +1801,47 @@ _TURF_SUBTABS = ("territory", "rivals", "crew", "operations")
 _SUBTAB_Y_OFFSET = 34   # sub-tab bar sits below main tabs
 
 
+def _turf_tab_badges(state) -> dict:
+    """Phase 125 — dynamic labels for Turf main tab + Crew/Ops subtabs."""
+    import src.managers as mgr
+
+    bld = sum(b.owned for b in getattr(state, 'buildings', []))
+    terr = sum(1 for t in getattr(state, 'territories', []) if getattr(t, 'unlocked', False))
+    rank = prestige.get_rank(state.prestige_tokens)
+    made_man = prestige._rank_index(rank) >= prestige._rank_index("Made Man")
+    ready_ops = sum(
+        1 for op in getattr(state, 'operations', []) if getattr(op, 'is_ready', False)
+    )
+    ops_unlocked = terr >= 2 or made_man
+
+    main = "Turf"
+    if mgr.manager_active(state, 'The Broker'):
+        main = "Turf ★"
+    elif ops_unlocked and ready_ops > 0:
+        main = "Turf •"
+
+    crew = f"Crew {min(bld, 5)}/5" if bld < 5 else "Crew"
+    if not ops_unlocked:
+        ops = f"Ops {min(terr, 2)}/2"
+    elif ready_ops > 0:
+        ops = "Ops*"
+    else:
+        ops = "Ops"
+
+    return {'main': main, 'crew': crew, 'operations': ops, 'ready_ops': ready_ops}
+
+
 def main_tab_rects(state, fonts):
     """Geometry for the main tab bar — single source of truth for draw + click
     (Phase 89). Each tab sizes itself to its label width + UI_TAB_PADDING so tab
     names can never collide. Returns [(rect, label, key), ...]."""
     panel_top = (PRESTIGE_RECT.bottom + 6) if _PORTRAIT else HEADER_H
     pad, gap = sd(config.UI_TAB_PADDING), sd(config.UI_TAB_GAP)
+    badges = _turf_tab_badges(state)
     rects, x = [], RIGHT_X + 4
     for label, key in prestige.visible_tabs(state):
+        if key == 'turf':
+            label = badges['main']
         w = fonts['xs'].size(label)[0] + pad * 2
         rects.append((pygame.Rect(x, panel_top, w, TAB_H), label, key))
         x += w + gap
@@ -1823,8 +1856,13 @@ def subtab_rects(state, fonts):
     panel_top = (PRESTIGE_RECT.bottom + 6) if _PORTRAIT else HEADER_H
     sub_y = panel_top + TAB_H
     pad, gap = sd(config.UI_TAB_PADDING), sd(config.UI_TAB_GAP)
+    badges = _turf_tab_badges(state)
     rects, x = [], RIGHT_X + 8
     for label, key, locked, req in prestige.visible_turf_subtabs(state):
+        if key == 'crew':
+            label = badges['crew']
+        elif key == 'operations':
+            label = badges['operations']
         w = fonts['xs'].size(label)[0] + pad * 2
         rects.append((pygame.Rect(x, sub_y + 2, w, _SUBTAB_Y_OFFSET - 4), label, key, locked, req))
         x += w + gap
@@ -1869,23 +1907,11 @@ def draw_right_panel(surface: pygame.Surface, state, fonts: dict) -> None:
                      (tab_bar_rect.right, tab_bar_rect.bottom - 1), 1)
 
     current_main = _tab_display_name(state._tab)
+    turf_badges = _turf_tab_badges(state)
     for tr, label, key in main_tab_rects(state, fonts):
         active = (current_main == key)
         hover_tab = tr.collidepoint(mx, my) and not active
         _draw_dossier_tab(surface, tr, label, fonts, active, hover_tab)
-        # Operations-ready indicator: pulsing dot when an op is ready to collect.
-        if key == 'operations':
-            ready = sum(1 for op in getattr(state, 'operations', []) if getattr(op, 'is_ready', False))
-            if ready > 0:
-                t = getattr(state, '_time', 0.0)
-                pulse = int(180 + 75 * math.sin(t * 4.0))
-                dot_c = (60, 230, 90, pulse)
-                dot = pygame.Surface((14, 14), pygame.SRCALPHA)
-                pygame.draw.circle(dot, dot_c, (7, 7), 6)
-                surface.blit(dot, (tr.right - 16, tr.y + 3))
-                if ready > 1:
-                    cnt = fonts['xs'].render(str(ready), True, (10, 30, 15))
-                    surface.blit(cnt, cnt.get_rect(center=(tr.right - 9, tr.y + 10)))
 
     # Settings gear icon — right side of tab bar
     gear_r = pygame.Rect(config.SCREEN_WIDTH - 36, tab_bar_y + 4, 28, 26)
@@ -1920,6 +1946,15 @@ def draw_right_panel(surface: pygame.Surface, state, fonts: dict) -> None:
                 surface.blit(ss2, ss2.get_rect(center=sr2.center))
                 continue
             _draw_dossier_tab(surface, sr2, slabel, fonts, s_active, s_hover and not slocked)
+            if skey == 'operations' and turf_badges['ready_ops'] > 0:
+                t = getattr(state, '_time', 0.0)
+                pulse = int(180 + 75 * math.sin(t * 4.0))
+                dot = pygame.Surface((14, 14), pygame.SRCALPHA)
+                pygame.draw.circle(dot, (60, 230, 90, pulse), (7, 7), 6)
+                surface.blit(dot, (sr2.right - 14, sr2.y + 4))
+                if turf_badges['ready_ops'] > 1:
+                    cnt = fonts['xs'].render(str(turf_badges['ready_ops']), True, (10, 30, 15))
+                    surface.blit(cnt, cnt.get_rect(center=(sr2.right - 7, sr2.y + 11)))
 
     # ── Content rect ──
     content_top = panel_top + TAB_H + sub_content_offset
@@ -2326,7 +2361,7 @@ def _build_stats_virt(state, fonts: dict, rect: pygame.Rect) -> pygame.Surface:
     try:
         from src.territory import (territory_district_count_bonus,
                                    territory_income_mult, milestone_income_mult)
-        count_bonus = int(territory_district_count_bonus(territories) * 100)
+        count_bonus = int(territory_district_count_bonus(territories, state) * 100)
         mile_mult = milestone_income_mult(state)
         bonus_parts = [f"+{count_bonus}% from {player_t} districts (2%×count)"]
         if mile_mult > 1.0:
@@ -3426,7 +3461,7 @@ def draw_prestige_btn(surface: pygame.Surface, state, fonts: dict) -> None:
         row_h = min(row_h, 17)
 
         _req_labels = {
-            'earnings': ('Earnings', lambda c, t: f"{theme.format_number(c)} / {theme.format_number(t)}"),
+            'earnings': ('Empire', lambda c, t: f"{theme.format_number(c)} / {theme.format_number(t)}"),
             'rank':     ('Rank',     lambda c, t: f"{c}  →  need {t}"),
             'dealers':  ('Dealers',  lambda c, t: f"{int(c)} / {int(t)}"),
             'rackets':  ('Rackets',  lambda c, t: f"{int(c)} / {int(t)}"),

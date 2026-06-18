@@ -5,6 +5,7 @@ extends RefCounted
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 const _RivalAi = preload("res://scripts/systems/rival_ai.gd")
 const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
+const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 const ACTION_INTERVAL_MIN := 90.0
 const ACTION_INTERVAL_MAX := 180.0
@@ -373,6 +374,7 @@ static func _defeat_rival(
 		heat_bonus = "-30 heat!"
 	var freed: int = _TerritorySystem.release_rival_territories(state.territories, str(rival.get("name", "")))
 	state.total_rivals_defeated += 1
+	_DragonSystem.on_rival_eliminated(state, rival)
 	_log(state, "%s has been eliminated." % rival.get("name", "?"))
 	var reward_str: String = "+%s  +3 Influence  +30 Respect" % FormatUtil.format_money(cash_bonus)
 	if freed > 0:

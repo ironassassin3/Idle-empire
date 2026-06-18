@@ -130,6 +130,9 @@ def apply_save_data(state, data: dict) -> None:
 
     state.balance            = float(data.get('balance', 0))
     state.lifetime_earnings  = float(data.get('lifetime_earnings', 0))
+    state._prestige_route_earnings = float(
+        data.get('prestige_route_earnings', state.lifetime_earnings)
+    )
     state.prestige_tokens    = int(data.get('prestige_tokens', 0))
     state.influence          = int(data.get('influence', 0))
     state._click_count       = int(data.get('click_count', 0))
@@ -392,6 +395,7 @@ def save_game(state) -> None:
     data = {
         'balance':           state.balance,
         'lifetime_earnings': state.lifetime_earnings,
+        'prestige_route_earnings': float(getattr(state, '_prestige_route_earnings', 0.0)),
         'prestige_tokens':   state.prestige_tokens,
         'influence':         getattr(state, 'influence', 0),
         'click_count':       state._click_count,

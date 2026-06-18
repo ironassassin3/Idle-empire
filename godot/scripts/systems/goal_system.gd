@@ -5,19 +5,19 @@ extends RefCounted
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 
 const _GOAL_DEFS: Array = [
-	["start_cash_5k", "First Real Money ($5K)", "", "early", "lifetime", 5000.0, 500.0, 0, 1],
-	["start_cash_25k", "Getting Noticed ($25K)", "", "early", "lifetime", 25000.0, 2000.0, 0, 1],
-	["start_cash_100k", "Six Figures ($100K)", "", "early", "lifetime", 100000.0, 8000.0, 0, 2],
-	["start_cash_250k", "Connected ($250K)", "", "early", "lifetime", 250000.0, 20000.0, 0, 2],
-	["start_cash_500k", "Respected ($500K)", "", "early", "lifetime", 500000.0, 40000.0, 0, 3],
-	["start_cash_1m_inf", "Made (lifetime $1M)", "", "early", "lifetime", 1000000.0, 80000.0, 0, 3],
+	["start_cash_5k", "First Real Money ($5K)", "", "early", "route", 5000.0, 500.0, 0, 2],
+	["start_cash_25k", "Getting Noticed ($25K)", "", "early", "route", 25000.0, 2000.0, 0, 1],
+	["start_cash_100k", "Six Figures ($100K)", "", "early", "route", 100000.0, 8000.0, 0, 2],
+	["start_cash_250k", "Connected ($250K)", "", "early", "route", 250000.0, 20000.0, 0, 2],
+	["start_cash_500k", "Respected ($500K)", "", "early", "route", 500000.0, 40000.0, 0, 3],
+	["start_cash_1m_inf", "Made (empire $1M)", "", "early", "route", 1000000.0, 80000.0, 0, 3],
 	["cash_1m", "Reach $1M", "", "early", "balance", 1000000.0, 5000.0, 5, 0],
 	["buy_pawn", "Own a Pawn Shop", "", "early", "bld_4", 1.0, 3000.0, 3, 0],
 	["crew_50", "Hire 50 Crew", "", "early", "crew", 50.0, 15000.0, 8, 0],
 	["heat_60", "Survive 60% Heat", "", "early", "heat_cap", 60.0, 10000.0, 6, 0],
-	["first_territory", "Capture First District", "", "early", "terr_extra", 1.0, 30000.0, 12, 0],
+	["first_territory", "Capture First District", "", "early", "terr_extra", 1.0, 5000.0, 12, 0],
 	["cash_100m", "Reach $100M", "Fortune Built in Blood", "mid", "balance", 100000000.0, 500000.0, 20, 1],
-	["downtown", "Capture Downtown", "Own the Heart of the City", "mid", "downtown", 1.0, 200000.0, 25, 2],
+	["downtown", "Capture Downtown", "Own the Heart of the City", "mid", "downtown", 1.0, 25000.0, 25, 2],
 	["defeat_rival", "Defeat a Rival", "Send a Message", "mid", "rivals_elim", 1.0, 500000.0, 40, 3],
 	["capo_rank", "Reach Capo Rank", "Earn Your Stripes", "mid", "tokens", 25.0, 300000.0, 20, 2],
 	["crew_200", "Command 200 Crew", "Build an Army", "mid", "crew", 200.0, 1000000.0, 30, 0],
@@ -73,6 +73,8 @@ static func _progress(state, kind: String, target: float) -> float:
 	match kind:
 		"lifetime":
 			return float(state.lifetime_earnings)
+		"route":
+			return float(state.prestige_route_earnings)
 		"balance":
 			return float(state.balance)
 		"bld_4":
@@ -113,7 +115,6 @@ static func check_goals(state) -> Array[String]:
 		var cash: float = float(g.get("reward_cash", 0.0))
 		if cash > 0.0:
 			state.balance += cash
-			state.lifetime_earnings += cash
 		var resp: int = int(g.get("reward_respect", 0))
 		if resp > 0:
 			state.influence += resp
