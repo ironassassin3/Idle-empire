@@ -1,5 +1,7 @@
 # Phase 127 — Noir Theme Pass
 
+> **Historical — pygame prototype only.** Godot theme: `godot/theme/noir_theme.tres` + `GameTheme`.
+
 **Date:** 2026-06-15  
 **Scope:** Presentation only — palette, typography, atmosphere, dossier chrome, building cards, title screen. No gameplay, balance, or save changes. **No generative AI assets** — all code-drawn.
 

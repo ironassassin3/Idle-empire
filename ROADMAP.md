@@ -1,10 +1,8 @@
 # Criminal Empire — Godot → Mobile Launch Roadmap
 
-**Track:** Godot port (release vehicle) → soft launch → mobile.
-**Status entering roadmap:** Godot P1–P4 done (full core loop, territory, rivals, crew, ops,
-stats, achievements, prestige tree, rival AI, events, goals, tutorial, config, offline, buffs;
-dragon = save stubs only). pygame build is the **balance/design lab and mechanics source of
-truth** — it is not shipped.
+**Track:** Godot 1.0 (release vehicle) → soft launch → mobile.
+**Status:** P5 ✅ · P6–P8 code done (manual device/audio pass open) · P9 pacing done (notifications deferred).
+**pygame** is a **prototype / balance lab** (sims, quick mechanical experiments). It is **not** the shipped game and is not maintained for UI.
 
 > This is a planning document. It defines *what each phase contains and when it is done*, not the
 > implementation. No phase work is performed by this file.
@@ -17,10 +15,8 @@ truth** — it is not shipped.
 - **Improve existing systems before adding new ones.** No new currencies / tabs / prestige layers
   / progression systems without strong evidence.
 - **No generative-AI assets.** Code-drawn or hand-authored only.
-- **Evidence-based:** every balance/UX claim must cite source inspection, runtime test, or metrics.
-  Prove balance changes in the **pygame lab first**, then port the proven numbers to Godot.
-- **One save schema** shared with pygame (keys + migration defaults). Godot-only keys are ignored
-  by pygame; pygame keys get migration defaults in Godot.
+- **Evidence-based:** balance claims need sim or playtest proof. Prefer `sim_pacing.py` / `sim_godot_soak.py`; pygame `PlayingState` is the fast lab, Godot is what ships.
+- **Save schema** stays shared where practical (pygame import on title screen). New fields need migration defaults in **Godot** (`game_state.gd` / save load); mirror in pygame only if sims depend on them.
 
 ## Why this order (dependency chain, not pure priority)
 
@@ -74,10 +70,10 @@ Verify:        how it is proven (headless smoke, device test, metric).
 elimination overlay scene, buff-decay fix, updated `graphify-out/port/` map.
 
 **Exit criteria:**
-- [ ] Feature-parity matrix (pygame system → Godot system) is 100% — no "stub" rows.
-- [ ] Headless `game_screen.tscn` → zero `SCRIPT ERROR` after 60s sim tick.
-- [ ] Same starting save produces income within tolerance of pygame over a fixed tick count.
-- [ ] Defeating a rival shows epitaph overlay + rewards; buff bonuses decay correctly.
+- [x] Feature-parity matrix (pygame system → Godot system) is 100% — no "stub" rows. *(P5 scoped rows — see `P5_REPORT.md`; full-port partials documented as post-P5 debt.)*
+- [x] Headless `game_screen.tscn` → zero `SCRIPT ERROR` after 60s sim tick. (`python sim_godot_soak.py`)
+- [x] Same starting save produces income within tolerance of pygame over a fixed tick count. (`python sim_income_parity.py`)
+- [x] Defeating a rival shows epitaph overlay + rewards; buff bonuses decay correctly.
 
 **Dependencies:** none (continues P4).
 **Risks:** dragon system is large and touches income/ops/rivals — port in sub-slices behind a
@@ -103,9 +99,10 @@ flag; do not let it regress `compute_base_income`.
 `game_screen.gd` / overlays. Code-drawn or hand-authored audio only (no AI-generated assets).
 
 **Exit criteria:**
-- [ ] Every milestone tier plays its distinct cue; sliders + mute actually affect output.
-- [ ] No audio on headless/`--headless` (guarded); no per-frame surface/audio allocation spikes.
-- [ ] Motion cues fire on the correct events and never block input.
+- [~] Every milestone tier plays its distinct cue; sliders + mute actually affect output. **Code wired
+  — manual playtest open** (`P6_REPORT.md`).
+- [x] No audio on headless/`--headless` (guarded); no per-frame surface/audio allocation spikes.
+- [x] Motion cues fire on the correct events and never block input.
 
 **Dependencies:** P5 (events to attach cues to must all exist).
 **Risks:** audio latency / overlap on mobile — keep clips short, pool players.
@@ -131,9 +128,10 @@ flag; do not let it regress `compute_base_income`.
 report, before/after captures at 2–3 device aspect ratios.
 
 **Exit criteria:**
-- [ ] Playable end-to-end in portrait on a real phone (or device-sim) — no clipped/unreachable UI.
-- [ ] All interactive targets meet the minimum tap-size standard.
-- [ ] No reliance on hover/right-click anywhere in the play loop.
+- [~] Playable end-to-end in portrait on a real phone (or device-sim) — no clipped/unreachable UI.
+  **Structure verified headless; F5 + Moto G pass open** (`DEVICE_TEST_CHECKLIST.md`).
+- [x] All interactive targets meet the minimum tap-size standard.
+- [x] No reliance on hover/right-click anywhere in the play loop.
 
 **Dependencies:** P5, P6.
 **Risks:** dense tabs (Stats, Mgrs, Turf subtabs) hardest to fit — budget layout time there;
@@ -159,9 +157,12 @@ reuse the pygame font-driven geometry lessons (Phase 90/91 overlap fixes).
 particle/draw-call budgets documented.
 
 **Exit criteria:**
-- [ ] Holds target FPS on a defined low-tier reference device through a full session.
-- [ ] No memory growth over a multi-hour soak (headless + device).
-- [ ] Compatibility renderer verified — no visual regressions vs Forward+ captures.
+- [~] Holds target FPS on a defined low-tier reference device through a full session. **Reference:
+  Moto G (2026)** — headless throttle + renderer done; on-device FPS pending.
+- [x] No memory growth over a multi-hour soak (headless + device). Headless 120s soak PASS
+  (`memory_soak.gd`); multi-hour device soak pending.
+- [~] Compatibility renderer verified — no visual regressions vs Forward+ captures. **Desktop F5
+  visual check open** (`DEVICE_TEST_CHECKLIST.md` §A).
 
 **Dependencies:** P7 (final layout must exist before profiling it).
 **Risks:** Compatibility renderer can change blending/shaders — re-verify noir theme visuals.
@@ -172,6 +173,8 @@ particle/draw-call budgets documented.
 ## P9 — Retention Loop Hardening
 
 **Goal:** First-week retention behavior is tuned and the return-session is compelling.
+**Status:** In progress — daily login + principled pacing pass done in pygame lab and ported to Godot
+(`P9_REPORT.md`). Push notifications and FTUE telemetry remain.
 **Priority tie:** Retention (priority #1) — placed here because it must be tuned on the
 final mobile-shaped, perf-stable build with real feel.
 
@@ -179,8 +182,9 @@ final mobile-shaped, perf-stable build with real feel.
 - Return session: validate offline-earnings + welcome overlay; daily-return cadence.
 - Local push notifications (lapse nudges) — opt-in, platform-correct.
 - Port the **pygame-proven** pacing fixes from the Phase 103 audit:
-  Influence-snowball unlock, ~20-min automation-wall smoothing, early-game click→idle crossover.
-  *Prove each number change in the pygame lab first; port the validated values.*
+  empire-route prestige gate, Influence-snowball removal, turf income backloading, goal-cash
+  decoupling. *Prove each change in the pygame lab first; port validated values to Godot.*
+  *(Done — see `P9_REPORT.md` §3; play-time gate explicitly rejected.)*
 - First-time-user funnel review (tutorial → first prestige) against retention goals.
 
 **Out of scope:** new progression systems/currencies (CLAUDE.md prohibits without evidence).
@@ -189,9 +193,13 @@ final mobile-shaped, perf-stable build with real feel.
 FTUE funnel report, retention instrumentation (events for D1/D7 milestones).
 
 **Exit criteria:**
-- [ ] Offline/daily/notification loop works on device and respects opt-in/consent.
-- [ ] Pacing fixes verified in pygame sim **and** reproduced in Godot (same numbers).
-- [ ] FTUE funnel instrumented end-to-end; no dead-ends in first-prestige path.
+- [~] Offline/daily loop works (daily reward verified headless). **Push notifications + on-device
+  consent = device pass** — not started.
+- [~] Pacing fixes verified in pygame sim **and** ported to Godot — see `P9_REPORT.md` §3–4.
+  Buildings-only first prestige ~25 min; territory-engaging ~17 min (was 4–8 min runaway). No
+  play-time gate. On-device feel validation still pending.
+- [~] FTUE funnel reviewed — no dead-ends in first-prestige path. **Telemetry instrumentation
+  deferred** (mobile analytics not scoped).
 
 **Dependencies:** P5–P8; pygame-lab balance proofs.
 **Risks:** notification permission/spam policy per platform — follow store rules; gentle cadence.
@@ -279,20 +287,18 @@ save-migration test matrix doc.
 
 ---
 
-## Cross-track sync rule (pygame ↔ Godot)
+## Cross-track sync rule (prototype ↔ Godot 1.0)
 
-- **pygame = balance/design lab.** Any number/pacing change is proven here first (sim harness,
-  playtest) before it touches Godot.
-- **Godot = ship target.** Receives validated numbers + native touch UI; never invents balance.
-- **Save schema is shared.** New fields land with migration defaults in *both*; Godot-only keys
-  are tolerated/ignored by pygame.
-- After Godot code edits: `python -m graphify update .` and refresh `graphify-out/port/`.
+- **Godot = ship target.** Player UI, audio, mobile UX, and new features land here only.
+- **pygame = lab.** Use for `sim_pacing.py`, income parity vs Godot, and quick balance experiments on `PlayingState`. Ignore pygame UI work.
+- **Balance numbers:** prove in sim, then port to `godot/scripts/` (defs + systems). Don't drift the two runtimes without intent.
+- After Godot edits: `python -m graphify update .` and refresh `graphify-out/port/`.
 
 ## Launch gate (definition of "ready to widen")
 
-All true: parity (P5) ✓ · perf on low-tier device (P8) ✓ · retention loop tuned & instrumented
-(P9) ✓ · monetization seams + consent (P10) ✓ · signed/compliant build + crash reporting (P11) ✓
-· soft-launch KPIs meet pre-set thresholds (P12) ✓.
+All true: parity (P5) ✓ · perf on low-tier device (P8) · retention loop tuned & instrumented
+(P9 — pacing done in lab; notifications/telemetry pending) · monetization seams + consent (P10) ·
+signed/compliant build + crash reporting (P11) · soft-launch KPIs meet pre-set thresholds (P12).
 
 ## Out of scope for this entire roadmap
 

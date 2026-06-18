@@ -1,5 +1,7 @@
 # Phase 121 — Presentation Vision & Front-End Redesign Audit
 
+> **Historical — pygame prototype only.** Godot `game_screen.gd` is the live UI. Do not continue this track on pygame unless explicitly reviving the lab.
+
 **Date:** 2026-06-15  
 **Scope:** Audit, mockup planning, and design direction only — **no code changes.**  
 **Builds on:** Phase 120 (UI cohesion metrics via `_measure_p120.py`).

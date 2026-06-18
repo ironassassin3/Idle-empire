@@ -1,16 +1,43 @@
-# Project: Criminal Empire — 2D Idle Game (pygame-ce)
+# Project: Criminal Empire — 2D Idle Game
+
+## Ship target vs prototype
+
+| Runtime | Role |
+|---------|------|
+| **`godot/`** | **1.0 product** — mobile launch vehicle. All player-facing UI, feel, and new features land here. |
+| **pygame (`src/`, `main.py`)** | **Prototype / balance lab** — mechanics reference and sim harness (`sim_pacing.py`, `sim_smoke.py`, income parity). Not maintained for UI or presentation. Do not spend effort on pygame polish phases. |
+
+Balance changes: prove in pygame sims if convenient, then port constants to Godot. Gameplay/UI work: **Godot first.**
+
+## Communication Style
+- Be concise by default. Lead with the conclusion, then minimal supporting detail.
+- Prefer bullets and short tables over paragraphs. No preamble, no filler, no motivational language.
+- Don't restate the question or recap context the user already has.
+- Answer what was asked — don't volunteer tangents or over-explain.
+- Match response length to the task: one-liners for simple things, detail only when it changes a decision.
+- Don't be a yes-man. Challenge weak reasoning and give evidence-based pushback when warranted.
+- Show code/file refs as clickable links, not fenced restatements of code the user can open.
 
 ## What This Is
 A modular idle/incremental game where the player builds a criminal empire. Core loop: buy buildings → earn income/s → buy upgrades → gain Influence → prestige. Layered systems: heat, territory warfare, rival factions, crew assignments, illegal operations, prestige perk tree.
 
 ## Commands
 ```
-python main.py        # run the game
-pip install pygame-ce # install dependency (pygame-ce, NOT pygame)
-flake8 .              # lint (if installed)
+# Ship target (Godot 1.0)
+# Open godot/project.godot in Godot 4.3+ and press F5
+
+# Prototype / balance lab (pygame — sims + optional manual playtest)
+python main.py
+python sim_pacing.py --minutes 45 --active 0.33 --cps 2
+python sim_godot_soak.py --godot "<path-to-godot>"
+pip install pygame-ce   # only needed for lab sims
+flake8 .
 ```
 
-## Key Files
+## Key Files (pygame prototype — lab reference)
+
+Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui.py`) as the product UI.**
+
 | File | Purpose |
 |---|---|
 | `main.py` | Engine entry point. `MenuState` → `PlayingState` handoff only. |
@@ -80,20 +107,16 @@ Strings in `_milestone_queue` **must** use `\n` as line separator:
 - **No generative AI assets** — do not use AI image generation for sprites, icons, portraits, textures, backgrounds, or marketing art.
 - Visual work stays **code-drawn** (pygame primitives, typography, theme palette) or **hand-authored assets** the user provides.
 
-## Presentation Saga (UI pass — presentation only)
+## Presentation Saga (pygame — **archived**)
+
+Phases 121–127 and 125 were pygame-only UI passes. **Inactive** — Godot `game_screen.gd` is the live UI. Do not continue this track unless explicitly reviving the prototype.
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 121 | Done | Audit + vision (`PHASE121_REPORT.md`) |
-| 122 | Done | Command-center header (`PHASE122_REPORT.md`) |
-| 123 | Done | Employee roster / Managers tab (`PHASE123_REPORT.md`) |
-| 124 | Done | City-first left column + overlap fixes (`PHASE124_REPORT.md`) |
-| **127** | **Done** | Noir theme pass — palette, atmosphere, dossier tabs, cards, menu (`PHASE127_REPORT.md`) |
-| **125** | **Next (recommended)** | Turf sub-tab badges (ops ready, broker) |
-| 126 | Queued | Stats tiering + achievement entry |
-| 128 | Queued | Motion P0 (shield pulse, auto-buy toasts) |
+| 121–127, 125 | Done (pygame) | Historical; parity ideas already ported or superseded in Godot P6–P7 |
+| 126, 128 | **Godot only** — Phase 126 done (`PHASE126_REPORT.md`); 128 partial in P6 |
 
-**Parallel non-UI work (no gameplay change, zero collision with UI):** `sim_test_suite.py`, `sim_smoke.py`, and `sim_harness.py` were brought in sync with current design (Pete's Pick, hard prestige wipe, 0 starting dealers, Phase 100 flat nav). `PROJECT_RULES.md` now documents the intended prestige reset: buildings/income wipe, persistent prestige multiplier survives.
+**Lab sims (still maintained):** `sim_pacing.py`, `sim_smoke.py`, `sim_harness.py`, `sim_godot_soak.py` — pygame design (Pete's Pick, hard prestige wipe, 0 starting dealers).
 
 ## Save/Load
 New fields must be added with a migration default in `save_load.py` so old saves don't crash. Check `load_game_preview()` separately — it reads a lightweight subset for the title screen.

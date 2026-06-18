@@ -1,5 +1,7 @@
 # Phase 122 — Command Center Header Redesign
 
+> **Historical — pygame prototype only.** Superseded by Godot header in `game_screen.gd`.
+
 **Date:** 2026-06-15  
 **Scope:** Presentation only — header + ticker styling. No gameplay, save, or tab changes.
 

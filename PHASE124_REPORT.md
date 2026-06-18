@@ -1,5 +1,7 @@
 # Phase 124 — City-First Layout
 
+> **Historical — pygame prototype only.** Superseded by Godot portrait layout (P7).
+
 **Date:** 2026-06-15  
 **Scope:** Presentation only — left-column layout, scene atmosphere, click overlay. No gameplay, balance, or save changes.
 
