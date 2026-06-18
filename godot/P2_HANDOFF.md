@@ -1,4 +1,4 @@
-# P2–P5 Session Handoff — Criminal Empire Godot Port
+# Godot Session Handoff — Criminal Empire 1.0
 
 Copy everything inside the **prompt block** below into a new Cursor chat to continue work.
 
@@ -7,204 +7,136 @@ Copy everything inside the **prompt block** below into a new Cursor chat to cont
 ## Prompt (paste this)
 
 ```
-You are continuing the Criminal Empire Godot 4 GDScript port (hybrid approach).
+You are continuing Criminal Empire — Godot 4 is the **1.0 ship target**.
 
 ## Project
 - **Open in Godot:** `d:\2d_game\godot\project.godot` (NOT `criminal-empire-(4.3)/`, NOT repo root)
-- **Reference implementation (mechanics source of truth):** Python pygame-ce at `d:\2d_game\` — run with `python main.py`
-- **Read first:** `d:\2d_game\godot\P2_HANDOFF.md`, `d:\2d_game\CLAUDE.md`, `d:\2d_game\godot\README.md`
-- **Architecture map (optional):** `d:\2d_game\graphify-out\port\GRAPH_REPORT.md` + `graph.json` — rebuild after big changes: `/graphify` on `src/` + `godot/scripts` with `--update`.
-- **Godot version on user's machine:** 4.6.3 (`E:/Downloads/Godot_v4.6.3-stable_win64.exe`)
-- **Constraint:** No generative AI image assets (see CLAUDE.md Art & Assets)
+- **Balance lab (optional):** pygame-ce at `d:\2d_game\` — `python sim_pacing.py`, `python sim_smoke.py`
+- **Read first:** `godot/P2_HANDOFF.md`, `README.md`, `ROADMAP.md`, `PROJECT_RULES.md`, `CLAUDE.md`
+- **Architecture map:** `graphify-out/port/GRAPH_REPORT.md` — refresh after big changes: `/graphify` on `src/` + `godot/scripts` with `--update`
+- **Godot version:** 4.6.3 (`E:/Downloads/Godot_v4.6.3-stable_win64.exe`)
+- **No generative AI image assets** (see CLAUDE.md)
 
-## Hybrid approach (do NOT abandon)
-- Port **mechanics faithfully** from `src/*.py` — same numbers, save fields, income pipeline
-- **Do NOT port** pygame `draw_panel()` — rebuild each tab as Godot scenes (ScrollContainer + row prefabs)
-- Keep pygame sim/tests as balance reference; Godot gets Godot-native UI (touch-friendly)
-- One save schema shared with pygame (`save.json` keys + migration defaults)
+## Ship vs lab
+| | Path | Role |
+|---|------|------|
+| **Product** | `godot/` | All player UI, audio, mobile UX, features |
+| **Lab** | `src/`, `main.py` | Balance sims + mechanical reference. **Do not polish pygame UI.** |
 
-## P1 completed (do not regress)
-- Core loop: 11 buildings, click, upgrades, prestige, heat + police raids
-- `ManagerSystem` — Mechanic, Accountant, Collector, Carl, Consigliere (+ Smuggler/Broker in P4)
-- `compute_base_income` — manager bonus by `building_index`, casino/racket globals, prestige perk mults
-- Save: buildings, managers, upgrades, manager runtime fields
-- Title + game scenes use `CanvasLayer`; theme `theme/noir_theme.tres`
+Mechanics are parity-locked (P5). Prove balance in sims, port numbers to Godot.
 
-## P2 status — Done
+## Roadmap status (2026-06)
 
-| # | System | Notes |
-|---|--------|-------|
-| Territory | 20 districts, warfare, milestones, rival-held blocked on turf tab |
-| Rivals | 5 factions, player actions, defeat rewards, activity log |
-| Crew | 5 roles, unlock @ 5 buildings, wired to income/heat/turf/raids |
-| Operations | 5 ops, timers, crew+cash+turf gates, Cartel perk mults |
-| Stats | Tiered sections, peak IPS, throttled refresh, achievements browser |
+| Phase | Status | Report |
+|-------|--------|--------|
+| P5 Parity | ✅ Done | `P5_REPORT.md` |
+| P6 Audio & feel | Code done — **manual audio playtest** open | `P6_REPORT.md` |
+| P7 Mobile UX | Portrait + bottom nav + touch targets — **device pass** open | `P7_REPORT.md` |
+| P8 Performance | Compatibility renderer + UI throttle — **Moto G 2026 FPS pass** open | `P8_REPORT.md` |
+| P9 Retention | Pacing + daily login done — notifications/telemetry deferred | `P9_REPORT.md` |
+| P10–P12 | Not started | `ROADMAP.md` |
 
-## P3 status — Done
+**Device checklist:** `DEVICE_TEST_CHECKLIST.md` — reference phone: **Motorola Moto G (2026)**.
 
-| # | System | Notes |
-|---|--------|-------|
-| Achievements | 74 defs, +1% IPS each, save `achievements[]` |
-| Prestige perk tree | 4 branches × 4 perks + overlay; `perks_purchased[]`, `prestige_branch` |
-| Graphify port map | `graphify-out/port/` |
+## What's shipped (do not regress)
 
-## P4 status — Done (session 2026-06)
+### Core (P1–P4)
+- 11 buildings, click, upgrades, prestige + 4-branch perk tree, heat/raids
+- 20 districts, 5 rivals + AI, crew, 5 illegal ops, 74 achievements, 21 goals
+- 11 managers, syndicate events, tutorial/milestones, offline return, daily login
+- Save schema shared with pygame import on title screen
 
-| # | System | Notes |
-|---|--------|-------|
-| Rival AI parity | Full `_take_action`, Blackwater indirect AI, rival-vs-rival — `rival_ai.gd` |
-| Manager ops | Smuggler +30% op reward, auto-start/ready toasts; Broker +15% turf, retry CD, intel UI |
-| Events | 11 syndicate events (6 generic + 5 Blackwater), choice overlay — `event_system.gd` |
-| Goals | 21 goals, influence faucet, save `goals_completed[]` — `goal_system.gd` |
-| Tutorial + milestones | 5-step banner, tab/heat/respect popups, milestone queue — `tutorial_system.gd` |
-| Config tab | 9th tab **Cfg**: volume, FPS, particles, reset tutorial, delete save |
-| UI polish (partial) | Tab badges (`Crew 3/5`, `Ops*`, `Turf ★`), turf header ops/broker hints |
-| Offline return | Load-time passive + welcome overlay — `offline_system.gd` |
-| Buffs | Syndicate/event income + op mults — `buff_system.gd` |
-| Dragon | **Save stubs only** (`dragon_key`, `dragon_xp`, `dragon_stage`, `dragon_abilities[]`) |
+### P5 — Parity lockdown ✅
+- Dragon patron gameplay + HUD
+- Pete/Sal/coin, Promoter, Rudy/Rob dashboards
+- Rival elimination epitaph overlay
+- Event buff decay (`bw_attack_bonus` / `bw_negotiate_bonus`)
+- Raid/first-heat tutorial hooks
+- Verify: `python sim_godot_soak.py` + `python sim_income_parity.py`
 
-### P4 bug fixes (still valid)
-- **`trait` reserved** in Godot 4.6 → use `trait_text` in rival row UI
-- **No `//` integer division** in GDScript — use `int(x / 3600.0)` not Python `//` (breaks parse → purple screen)
-- **`prestige_tree.gd` `BRANCH_ORDER`** must be literal strings, not `PackedStringArray([KINGPIN, ...])` (4.6 const expression rule)
-- Rival elimination: defeat bonus replaces attack loot (no double-pay)
-- Rival attack gate: `max($25k, IPS×20)`; turf on rival land blocked on turf tab
-- Main menu New Game: always `GameState.reset_new_game()` after optional save delete
+### P6 — Audio & feel (code done)
+- `AudioManager` autoload — procedural SFX + ambient music, volume/mute from Config
+- Motion: click floats, hustle squash, goal/autobuy toasts, prestige confirm pulse
+- **Open:** manual playtest — Config sliders, distinct milestone cues (`P6_REPORT.md`)
 
-### P3 behavior notes (still valid)
-- **PRESTIGE** opens `prestige_tree_overlay.tscn` (not instant prestige)
-- Prestige influence → both `prestige_tokens` and `influence` (Respect)
-- Prestige reset clears `prestige_branch`; owned perks persist; `peak_income` resets per cycle
+### P7 — Mobile UX (code done)
+- Portrait 720×1280, bottom bar (Bldgs/Upgrs/Mgrs/Turf/Stats), Turf subtabs
+- Safe-area insets, 44–56px touch targets, gear → Config
+- Turf badges (★ Broker / • ops ready)
+- Prestige perk detail = visible label (not hover-only)
+- **Open:** real device / windowed portrait walk (`DEVICE_TEST_CHECKLIST.md` §A–B)
 
-## Gaps / partial ports (P5 should know)
+### P8 — Performance (headless done)
+- `gl_compatibility` renderer; stats UI throttled to 10fps (dirty flag)
+- `memory_soak.gd` PASS 120s
+- **Open:** FPS/thermal on Moto G 2026
 
-- **Dragon patron:** save stubs only — no gameplay/UI (`src/dragon.py` is large; affects income/ops/rivals in pygame)
-- **Golden coin + Lucky Sal:** coin spawn, autocollect, `coins_caught` achievement
-- **Sticky Pete:** best building pick highlight on Bldgs tab
-- **The Promoter:** heat autopilot to player target (`tick_promoter_heat` in pygame)
-- **Rudy Riches / Rob Revenue:** prestige strategist + empire analyst dashboards
-- **Rival elimination overlay:** pygame full-screen epitaph (`_elim_overlay`); Godot uses notification text only
-- **Event buff cleanup:** `bw_attack_bonus` / `bw_negotiate_bonus` state fields don't decay with buff timer — verify parity
-- **Audio:** Config volume sliders save but no SFX/music playback wired yet
-- **Prestige tree UI polish:** first-visit banner, perk hover detail panel, Dragon Patron button
-- **Motion pass (Phase 128):** shield pulse, hustle/crit toasts, auto-buy motion — not started on Godot
-- **Pygame import:** new P4 save keys (`goals_completed`, tutorial flags, settings) may need migration defaults when importing old pygame saves (Godot-only keys ignored by pygame)
+### P9 — Retention (pacing done)
+- **Empire route earnings** for prestige gate + Influence goals (not lifetime windfalls)
+- Goal reward cash → balance only; removed +1 Influence per turf capture
+- Turf income scales `(route/required)²`; capped district stacking
+- **No play-time gate** on first prestige
+- `sim_pacing.py`: buildings-only ~25 min; territory-engaging ~17 min (target 25–45 min)
+- **Deferred:** push notifications, FTUE telemetry
+
+### Phase 126 — Stats tab (Godot UI)
+- `stats_dashboard.gd` — tiered cards; AchBtn at top with bonus %
+- `PHASE126_REPORT.md`
 
 ## Key Godot files
 
 | Area | Path |
 |------|------|
-| Simulation hub | `scripts/autoload/game_state.gd` |
+| Sim hub | `scripts/autoload/game_state.gd` |
 | Save | `scripts/autoload/save_manager.gd` |
-| Events / goals / tutorial / offline / buffs | `event_system.gd`, `goal_system.gd`, `tutorial_system.gd`, `offline_system.gd`, `buff_system.gd` |
-| Rivals AI | `scripts/systems/rival_ai.gd`, `rival_system.gd` |
-| Managers | `scripts/systems/manager_system.gd`, `operation_system.gd` (Smuggler tick) |
-| Prestige tree | `prestige_tree.gd`, `prestige_tree_overlay.gd` |
-| Main UI + overlays | `scripts/ui/game_screen.gd`, `scenes/game_screen.tscn` (OverlayLayer: event/milestone/offline) |
-| Row prefabs | `scenes/*_row.tscn` |
+| Audio | `scripts/autoload/audio_manager.gd` |
+| Main UI | `scripts/ui/game_screen.gd`, `scenes/game_screen.tscn` |
+| Stats dashboard | `scripts/ui/stats_dashboard.gd` |
+| Systems | `scripts/systems/*_system.gd` |
+| Data defs | `scripts/data/*_defs.gd` |
 
-## UI tabs (9)
+## Nav model (5 + subtabs)
 
-`game_screen.gd` enum `Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }`
+Bottom bar: **Buildings / Upgrades / Managers / Turf / Stats**. Header ⚙ → Config.
 
-Overlays (priority): offline → syndicate event → milestone queue → tutorial banner.
+Turf subtabs: Territory / Rivals / Crew / Ops (Crew @ 5 buildings, Ops @ 2 districts or Made Man).
 
-## Income pipeline (add since P3)
+Overlays (priority): offline/daily → syndicate event → milestone → tutorial → rival epitaph.
 
-After achievement mult, multiply by `BuffSystem.income_mult()` (syndicate/event buffs).
+## Income pipeline
 
-Op rewards: `ManagerSystem.operation_reward_mult()` (Smuggler) × `BuffSystem.operation_reward_mult()` × Cartel/district perks.
+```
+building base → ManagerSystem.compute_base_income
+  → achievement mult → BuffSystem.income_mult
+  → prestige × heat × territory × crew collection
+```
 
-## Save fields (P4 additions)
-
-Goals: `goals_completed[]` (keys only; defs rebuilt on load).
-
-Tutorial: `tutorial_step`, `shown_*_tutorial` flags (raid, ops, crew, turf, rivals, influence, heat, syndicate).
-
-Settings: `master_volume`, `sfx_volume`, `music_volume`, `mute_all`, `fps_cap`, `show_particles`.
-
-Dragon stubs: `dragon_key`, `dragon_xp`, `dragon_stage`, `dragon_abilities[]`.
-
-Runtime (not saved): `buffs[]`, `pending_event`, `milestone_queue`, `broker_retry_cd`, `smuggler_timer`, `show_offline_overlay`.
+Cached in `GameState.income_per_second()` — do not recompute more than once per frame.
 
 ## Godot 4.6 gotchas
 
-- **No `//`** — integer division: `int(a / b)` or `a / b` with int cast
-- **`trait` reserved** — never as variable name
-- **Const arrays:** literal values only in `const X = [...]` when using PackedStringArray
-- **Strict typing** on ternary/`:=` locals
-- **Autoload + class_name:** preload from callers, not cross-autoload refs in class bodies
-- **Headless verify:**
-  `"E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path "d:\2d_game\godot" --headless "res://scenes/game_screen.tscn" --quit-after 3 2>&1 | Select-String "SCRIPT ERROR"`
+- **No `//`** — use `int(a / b)` for integer division
+- **`trait` reserved** — use `trait_text` in UI
+- **Const arrays:** literal values in `const X = [...]`
+- **Headless:** AudioManager disabled; click floats skipped
+- **Verify:**
+  `python sim_godot_soak.py --godot "E:/Downloads/Godot_v4.6.3-stable_win64.exe"`
 
-## Architecture rules
+## Recommended next work (pick one)
+
+1. **Device pass (highest value)** — Export Android → Moto G 2026 → walk `DEVICE_TEST_CHECKLIST.md`
+2. **P6 sign-off** — Manual audio playtest; confirm milestone cue distinctness + music loop
+3. **P9 deferred** — Local push notifications (opt-in, gentle cadence) — not started
+4. **Balance tweak (optional)** — If territory path feels too fast on device, tune in `sim_pacing.py` first
+
+## Rules
 
 - All rates × `dt` in `_process`
-- `_ips_dirty` at tick start; `income_per_second()` cached once per frame
 - Milestone strings: `\n` separator (title line, then body)
+- New save fields need migration defaults in `game_state.gd` / save load
 - Do not commit unless user asks
-
-## Recommended next work (P5) — pick one slice per session
-
-### Slice 1 — Polish & feel (recommended first)
-- Rival **elimination overlay** (full-screen epitaph like pygame `_elim_overlay`)
-- **Raid / first-heat tutorial** milestones (`shown_raid_tutorial`, heat 50% warning — partial in `tutorial_system.gd`, wire heat raid path)
-- **Motion pass (Phase 128 lite):** Collector shield pulse on heat bar, hustle streak indicator, goal-complete toast styling
-- **Event buff decay:** tie `bw_attack_bonus` / `bw_negotiate_bonus` to buff `remaining` or clear on expiry
-
-### Slice 2 — Remaining managers
-- **Sticky Pete** — best income/$ affordable building highlight (`managers.py` `petes_pick`)
-- **Lucky Sal + golden coin** — floating coin, autocollect, `coins_caught` save + achievement
-- **The Promoter** — heat autopilot target cycle (40/50/60%)
-- **Rudy / Rob** — prestige advice + income breakdown panels (Stats or Mgrs sub-panel)
-
-### Slice 3 — Dragon patron (large)
-- Port `src/dragon.py` in phases: passive mults → HUD widget → abilities/requests
-- Wire prestige-tree Dragon Patron button; remove stub-only status
-- Save migration for dragon fields already stubbed
-
-### Slice 4 — Save / QA / graphify
-- Pygame save import test with P4 fields; document Godot-only keys
-- Headless smoke: load save → tick 60s sim → verify no script errors
-- `/graphify` update on `src/` + `godot/scripts`
-- Optional: switch renderer from Forward Plus to **Compatibility** (2D-only project)
-
-### Slice 5 — Mobile prep (defer until parity stable)
-- Touch targets audit on row prefabs
-- Export templates + portrait lock in `project.godot`
+- Do not add new major systems without evidence (PROJECT_RULES.md)
 ```
-
----
-
-## P5 session plan (detail for next agent)
-
-**Goal:** Move from “feature-complete P4” to **polish + remaining pygame parity** without regressing income/save.
-
-### Session order (suggested)
-
-| Priority | Slice | Est. effort | Deliverable |
-|----------|-------|-------------|-------------|
-| **P5-A** | Polish & feel | Medium | Elimination overlay scene, raid tutorial hook, buff decay fix, 2–3 motion cues |
-| **P5-B** | Pete + Sal + coin | Medium | Pete highlight on building row; coin spawn/collect loop; Sal autocollect |
-| **P5-C** | Promoter + Rudy/Rob | Medium | Heat autopilot; prestige advice labels on left panel or Stats |
-| **P5-D** | Dragon phase 1 | Large | Passive mults + HUD chip only (no full ability tree yet) |
-| **P5-E** | QA + graphify | Small | Import test matrix, headless smoke script, update `graphify-out/port/` |
-
-### P5-A acceptance checklist
-- [ ] Defeating a rival shows overlay with faction epitaph + rewards (not just toast)
-- [ ] First police raid triggers milestone popup once
-- [ ] `bw_negotiate_bonus` clears when `bw_negotiate` buff expires
-- [ ] Headless `game_screen.tscn` — zero SCRIPT ERROR
-- [ ] New Game → play 2 min → syndicate event appears and resolves without crash
-
-### P5-B acceptance checklist
-- [ ] Pete highlights one building row when Mechanic-tier manager hired/unlocked
-- [ ] Golden coin appears periodically; Sal autocollects when hired
-- [ ] `coins_caught` increments and saves
-
-### Do NOT start P5 until
-- Confirm game runs past title menu (purple-screen compile bugs fixed in P4 tail session)
-- Run headless check above
 
 ---
 
@@ -213,50 +145,24 @@ Runtime (not saved): `buffs[]`, `pending_event`, `milestone_queue`, `broker_retr
 ### Repo layout
 ```
 d:\2d_game\
-  main.py              ← pygame entry (still full game)
-  src/                 ← mechanics source of truth
-  save.json            ← pygame save (importable from Godot title screen)
-  graphify-out/port/   ← architecture graph
-  godot/               ← ONLY Godot project to use
-    project.godot
-    P2_HANDOFF.md
-    scenes/            main_menu, game_screen (+ OverlayLayer), prestige_tree_overlay, *_row
-    scripts/
-      autoload/        game_state, save_manager, game_config, format_util
-      systems/         territory, rival, rival_ai, crew, operation, manager, heat,
-                       prestige, prestige_tree, achievements, event, goal, tutorial,
-                       offline, buff, world_state
-      ui/              game_screen, main_menu, prestige_tree_overlay, *_row, game_theme
-      data/            building, upgrade, manager defs
-    theme/noir_theme.tres
+  README.md              Start here
+  ROADMAP.md             P5–P12 launch plan
+  DEVICE_TEST_CHECKLIST.md
+  main.py, src/          pygame lab (sims + reference)
+  sim_pacing.py          First-prestige pacing instrument
+  sim_godot_soak.py      Headless Godot gate
+  godot/                 **Ship target**
+    project.godot        Portrait, GL Compatibility
+    scenes/              main_menu, game_screen, overlays, *_row
+    scripts/             autoload, systems, ui, data, tools
 ```
-
-### P4 deliverables (completed this session)
-
-**Rival AI** — `rival_ai.gd`: `_grow`, `_take_action`, `_blackwater_action`, rival-vs-rival, catch-up wealth, Collector raid formula.
-
-**Manager ops** — Smuggler: +30% op reward, `tick_smuggler_ops` every 2s. Broker: +15% turf success, 5min retry on fail, green BROKER button intel.
-
-**Events / goals / tutorial** — Full event pool + `OverlayLayer` choice UI; 21 goals with influence faucet; milestone queue + 5-step tutorial banner.
-
-**Config** — 9th tab with volume/FPS/particles, reset tutorial, delete save.
-
-**Offline** — `save_timestamp` delta → passive earnings × offline mult → welcome overlay.
-
-**Bug fix** — GDScript `//` parse failure broke all autoloads (purple screen).
-
-### UI tab state
-9 tabs including **Cfg**. PRESTIGE opens perk tree overlay. Overlays block input when active.
 
 ### Headless sanity check
 ```powershell
-& "E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path "d:\2d_game\godot" --headless "res://scenes/main_menu.tscn" --quit-after 3 2>&1 | Select-String "SCRIPT ERROR"
-& "E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path "d:\2d_game\godot" --headless "res://scenes/game_screen.tscn" --quit-after 3 2>&1 | Select-String "SCRIPT ERROR"
+python sim_godot_soak.py --godot "E:/Downloads/Godot_v4.6.3-stable_win64.exe"
+python sim_smoke.py
+python sim_pacing.py --minutes 45 --active 0.33 --cps 2
 ```
-Empty output = scripts compile.
 
-### Graphify
-Update after P5: `/graphify d:\2d_game\src d:\2d_game\godot\scripts --update`
-
-### Presentation saga (pygame reference only)
-Phases 121–127 done on pygame. Godot: Phase 125 turf badges partial (tab/header hints); Phase 128 motion queued for P5-A.
+### Presentation saga
+Phases 121–127 were **pygame-only** UI passes — archived. Godot P6–P7 supersede them. Phase 126 (Stats tiering) is Godot-only and done.

@@ -1,34 +1,35 @@
-# PROJECT_RULES.md — Idle Empire
-*Last updated: Phase 13 complete. 44/44 tests passing. Closed-beta candidate.*
+# PROJECT_RULES.md — Criminal Empire
+*Last updated: 2026-06 — Godot 1.0 ship track; pygame prototype/lab.*
 
 ---
 
-## Project Status
+## Project status (current)
 
-**Phase 13 is complete.** The game is stable, feature-complete, and playable from fresh save through multiple prestiges.
+**Ship target:** [`godot/`](godot/) — Godot 4.6, portrait, Compatibility renderer, procedural audio.  
+**Prototype / lab:** [`src/`](src/) — mechanics reference + `sim_pacing.py`, `sim_smoke.py`, `sim_godot_soak.py`. UI work on pygame is **archived**.
 
-**Core systems — complete, do not redesign:**
+**Launch roadmap:** [`ROADMAP.md`](ROADMAP.md) — P5 ✅ · P6–P9 in progress · P10–P12 queued.  
+**Device reference:** Motorola **Moto G (2026)** — [`DEVICE_TEST_CHECKLIST.md`](DEVICE_TEST_CHECKLIST.md).
 
-| System | Module | Notes |
-|--------|--------|-------|
-| Economy / buildings | `src/buildings.py` | 11 buildings, append-only `_DEFS` |
-| Upgrades | `src/upgrades.py` | ~27 upgrades, append-only `_DEFS` |
-| Prestige + perk tree | `src/prestige.py`, `src/prestige_tree.py` | 13 ranks, 10 perks, 5 tiers |
-| Managers | `src/managers.py` | 11 managers, unique per-manager effect |
-| Heat | `src/heat.py` | Rise/decay/raids, income + click bonus |
-| Territory | `src/territory.py` | 20 districts, attack/bribe/negotiate/sabotage |
-| Rivals | `src/rivals.py` | 5 AI factions, genuine AI (growth, raids, war) |
-| Crew | `src/crew.py` | 5 roles, real trade-offs |
-| Operations | `src/operations.py` | 5 timed missions, success chance formula |
-| Syndicate events | `src/events.py` | 6-choice events, fires every 3–6 min |
-| Goals | `src/goals.py` | early/mid/late, influence faucet for new players |
-| Achievements | `src/achievements.py` | 60+ achievements, toast system |
-| Save / load | `src/save_load.py` | Atomic write, backup, version migration |
-| Tutorial | `src/tutorial.py` | 5-step first-run + milestone queue |
-| Analytics | `src/analytics.py` | Local-only, JSONL, full funnel + first-X events |
-| UI | `src/ui.py` | Responsive layout, all overlays |
+Mechanics are stable across both runtimes (parity locked in P5). Current work: **mobile device pass**, **audio playtest**, **retention polish** — not new major systems.
 
-**Do not add new major systems.** The game does not need more mechanics.
+---
+
+## Core systems (mechanics — do not redesign without evidence)
+
+| System | pygame (`src/`) | Godot |
+|--------|-----------------|-------|
+| Buildings | `buildings.py` | `data/building_defs.gd` |
+| Upgrades | `upgrades.py` | `data/upgrade_defs.gd` |
+| Prestige + tree | `prestige.py`, `prestige_tree.py` | `systems/prestige.gd`, `prestige_tree.gd` |
+| Managers | `managers.py` | `systems/manager_system.gd` |
+| Heat / turf / rivals / crew / ops | respective `.py` | `systems/*_system.gd` |
+| Events / goals / tutorial | `events.py`, `goals.py`, `tutorial.py` | `*_system.gd` |
+| Save | `save_load.py` | `save_manager.gd`, `game_state.gd` |
+| Achievements | `achievements.py` | `achievement_system.gd` |
+| **Player UI** | `ui.py` (**archived**) | `ui/game_screen.gd`, row scenes |
+
+**Do not add new major systems.**
 
 **Acceptable work in this phase:**
 - Retention improvements
@@ -44,7 +45,13 @@
 
 ```
 d:\2d_game\
-├── main.py               Engine init + MenuState entry point
+├── README.md             Start here
+├── ROADMAP.md            Godot → mobile launch (P5–P12)
+├── godot/                **1.0 ship target** (Godot 4.6)
+│   ├── project.godot
+│   ├── scenes/           main_menu, game_screen, row prefabs, overlays
+│   └── scripts/          autoload, systems, ui, data
+├── main.py               pygame lab entry (prototype)
 ├── config.py             SCREEN_WIDTH/HEIGHT, FPS, MIN_WIDTH/HEIGHT
 ├── analytics_report.py   Dev tool: reads analytics.jsonl, prints funnel report
 ├── sim_smoke.py          Fast sanity test (~5s) — run before every commit
@@ -168,17 +175,24 @@ state._notif_near_prestige_80 = False
 
 ## Critical Rules — Tab Gating
 
-Tab visibility is controlled by `prestige.visible_tabs(state)`. Current gates:
+**Godot:** 5 bottom tabs always visible — Buildings / Upgrades / Mgrs / Turf / Stats. Config via header gear.  
+**Turf subtabs:** Territory, Rivals always; Crew locked until **5 buildings** (shows `Crew n/5`); Ops locked until **2 districts or Made Man** (shows `Ops n/2`). Locked tabs stay **visible** with progress text (Phase 102).
 
-| Tab | Minimum influence (prestige_tokens) |
-|-----|-------------------------------------|
-| Buildings | 0 (always) |
-| Empire (→ Upgrades, Managers, Territory, Rivals) | 0 (always — fixed in Phase 12) |
-| Crew | 1 (Crew Member rank) |
-| Operations | 12 (Made Man rank) |
-| Stats | 0 (always) |
+**pygame lab** mirrors the same gates via `prestige.visible_turf_subtabs()`.
 
-Do not add new token gates to early content. The deadlock was caused by exactly this pattern. If gating is needed, use cash thresholds or building counts instead.
+Do not re-introduce Influence-gated main tabs — that caused the historical deadlock. Subsystem **economic** gates (crew count, turf count) are fine.
+
+---
+
+## Critical Rules — First Prestige (P9 pacing)
+
+- **Earnings gate:** `prestige_route_earnings` (passive + clicks only) ≥ $20M — not lifetime earnings, not goal windfalls.
+- **Influence goals:** starter faucet tracks **empire route**, same metric as the prestige gate.
+- **Rank gate:** Made Man (12 Influence) from economic goals; turf capture does **not** grant +1 Influence per action.
+- **Turf income:** scales with `(route / required)²`; district stacking capped.
+- **No play-time floor** on prestige — balance only.
+
+Prove pacing changes in `sim_pacing.py` before porting constants to Godot `game_config.gd` / systems.
 
 ---
 
@@ -225,8 +239,9 @@ To read beta data: `python analytics_report.py`
 
 ## Critical Rules — UI / Rendering
 
-**All layout values come from `ui.reinit_layout(w, h)` — never hardcode pixel positions.**  
-The game supports any window size from 480×480 to unlimited. Use `ui.CLICK_RECT`, `ui.PRESTIGE_RECT`, `ui.RIGHT_X`, `ui.HEADER_H` etc. everywhere.
+**Godot (ship UI):** `godot/scripts/ui/game_screen.gd`, row scenes, `GameTheme`. Portrait 720×1280, bottom nav, safe-area insets. Do not port pygame `draw_panel()` patterns.
+
+**pygame lab (archived UI):** layout via `ui.reinit_layout(w, h)` — only if touching prototype screens.
 
 **All colours come from `src/theme.py`.** No raw RGB tuples in rendering code.
 
@@ -260,25 +275,23 @@ if <my condition>:
 
 ## Testing Protocol
 
-Before any commit:
+Before any commit (Godot + lab):
+
 ```bash
-python sim_smoke.py          # must pass (~5s)
-python -m py_compile src/*.py  # no syntax errors
+python sim_smoke.py
+python sim_godot_soak.py --godot "<path-to-godot>"
 ```
 
-Before any release:
-```bash
-python sim_test_suite.py     # all 44 must pass (~30s)
-```
+Before balance changes: `python sim_pacing.py --minutes 45 --active 0.33 --cps 2`
 
-Manual verification checklist:
-- [ ] Fresh save (delete `save.json`, run `main.py`)
-- [ ] Existing save loads without error
-- [ ] After prestige: buildings/income hard-reset to 0, influence increases, prestige income multiplier persists (faster rebuild)
-- [ ] Offline earnings overlay appears on return after >1 min away
-- [ ] Tutorial completes without softlock
+Before any release: `python sim_test_suite.py` (pygame lab, if still maintained)
 
-For balance changes: use `python sim_harness.py` to run headless simulations.
+Manual verification (Godot F5 or **Moto G 2026** device pass — see `DEVICE_TEST_CHECKLIST.md`):
+- [ ] Fresh save → tutorial → first buildings → no softlock
+- [ ] Prestige: hard reset + persistent mult; empire route gate at $20M
+- [ ] Offline + daily return overlays
+- [ ] Audio sliders + mute (P6)
+- [ ] Portrait + bottom nav on device (P7)
 
 ---
 
@@ -296,27 +309,25 @@ For balance changes: use `python sim_harness.py` to run headless simulations.
 
 ## Current Priority Order
 
-1. Beta launch readiness — resolve MAJOR blockers from Phase 13 report
-2. Retention polish — return-to-game experience, offline world simulation
-3. Balance tuning — use `sim_harness.py` and `analytics_report.py` data
-4. Stability — fix any crashes or invalid states discovered in beta
-5. UX clarity — surfacing what players miss (e.g. prestige button unlock hint)
-6. New content — only if a genuine content gap is identified from telemetry
+Follow [`ROADMAP.md`](ROADMAP.md):
 
-Do not reorder. New content is last because telemetry will tell us what players actually want, not what we assume.
+1. **Device pass** — Moto G (2026): P7 touch/safe-area + P8 FPS/thermal (`DEVICE_TEST_CHECKLIST.md`)
+2. **P6 sign-off** — audio playtest on device/desktop
+3. **P9 closeout** — push notifications + FTUE telemetry (when scoped)
+4. **Balance** — prove in `sim_pacing.py`, port to Godot; no play-time gates
+5. **P10–P12** — monetization seams → store → soft launch
+
+Do not add new major mechanics without telemetry evidence.
 
 ---
 
-## Known Open Issues (Phase 13 exit)
+## Known follow-ups
 
-**MAJOR — Prestige button gives no hint when locked.**  
-Players click it, enter the perk tree, and see a requirements list buried in the UI. A badge or inline text on the button face showing the blocking condition would prevent abandonment at the prestige gate.
-
-**MAJOR — Rivals are static offline.**  
-Rivals do not tick during offline periods. The return summary shows rival counts but they reflect the same state as when the player left. For the "living city" promise to hold, rivals need a fast-forward offline simulation step in `apply_save_data`.
-
-**MINOR — No analytics opt-out in settings UI.**  
-`analytics.set_enabled(False)` exists but is not exposed to the player. For GDPR compliance a toggle is needed in the pause/settings panel.
-
-**MINOR — `analytics.jsonl` has no size cap.**  
-For extended beta periods, this file will grow. Add rotation or a max-line cap.
+| Item | Phase | Notes |
+|------|-------|-------|
+| Prestige button hint when locked | UX | Inline blocking condition on button face |
+| Rivals static offline | P9 | Fast-forward rival sim on return (pygame has partial step) |
+| Analytics opt-out in Config | P11 | `set_enabled(False)` exists, no UI toggle yet |
+| `analytics.jsonl` size cap | Ops | Rotation for long betas |
+| Push notifications | P9 | Not implemented |
+| FTUE telemetry on mobile | P9 | Funnel reviewed; instrumentation deferred |

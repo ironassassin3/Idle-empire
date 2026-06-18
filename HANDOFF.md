@@ -1,4 +1,15 @@
-# Session Handoff — 2D Idle Clicker (Pygame)
+# Repo handoff — Criminal Empire
+
+> **Start here:** [`README.md`](README.md) · **Ship target:** [`godot/`](godot/) · **Roadmap:** [`ROADMAP.md`](ROADMAP.md)
+
+This file preserves **early pygame session notes** (2026-05-31). Mechanics and architecture below are **historical** — the live product is Godot.
+
+**Current session handoff:** [`godot/P2_HANDOFF.md`](godot/P2_HANDOFF.md)  
+**Mechanics rules:** [`PROJECT_RULES.md`](PROJECT_RULES.md) · **Retention/pacing:** [`P9_REPORT.md`](P9_REPORT.md)
+
+---
+
+# Session Handoff — 2D Idle Clicker (Pygame) *(archived)*
 
 **Date:** 2026-05-31  
 **Window:** 900 × 650  
@@ -45,41 +56,9 @@
 
 ---
 
-## Architecture Snapshot
+## Architecture Snapshot *(historical — game has grown significantly since)*
 
-```
-d:\2d_game\
-├── main.py           MenuState + entry point (unchanged)
-├── config.py         SCREEN_WIDTH=900, SCREEN_HEIGHT=650, FPS=60
-└── src\
-    ├── engine.py     Engine, game loop, dt (unchanged)
-    ├── states.py     GameState ABC, StateManager, PlayingState  [305 lines]
-    ├── ui.py         All rendering helpers                       [355 lines]
-    ├── theme.py      Colors, fonts, format_number()             [58 lines]
-    ├── buildings.py  8 building defs, draw_panel(scroll=)       [141 lines]
-    ├── upgrades.py   10 upgrade defs + effects, draw_panel(scroll=) [142 lines]
-    ├── achievements.py 13 achievements + toast drawer           [97 lines]
-    ├── prestige.py   Threshold 1M lifetime, tokens, execute()   (unchanged)
-    └── save_load.py  JSON save/load to save.json                (unchanged)
-```
-
-### Key Class/Function Map
-
-| Symbol | File | Notes |
-|---|---|---|
-| `PlayingState` | `states.py:89` | Main game state; holds all runtime state |
-| `PlayingState._bld_scroll` / `_upg_scroll` | `states.py` | Scroll offsets; clamped in MOUSEWHEEL handler |
-| `PlayingState.click_value` | `states.py:152` | Checks `double_click` and `quad_click` effect keys |
-| `draw_click_zone` | `ui.py:172` | Left panel container + 3D button + idle particle spawn |
-| `draw_right_panel` | `ui.py:234` | 3-tab bar + dispatches to bld/upg/stats panel |
-| `draw_stats_tab` | `ui.py` | Stats panel; reads `state._time` for session clock |
-| `_draw_scroll_hints` | `ui.py` | ▲ / ▼ indicators when content overflows |
-| `draw_idle_particles` | `ui.py` | Mint-green `+` particles near balance |
-| `draw_panel_divider` | `ui.py` | 1px vertical separator |
-| `format_number(n)` | `theme.py` | K/M/B formatter; used everywhere |
-| `buildings._DEFS` | `buildings.py:37` | 8 tuples; append-only for save compat |
-| `upgrades._DEFS` | `upgrades.py:79` | 10 tuples; append-only for save compat |
-| `make_achievements()` | `achievements.py:28` | Returns 13 `Achievement` dataclasses |
+See [`graphify-out/port/GRAPH_REPORT.md`](graphify-out/port/GRAPH_REPORT.md) for current pygame↔Godot map.
 
 ---
 
@@ -89,23 +68,8 @@ d:\2d_game\
 
 ---
 
-## Known Constraints / Rules
+## Known Constraints / Rules *(2026-05-31 — superseded by CLAUDE.md / PROJECT_RULES.md)*
 
-- `states.py` must stay under ~350 lines (currently 305)
-- All colours must come from `src/theme.py` — no raw tuples in ui/building/upgrade files
 - All animation timing must use `dt` — no frame-dependent logic
-- `src/engine.py`, `src/prestige.py`, `src/save_load.py` — do not touch
-- No new pip dependencies — pygame only
+- No new pip dependencies beyond pygame-ce
 - Buildings/upgrades/achievements data: **append only** to keep save compat
-
----
-
-## Obvious Next Steps
-
-- **Sound** — `pygame.mixer` not initialised anywhere; add click/purchase/achievement SFX
-- **More upgrade tiers** — second prestige multiplier upgrade, achievement-gated bonuses
-- **Scroll bar visual** — replace ▲/▼ text hints with a proper scrollbar track
-- **Pause / ESC menu** — currently ESC exits to the (empty) MenuState
-- **Save versioning** — no migration logic; adding mid-list entries would break saves
-- **Offline earnings** — calculate passive income accrued since last `save_game()` call on load
-- **Settings tab** — 4th tab for volume, theme, FPS cap

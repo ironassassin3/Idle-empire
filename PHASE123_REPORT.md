@@ -1,5 +1,7 @@
 # Phase 123 — Employee Roster Redesign
 
+> **Historical — pygame prototype only.** Superseded by Godot Managers tab rows.
+
 **Date:** 2026-06-15  
 **Scope:** Managers tab presentation only — no gameplay, balance, or save changes.
 

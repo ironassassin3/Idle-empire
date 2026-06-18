@@ -15,9 +15,9 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Criminal Empire"
-config/description="Idle criminal empire — GDScript port of the pygame-ce game."
+config/description="Criminal Empire — idle mobile game (Godot 1.0). Pygame repo root is balance lab only."
 run/main_scene="res://scenes/main_menu.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0.102, 0.082, 0.125, 1)
 boot_splash/show_image=false
 config/icon="res://icon.svg"
@@ -28,12 +28,15 @@ GameConfig="*res://scripts/autoload/game_config.gd"
 FormatUtil="*res://scripts/autoload/format_util.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
 
 [display]
 
-window/size/viewport_width=900
-window/size/viewport_height=720
+window/size/viewport_width=720
+window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation="portrait"
 
 [gui]
 
@@ -41,4 +44,6 @@ theme/custom="res://theme/noir_theme.tres"
 
 [rendering]
 
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.102, 0.082, 0.125, 1)
