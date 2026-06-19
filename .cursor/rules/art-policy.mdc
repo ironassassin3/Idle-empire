@@ -1,0 +1,18 @@
+---
+description: Mandatory art policy — no generative AI; code-built assets only
+alwaysApply: true
+---
+
+# Art policy — read before any visual or audio work
+
+**You must read and follow [`ART_POLICY.md`](../../ART_POLICY.md)** at the repo root before adding or changing sprites, icons, textures, UI chrome, backgrounds, portraits, SFX, music, or store/marketing art.
+
+## Hard rules
+
+1. **No generative-AI assets** — no AI image/audio tools (Midjourney, DALL·E, Stable Diffusion, Suno, etc.), including “lightly edited” AI output.
+2. **Build in code** — Godot `StyleBox`/`Theme`/`draw_*`, pygame primitives, procedural audio.
+3. **UI surfaces** — Material Maker procedural textures per `ART_POLICY.md` §4 and `P13_REPORT.md` (not AI).
+4. **Hand-authored files** — only when the **project owner explicitly provides** them.
+4. If code cannot express it, **ask the owner** — do not substitute AI.
+
+When in doubt, open `ART_POLICY.md` and follow its decision tree.

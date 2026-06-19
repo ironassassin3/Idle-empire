@@ -66,4 +66,4 @@ Prove balance in pygame sims, port numbers to `godot/scripts/`.
 
 ## Art
 
-No generative-AI assets. Code-drawn UI (pygame/Godot primitives) or hand-authored assets only.
+**Mandatory policy:** [`ART_POLICY.md`](ART_POLICY.md) — no generative-AI assets; build visuals and SFX in code (or use owner-provided hand art only).

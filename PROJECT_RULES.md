@@ -31,6 +31,8 @@ Mechanics are stable across both runtimes (parity locked in P5). Current work: *
 
 **Do not add new major systems.**
 
+**Art (mandatory):** [`ART_POLICY.md`](ART_POLICY.md) — no generative-AI assets; code-drawn UI and procedural audio only (or owner-provided hand art).
+
 **Acceptable work in this phase:**
 - Retention improvements
 - Balance tuning
@@ -46,6 +48,7 @@ Mechanics are stable across both runtimes (parity locked in P5). Current work: *
 ```
 d:\2d_game\
 ├── README.md             Start here
+├── ART_POLICY.md         **Mandatory** — no AI art; code-built assets only
 ├── ROADMAP.md            Godot → mobile launch (P5–P12)
 ├── godot/                **1.0 ship target** (Godot 4.6)
 │   ├── project.godot
