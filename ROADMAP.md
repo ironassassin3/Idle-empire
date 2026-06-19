@@ -14,7 +14,7 @@
 - **Priority order:** Retention > Progression > Engagement > Mobile UX > Monetization > New Features.
 - **Improve existing systems before adding new ones.** No new currencies / tabs / prestige layers
   / progression systems without strong evidence.
-- **No generative-AI assets.** Code-drawn or hand-authored only.
+- **No generative-AI assets.** Code-drawn, Material Maker procedural (see `ART_POLICY.md` §4), or hand-authored only.
 - **Evidence-based:** balance claims need sim or playtest proof. Prefer `sim_pacing.py` / `sim_godot_soak.py`; pygame `PlayingState` is the fast lab, Godot is what ships.
 - **Save schema** stays shared where practical (pygame import on title screen). New fields need migration defaults in **Godot** (`game_state.gd` / save load); mirror in pygame only if sims depend on them.
 
@@ -284,6 +284,21 @@ save-migration test matrix doc.
 **Dependencies:** P11.
 **Risks:** chasing vanity metrics — define target KPIs and decision thresholds *before* launch.
 **Verify:** live dashboards + cohort retention curves.
+
+---
+
+## P13 — Rustic Noir UI Overhaul (presentation track)
+
+**Goal:** Match commercial idle-game tactile polish while keeping ledger/noir identity.  
+**Status:** Planned — see [`P13_REPORT.md`](P13_REPORT.md).  
+**Priority tie:** Retention + Engagement (visual clarity and session feel).  
+**Toolchain:** Material Maker procedural textures → Godot `StyleBoxTexture` (not generative AI; `ART_POLICY.md` §4).
+
+**Scope (in):** Theme swap, main menu, header/nav, row cards, overlays, tab badges, atmosphere grain.  
+**Out of scope:** New mechanics, AI texture packs, replacing procedural audio or code-driven motion/bars.
+
+**Dependencies:** P7 layout stable (done in code); P8 device pass recommended before full texture rollout.  
+**Can run in parallel** with P6–P9 device/audio pass if owner prioritizes visual retention uplift.
 
 ---
 

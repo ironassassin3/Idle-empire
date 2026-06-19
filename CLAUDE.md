@@ -1,5 +1,8 @@
 # Project: Criminal Empire — 2D Idle Game
 
+> **MANDATORY — read before any art/UI/audio work:** [`ART_POLICY.md`](ART_POLICY.md)  
+> No generative-AI assets. Visuals and SFX are **code-built** (or owner-provided hand art only).
+
 ## Ship target vs prototype
 
 | Runtime | Role |
@@ -104,8 +107,12 @@ Strings in `_milestone_queue` **must** use `\n` as line separator:
 - **Comments:** Only for non-obvious WHY (hidden constraints, workarounds). No docblock novels.
 
 ## Art & Assets
-- **No generative AI assets** — do not use AI image generation for sprites, icons, portraits, textures, backgrounds, or marketing art.
-- Visual work stays **code-drawn** (pygame primitives, typography, theme palette) or **hand-authored assets** the user provides.
+
+**Full policy (required reading):** [`ART_POLICY.md`](ART_POLICY.md)
+
+- **No generative-AI assets** — images, sprites, textures, UI art, audio, or marketing visuals.
+- **Code-built by default** — pygame/Godot primitives, theme tokens, procedural SFX.
+- **Hand-authored only** when the project owner explicitly supplies files (agents must not AI-generate on their behalf).
 
 ## Presentation Saga (pygame — **archived**)
 
