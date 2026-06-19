@@ -69,6 +69,8 @@ godot/
 
 ## Mobile export (Android)
 
+Plugin scaffolding (SHIP §5): [../ANDROID_SETUP.md](../ANDROID_SETUP.md).
+
 1. **Editor → Manage Export Templates** → install Android templates.
 2. **Project → Export → Android** — debug keystore OK for personal testing.
 3. Moto G (2026): enable USB debugging → **Export & Run**, or sideload debug APK.

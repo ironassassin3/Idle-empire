@@ -10,3 +10,6 @@
 # Signing — never commit keystores or secrets
 *.keystore
 *.jks
+
+# Plugin download staging (see addons/PLUGINS.md)
+/_plugin_staging/
