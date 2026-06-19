@@ -1,7 +1,7 @@
 extends Node
 ## Mirrors config.py — tuning constants for the GDScript port.
 
-const VERSION := "v1.0-godot-mvp"
+const VERSION := "v1.0.0"
 const DESIGN_WIDTH := 900
 const DESIGN_HEIGHT := 720
 const FPS := 60
