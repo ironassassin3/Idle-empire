@@ -1,28 +1,31 @@
 extends Node
-## Telemetry — local-first analytics for Criminal Empire.
+## Telemetry — local-first analytics with pluggable sinks (§4.4).
 ##
-## Buffers gameplay events to user://telemetry.jsonl (one JSON object per line),
-## flushing on a timer and on app pause / exit. Provider-agnostic: the local
-## file is the only sink today; forwarding to GameAnalytics / Firebase later is a
-## single addition in flush() — no gameplay code changes.
-##
-## Decoupled from gameplay: it only *listens* to GameState signals, so the
-## headless sims behave identically whether or not it is installed. Disabled
-## entirely under the headless display server (mirrors AudioManager).
+## Buffers gameplay events, flushing to LocalFileSink always and RemoteSink when
+## configured. Consent-gated via GameState.telemetry_consent. Disabled under
+## headless display server (mirrors AudioManager).
 
-const LOG_PATH := "user://telemetry.jsonl"
+const LocalFileSink = preload("res://scripts/telemetry/local_file_sink.gd")
+const RemoteSink = preload("res://scripts/telemetry/remote_sink.gd")
+
 const FLUSH_INTERVAL := 5.0
 const MAX_BUFFER := 200
+const REMOTE_ENDPOINT := ""  # Set when analytics backend is provisioned.
 
 var enabled: bool = true
 var _session: String = ""
 var _buffer: PackedStringArray = PackedStringArray()
 var _flush_timer: float = 0.0
-var _io_failed: bool = false
+var _local_sink: RefCounted
+var _remote_sink: RefCounted
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_local_sink = LocalFileSink.new()
+	_remote_sink = RemoteSink.new()
+	if not REMOTE_ENDPOINT.is_empty():
+		_remote_sink.configure(REMOTE_ENDPOINT, self)
 	if DisplayServer.get_name() == "headless":
 		enabled = false
 		return
@@ -36,8 +39,6 @@ func _ready() -> void:
 
 
 func _connect_game_signals() -> void:
-	# GameState is a core autoload (and is singleton-registered by the headless
-	# soak tools), so the bare global resolves in both the game and -s tool runs.
 	if GameState == null:
 		return
 	if GameState.has_signal("prestiged"):
@@ -50,9 +51,13 @@ func _connect_game_signals() -> void:
 		GameState.tutorial_advanced.connect(_on_tutorial_advanced)
 
 
+func _consent_ok() -> bool:
+	return GameState == null or GameState.telemetry_consent
+
+
 ## Single entry point. `props` is merged into the record. Never throws.
 func log_event(ev: String, props: Dictionary = {}) -> void:
-	if not enabled or _io_failed:
+	if not enabled or not _consent_ok():
 		return
 	var rec: Dictionary = {
 		"t": Time.get_unix_time_from_system(),
@@ -67,6 +72,8 @@ func log_event(ev: String, props: Dictionary = {}) -> void:
 
 
 func _process(delta: float) -> void:
+	if _remote_sink != null:
+		_remote_sink.tick(delta, self)
 	if _buffer.is_empty():
 		return
 	_flush_timer += delta
@@ -76,28 +83,17 @@ func _process(delta: float) -> void:
 
 
 func flush() -> void:
-	if _buffer.is_empty() or _io_failed:
+	if _buffer.is_empty():
 		return
-	# Godot has no append mode; open READ_WRITE + seek_end to append.
-	var f: FileAccess
-	if FileAccess.file_exists(LOG_PATH):
-		f = FileAccess.open(LOG_PATH, FileAccess.READ_WRITE)
-		if f != null:
-			f.seek_end()
-	else:
-		f = FileAccess.open(LOG_PATH, FileAccess.WRITE)
-	if f == null:
-		_io_failed = true
-		return
-	for line in _buffer:
-		f.store_line(line)
-	f.close()
+	var batch := _buffer.duplicate()
 	_buffer.clear()
+	if _local_sink != null:
+		_local_sink.append_lines(batch)
+	if _remote_sink != null:
+		_remote_sink.enqueue(batch)
 
 
 func _notification(what: int) -> void:
-	# Flush when the OS backgrounds the app (mobile) or on exit, so events aren't
-	# lost when the process is killed without a clean shutdown.
 	if (
 		what == NOTIFICATION_APPLICATION_PAUSED
 		or what == NOTIFICATION_WM_CLOSE_REQUEST

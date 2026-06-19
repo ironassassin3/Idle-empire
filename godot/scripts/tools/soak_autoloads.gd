@@ -15,6 +15,9 @@ const AUTOLOADS := [
 	["SaveManager", "res://scripts/autoload/save_manager.gd"],
 	["AudioManager", "res://scripts/autoload/audio_manager.gd"],
 	["Telemetry", "res://scripts/autoload/telemetry.gd"],
+	["Monetization", "res://scripts/autoload/monetization.gd"],
+	["Notifications", "res://scripts/autoload/notifications.gd"],
+	["CloudSave", "res://scripts/autoload/cloud_save.gd"],
 ]
 
 
