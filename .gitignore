@@ -1,5 +1,6 @@
 save.json
 save.json.bak
+analytics.jsonl
 crash.log
 __pycache__/
 *.pyc
