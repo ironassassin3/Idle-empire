@@ -102,6 +102,8 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _offline_panel: PanelContainer = $OverlayLayer/OfflinePanel
 @onready var _offline_body: Label = $OverlayLayer/OfflinePanel/VBox/Body
 @onready var _offline_continue: Button = $OverlayLayer/OfflinePanel/VBox/ContinueBtn
+var _offline_watch_ad: Button
+var _coin_ad_btn: Button
 @onready var _elim_panel: PanelContainer = $OverlayLayer/ElimPanel
 @onready var _elim_name: Label = $OverlayLayer/ElimPanel/VBox/Name
 @onready var _elim_flavor: Label = $OverlayLayer/ElimPanel/VBox/Flavor
@@ -183,6 +185,16 @@ func _ready() -> void:
 	_sub_ops.pressed.connect(func(): _set_turf_subtab(Tab.OPS))
 	_milestone_dismiss.pressed.connect(_dismiss_milestone)
 	_offline_continue.pressed.connect(_dismiss_offline)
+	var offline_vbox := _offline_continue.get_parent()
+	_offline_watch_ad = Button.new()
+	_offline_watch_ad.text = "Watch ad (2× earnings)"
+	offline_vbox.add_child(_offline_watch_ad)
+	offline_vbox.move_child(_offline_watch_ad, offline_vbox.get_child_count() - 1)
+	_offline_watch_ad.pressed.connect(_on_offline_watch_ad)
+	_coin_ad_btn = Button.new()
+	_coin_ad_btn.text = "Ad → coin"
+	_coin_btn.get_parent().add_child(_coin_ad_btn)
+	_coin_ad_btn.pressed.connect(_on_coin_watch_ad)
 	_elim_dismiss.pressed.connect(_dismiss_elim)
 	_notif_default_font_size = _notif.get_theme_font_size("font_size")
 	call_deferred("_init_hustle_pivot")
@@ -380,6 +392,9 @@ func _refresh_overlays() -> void:
 				GameState.daily_streak, FormatUtil.format_money(GameState.daily_reward),
 			]
 		_offline_body.text = body_text
+		_offline_watch_ad.visible = (
+			Monetization.ads_available() and GameState.can_double_offline_via_ad()
+		)
 	elif GameState.elim_overlay_active:
 		blocking = true
 		_elim_panel.visible = true
@@ -412,6 +427,7 @@ func _refresh_overlays() -> void:
 		_milestone_panel.visible = false
 		_event_panel.visible = false
 		_offline_panel.visible = false
+		_offline_watch_ad.visible = false
 		_elim_panel.visible = false
 		_last_event_key = ""
 	_overlay_dim.visible = blocking
@@ -452,6 +468,14 @@ func _dismiss_milestone() -> void:
 func _dismiss_offline() -> void:
 	GameState.dismiss_offline_overlay()
 	_refresh_overlays()
+
+
+func _on_offline_watch_ad() -> void:
+	Monetization.show_rewarded(Monetization.PLACEMENT_OFFLINE_DOUBLE)
+
+
+func _on_coin_watch_ad() -> void:
+	Monetization.show_rewarded(Monetization.PLACEMENT_FREE_COIN)
 
 
 func _dismiss_elim() -> void:
@@ -498,6 +522,12 @@ func _update_motion_cues() -> void:
 		and not _ManagerSystem.manager_active(GameState, "Lucky Sal")
 	)
 	_coin_btn.visible = show_coin
+	var ads_ok: bool = Monetization.ads_available()
+	_coin_ad_btn.visible = (
+		ads_ok
+		and not show_coin
+		and not _ManagerSystem.manager_active(GameState, "Lucky Sal")
+	)
 	if show_coin:
 		var coin_pulse: float = 0.65 + 0.35 * sin(_ui_time * 6.0)
 		_coin_btn.modulate = Color(1.0, 0.88, 0.35, coin_pulse)
@@ -937,6 +967,36 @@ func _build_config_tab() -> void:
 	_add_config_header("DISPLAY")
 	_add_cycle_row("FPS Cap", ["30", "60", "120"], [30, 60, 120].find(GameState.fps_cap), func(i): _set_fps_cap(i))
 	_add_cycle_row("Particles", ["ON", "OFF"], 0 if GameState.show_particles else 1, func(i): GameState.show_particles = i == 0)
+	_add_config_header("RETENTION")
+	_add_cycle_row("Notifications", ["OFF", "ON"], 1 if GameState.notifications_enabled else 0, func(i):
+		var on: bool = i == 1
+		GameState.notifications_enabled = on
+		if on:
+			Notifications.request_permission()
+		SaveManager.save_game()
+	)
+	_add_cycle_row("Analytics", ["OFF", "ON"], 1 if GameState.telemetry_consent else 0, func(i):
+		GameState.telemetry_consent = i == 1
+		SaveManager.save_game()
+	)
+	if CloudSave.is_signed_in():
+		var cloud_lbl := Label.new()
+		cloud_lbl.text = "Cloud save: signed in"
+		cloud_lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+		_config_body.add_child(cloud_lbl)
+	else:
+		var cloud_btn := Button.new()
+		cloud_btn.text = "Sign in (cloud backup)"
+		cloud_btn.pressed.connect(func(): CloudSave.sign_in())
+		_config_body.add_child(cloud_btn)
+	_add_config_header("STORE")
+	_add_iap_row("Remove ads", Monetization.PRODUCT_REMOVE_ADS, "Hides ads permanently")
+	_add_iap_row("Starter pack", Monetization.PRODUCT_STARTER, "Cash + Influence boost")
+	_add_iap_row("2× income (permanent)", Monetization.PRODUCT_INCOME_X2, "Doubles passive income")
+	var restore := Button.new()
+	restore.text = "Restore purchases"
+	restore.pressed.connect(func(): Monetization.restore())
+	_config_body.add_child(restore)
 	_add_config_header("DATA")
 	var reset_tut := Button.new()
 	reset_tut.text = "Reset Tutorial"
@@ -973,6 +1033,26 @@ func _add_cycle_row(label: String, options: Array, index: int, cb: Callable) -> 
 		btn.text = str(options[holder.i])
 		cb.call(holder.i)
 	)
+	row.add_child(btn)
+	_config_body.add_child(row)
+
+
+func _add_iap_row(label: String, product_id: String, hint: String) -> void:
+	if Monetization.product_owned(product_id):
+		var owned := Label.new()
+		owned.text = "%s — owned" % label
+		owned.add_theme_color_override("font_color", GameTheme.GREEN)
+		_config_body.add_child(owned)
+		return
+	var row := HBoxContainer.new()
+	var lbl := Label.new()
+	lbl.text = label
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(lbl)
+	var btn := Button.new()
+	btn.text = "Buy"
+	btn.tooltip_text = hint
+	btn.pressed.connect(func(): Monetization.purchase(product_id))
 	row.add_child(btn)
 	_config_body.add_child(row)
 

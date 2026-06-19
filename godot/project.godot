@@ -15,8 +15,8 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Criminal Empire"
-config/version="1.0.0"
 config/description="Criminal Empire — idle mobile game (Godot 1.0). Pygame repo root is balance lab only."
+config/version="1.0.0"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0.102, 0.082, 0.125, 1)
@@ -31,6 +31,9 @@ GameState="*res://scripts/autoload/game_state.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 Telemetry="*res://scripts/autoload/telemetry.gd"
+Monetization="*res://scripts/autoload/monetization.gd"
+Notifications="*res://scripts/autoload/notifications.gd"
+CloudSave="*res://scripts/autoload/cloud_save.gd"
 
 [display]
 

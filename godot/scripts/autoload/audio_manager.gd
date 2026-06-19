@@ -4,6 +4,8 @@ extends Node
 
 const SAMPLE_RATE := 22050
 const POOL_SIZE := 8
+const SFXR_RATE := 44100
+const Sfxr = preload("res://scripts/audio/sfxr.gd")
 
 var _enabled := false
 var _streams: Dictionary = {}
@@ -129,22 +131,44 @@ func _setup_players() -> void:
 		_music_player.play()
 
 
+## SFX are sfxr-synthesized once at startup (deterministic per cue via a fixed
+## seed). `ambient` stays the looping noir drone — sfxr is for one-shots.
 func _build_streams() -> void:
-	_streams["click"] = _sine(440.0, 40, 0.28, 20)
-	_streams["purchase"] = _two_tone(520.0, 660.0, 60, 80, 0.38)
-	_streams["achievement"] = _two_tone(660.0, 880.0, 80, 120, 0.42)
-	_streams["coin"] = _two_tone(880.0, 1100.0, 60, 100, 0.38)
-	_streams["crit"] = _two_tone(660.0, 1320.0, 45, 120, 0.52)
-	_streams["buff"] = _two_tone(523.0, 784.0, 90, 150, 0.46)
-	_streams["manager"] = _arpeggio([[392.0, 70], [523.0, 70], [659.0, 130]], 0.42)
-	_streams["territory"] = _arpeggio([[523.0, 70], [659.0, 70], [784.0, 150]], 0.46)
-	_streams["rival"] = _arpeggio([[523.0, 70], [659.0, 70], [784.0, 70], [1047.0, 190]], 0.52)
-	_streams["rankup"] = _arpeggio([[659.0, 60], [784.0, 60], [988.0, 60], [1319.0, 200]], 0.50)
-	_streams["prestige"] = _arpeggio(
-		[[330.0, 110], [440.0, 110], [523.0, 120], [659.0, 140], [880.0, 320]], 0.55
-	)
-	_streams["error"] = _noise(60, 0.18)
+	_streams["click"] = _sfx("blip", 101, 0.30)
+	_streams["purchase"] = _sfx("coin", 202, 0.40)
+	_streams["achievement"] = _sfx("powerup", 303, 0.44)
+	_streams["coin"] = _sfx("coin", 404, 0.40)
+	_streams["crit"] = _sfx("laser", 505, 0.50)
+	_streams["buff"] = _sfx("powerup", 606, 0.46)
+	_streams["manager"] = _sfx("powerup", 707, 0.44)
+	_streams["territory"] = _sfx("powerup", 808, 0.46)
+	_streams["rival"] = _sfx("explosion", 909, 0.52)
+	_streams["rankup"] = _sfx("powerup", 112, 0.50, {"p_base_freq": 0.45, "p_arp_speed": 0.6, "p_arp_mod": 0.45})
+	_streams["prestige"] = _sfx("powerup", 223, 0.55, {"p_base_freq": 0.30, "p_env_decay": 0.55, "p_arp_speed": 0.55, "p_arp_mod": 0.50})
+	_streams["error"] = _sfx("hit", 334, 0.40)
 	_streams["ambient"] = _ambient(4.0, 0.22)
+
+
+## Build one sfxr cue: seed an RNG, apply a preset (+ optional param overrides),
+## render, and normalize to `peak`. Seeds are fixed so a cue sounds identical
+## every play and across sessions; reroll a seed to audition alternatives.
+func _sfx(preset: String, seed: int, peak: float, overrides: Dictionary = {}) -> AudioStreamWAV:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var p: Dictionary
+	match preset:
+		"coin": p = Sfxr.preset_coin(rng)
+		"laser": p = Sfxr.preset_laser(rng)
+		"explosion": p = Sfxr.preset_explosion(rng)
+		"powerup": p = Sfxr.preset_powerup(rng)
+		"hit": p = Sfxr.preset_hit(rng)
+		"jump": p = Sfxr.preset_jump(rng)
+		"blip": p = Sfxr.preset_blip(rng)
+		_: p = Sfxr.default_params()
+	for k in overrides:
+		p[k] = overrides[k]
+	p["seed"] = seed
+	return Sfxr.to_stream(Sfxr.render(p, SFXR_RATE), SFXR_RATE, peak)
 
 
 func _is_headless() -> bool:
@@ -175,68 +199,6 @@ func _make_stream(samples: PackedInt32Array) -> AudioStreamWAV:
 		data[base + 3] = (v >> 8) & 0xFF
 	stream.data = data
 	return stream
-
-
-func _sine(freq: float, dur_ms: int, vol: float, fade_ms: int) -> AudioStreamWAV:
-	var n := int(SAMPLE_RATE * dur_ms / 1000.0)
-	var fn := int(SAMPLE_RATE * fade_ms / 1000.0)
-	var amp := int(32767.0 * vol)
-	var samples := PackedInt32Array()
-	samples.resize(n)
-	for i in n:
-		var envelope := 1.0
-		if fn > 0 and i >= n - fn:
-			envelope = float(n - i) / float(fn)
-		var s := int(float(amp) * envelope * sin(TAU * freq * float(i) / float(SAMPLE_RATE)))
-		samples[i] = s
-	return _make_stream(samples)
-
-
-func _two_tone(f1: float, f2: float, d1_ms: int, d2_ms: int, vol: float) -> AudioStreamWAV:
-	var n1 := int(SAMPLE_RATE * d1_ms / 1000.0)
-	var n2 := int(SAMPLE_RATE * d2_ms / 1000.0)
-	var amp := int(32767.0 * vol)
-	var total := n1 + n2
-	var samples := PackedInt32Array()
-	samples.resize(total)
-	var idx := 0
-	for i in n1:
-		var fade := float(n1 - i) / float(n1)
-		samples[idx] = int(float(amp) * fade * sin(TAU * f1 * float(i) / float(SAMPLE_RATE)))
-		idx += 1
-	for i in n2:
-		var fade := float(n2 - i) / float(n2)
-		samples[idx] = int(float(amp) * fade * sin(TAU * f2 * float(i) / float(SAMPLE_RATE)))
-		idx += 1
-	return _make_stream(samples)
-
-
-func _arpeggio(notes: Array, vol: float) -> AudioStreamWAV:
-	var amp := int(32767.0 * vol)
-	var samples := PackedInt32Array()
-	for note in notes:
-		var freq: float = note[0]
-		var dur_ms: int = int(note[1])
-		var n := int(SAMPLE_RATE * dur_ms / 1000.0)
-		var prev := samples.size()
-		samples.resize(prev + n)
-		for i in n:
-			var fade := float(n - i) / float(n)
-			samples[prev + i] = int(
-				float(amp) * fade * sin(TAU * freq * float(i) / float(SAMPLE_RATE))
-			)
-	return _make_stream(samples)
-
-
-func _noise(dur_ms: int, vol: float) -> AudioStreamWAV:
-	var n := int(SAMPLE_RATE * dur_ms / 1000.0)
-	var amp := int(32767.0 * vol)
-	var samples := PackedInt32Array()
-	samples.resize(n)
-	for i in n:
-		var fade := float(n - i) / float(n)
-		samples[i] = int(float(amp) * fade * randf_range(-1.0, 1.0))
-	return _make_stream(samples)
 
 
 ## Seamless ambient drone for the Music bus. Frequencies and the LFO complete

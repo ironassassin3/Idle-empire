@@ -1,6 +1,8 @@
 extends Node
 ## JSON save/load — compatible subset with src/save_load.py (user://save.json).
 
+signal game_saved(data: Dictionary)
+
 const SAVE_PATH := "user://save.json"
 const BACKUP_PATH := "user://save.json.bak"
 
@@ -16,6 +18,7 @@ func save_game() -> bool:
 		push_warning("Save failed: %s" % FileAccess.get_open_error())
 		return false
 	file.store_string(json)
+	game_saved.emit(data)
 	return true
 
 

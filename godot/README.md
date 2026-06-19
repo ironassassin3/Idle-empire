@@ -58,7 +58,8 @@ godot/
   project.godot
   scenes/              main_menu, game_screen, prestige_tree_overlay, *_row
   scripts/
-    autoload/          GameConfig, GameState, SaveManager, FormatUtil, AudioManager
+    autoload/          GameConfig, GameState, SaveManager, FormatUtil, AudioManager,
+                       Telemetry, Monetization, Notifications, CloudSave
     systems/           territory, rivals, crew, ops, heat, prestige, events, …
     ui/                game_screen.gd, stats_dashboard.gd, row scripts, GameTheme
     data/              building, upgrade, manager defs

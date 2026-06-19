@@ -131,6 +131,14 @@ var music_volume: float = 0.5
 var mute_all: bool = false
 var fps_cap: int = 60
 var show_particles: bool = true
+var notifications_enabled: bool = false
+var telemetry_consent: bool = true
+
+# Monetization (Phase C — persisted entitlements)
+var remove_ads: bool = false
+var entitlements: Array = []
+var iap_income_mult: float = 1.0
+var _offline_ad_doubled: bool = false  # runtime-only; one double per offline return
 
 # Offline return overlay
 var show_offline_overlay: bool = false
@@ -429,6 +437,7 @@ func income_per_second() -> float:
 	mult *= 1.0 + _DragonSystem.active_ops_income_bonus(self)
 	mult *= 1.0 + Prestige.respect_income_bonus(influence) * _PrestigeTree.respect_income_mult(self)
 	mult *= 1.0 + Prestige.rank_income_bonus(prestige_tokens)
+	mult *= iap_income_mult
 	_ips_cached = base * mult
 	_ips_dirty = false
 	return _ips_cached
@@ -757,6 +766,12 @@ func apply_save_data(data: Dictionary) -> void:
 	mute_all = _b(data, "mute_all", false)
 	fps_cap = _i(data, "fps_cap", 60)
 	show_particles = _b(data, "show_particles", true)
+	notifications_enabled = _b(data, "notifications_enabled", false)
+	telemetry_consent = _b(data, "telemetry_consent", true)
+	remove_ads = _b(data, "remove_ads", false)
+	entitlements = _arr(data, "entitlements")
+	iap_income_mult = maxf(1.0, _f(data, "iap_income_mult", 1.0))
+	_offline_ad_doubled = false
 	var patron_raw = data.get("dragon_patron", data.get("dragon_key", null))
 	if patron_raw != null and str(patron_raw) in _DragonSystem.DRAGON_META:
 		dragon_patron = str(patron_raw)
@@ -897,6 +912,11 @@ func to_save_data() -> Dictionary:
 		"mute_all": mute_all,
 		"fps_cap": fps_cap,
 		"show_particles": show_particles,
+		"notifications_enabled": notifications_enabled,
+		"telemetry_consent": telemetry_consent,
+		"remove_ads": remove_ads,
+		"entitlements": entitlements.duplicate(),
+		"iap_income_mult": iap_income_mult,
 		"dragon_patron": dragon_patron if not dragon_patron.is_empty() else null,
 		"dragon_xp": dragon_xp,
 		"dragon_ability_cooldowns": dragon_ability_cooldowns.duplicate(),
@@ -1070,6 +1090,59 @@ func collect_golden_coin(auto: bool = false) -> void:
 func dismiss_offline_overlay() -> void:
 	show_offline_overlay = false
 	show_daily_overlay = false
+	_offline_ad_doubled = false
+
+
+func can_double_offline_via_ad() -> bool:
+	return show_offline_overlay and offline_gain > 0.0 and not _offline_ad_doubled
+
+
+func grant_offline_ad_double() -> void:
+	if not can_double_offline_via_ad():
+		return
+	balance += offline_gain
+	lifetime_earnings += offline_gain
+	_offline_ad_doubled = true
+	notification.emit(
+		"Ad bonus! +%s offline earnings doubled" % FormatUtil.format_money(offline_gain),
+		GameTheme.GREEN,
+	)
+	_mark_ips_dirty()
+	stats_changed.emit()
+
+
+func grant_free_golden_coin() -> void:
+	if golden_coin_active:
+		return
+	golden_coin_active = true
+	golden_coin_timer = 0.0
+	notification.emit("Golden coin spawned!", GameTheme.GOLD)
+	stats_changed.emit()
+
+
+func apply_iap_entitlement(product_id: String) -> void:
+	if product_id.is_empty():
+		return
+	if product_id not in entitlements:
+		entitlements.append(product_id)
+	match product_id:
+		"remove_ads":
+			remove_ads = true
+		"starter_pack":
+			var cash: float = maxf(income_per_second() * 3600.0, 50_000.0)
+			balance += cash
+			lifetime_earnings += cash
+			influence += 5
+			notification.emit(
+				"Starter pack: +%s and +5 Influence" % FormatUtil.format_money(cash),
+				GameTheme.GOLD_BRIGHT,
+			)
+		"income_x2":
+			iap_income_mult = 2.0
+			notification.emit("Permanent 2× income unlocked!", GameTheme.GOLD_BRIGHT)
+	_mark_ips_dirty()
+	stats_changed.emit()
+	SaveManager.save_game()
 
 
 func show_elimination_overlay(name: String, flavor: String, rewards: String) -> void:

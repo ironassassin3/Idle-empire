@@ -45,11 +45,14 @@ Mechanics are stable across both runtimes (parity locked in P5). Current work: *
 
 ## Architecture
 
+**F2P service autoloads** (mock-first, signal-decoupled — see `SHIP_ARCHITECTURE.md`): `Telemetry`, `Monetization`, `Notifications`, `CloudSave`. Each picks `MockBackend` in editor/headless and `AndroidBackend` when native plugins exist (§5). `GameState` never hard-depends on device services.
+
 ```
 d:\2d_game\
 ├── README.md             Start here
 ├── ART_POLICY.md         **Mandatory** — no AI art; code-built assets only
 ├── ROADMAP.md            Godot → mobile launch (P5–P12)
+├── SHIP_ARCHITECTURE.md  F2P ship plan (monetization, retention, telemetry)
 ├── godot/                **1.0 ship target** (Godot 4.6)
 │   ├── project.godot
 │   ├── scenes/           main_menu, game_screen, row prefabs, overlays
@@ -332,5 +335,6 @@ Do not add new major mechanics without telemetry evidence.
 | Rivals static offline | P9 | Fast-forward rival sim on return (pygame has partial step) |
 | Analytics opt-out in Config | P11 | `set_enabled(False)` exists, no UI toggle yet |
 | `analytics.jsonl` size cap | Ops | Rotation for long betas |
-| Push notifications | P9 | Not implemented |
-| FTUE telemetry on mobile | P9 | Funnel reviewed; instrumentation deferred |
+| Push notifications | P9 | Mock-first autoload done; Android plugin pending (§5) |
+| FTUE telemetry on mobile | P9 | `Telemetry` autoload + local JSONL; remote sink deferred |
+| F2P monetization seams | P10 | Mock-first `Monetization` autoload + UI hooks; device plugins pending |

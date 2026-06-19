@@ -33,8 +33,8 @@ Mechanics are parity-locked (P5). Prove balance in sims, port numbers to Godot.
 | P6 Audio & feel | Code done — **manual audio playtest** open | `P6_REPORT.md` |
 | P7 Mobile UX | Portrait + bottom nav + touch targets — **device pass** open | `P7_REPORT.md` |
 | P8 Performance | Compatibility renderer + UI throttle — **Moto G 2026 FPS pass** open | `P8_REPORT.md` |
-| P9 Retention | Pacing + daily login done — notifications/telemetry deferred | `P9_REPORT.md` |
-| P10–P12 | Not started | `ROADMAP.md` |
+| P9 Retention | Pacing + daily login done — push delivery deferred to §5 | `P9_REPORT.md` |
+| P10–P12 | Mock-first SHIP services in tree (uncommitted) | `SHIP_ARCHITECTURE.md` |
 
 **Device checklist:** `DEVICE_TEST_CHECKLIST.md` — reference phone: **Motorola Moto G (2026)**.
 
@@ -77,7 +77,12 @@ Mechanics are parity-locked (P5). Prove balance in sims, port numbers to Godot.
 - Turf income scales `(route/required)²`; capped district stacking
 - **No play-time gate** on first prestige
 - `sim_pacing.py`: buildings-only ~25 min; territory-engaging ~17 min (target 25–45 min)
-- **Deferred:** push notifications, FTUE telemetry
+- **Deferred:** Android notification delivery (mock autoload exists)
+
+### SHIP services (mock-first — uncommitted)
+- `Telemetry`, `Monetization`, `Notifications`, `CloudSave` autoloads + mock backends; registered in `soak_autoloads.gd`
+- Offline 2× ad button, IAP rows in Config, `iap_income_mult` in income pipeline
+- **Deferred:** §5 Android build template + plugins → `AndroidBackend` swap; §6 store/compliance
 
 ### Phase 126 — Stats tab (Godot UI)
 - `stats_dashboard.gd` — tiered cards; AchBtn at top with bonus %
@@ -126,8 +131,9 @@ Cached in `GameState.income_per_second()` — do not recompute more than once pe
 
 1. **Device pass (highest value)** — Export Android → Moto G 2026 → walk `DEVICE_TEST_CHECKLIST.md`
 2. **P6 sign-off** — Manual audio playtest; confirm milestone cue distinctness + music loop
-3. **P9 deferred** — Local push notifications (opt-in, gentle cadence) — not started
-4. **Balance tweak (optional)** — If territory path feels too fast on device, tune in `sim_pacing.py` first
+3. **Commit SHIP work** — `chore:` hygiene + `feat:` mock-first F2P autoloads (see `SHIP_ARCHITECTURE.md`)
+4. **§5 Android setup** — Install build template + AdMob/Billing/notification/Play Games plugins
+5. **Balance tweak (optional)** — If territory path feels too fast on device, tune in `sim_pacing.py` first
 
 ## Rules
 
