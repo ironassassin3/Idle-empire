@@ -262,6 +262,9 @@ static func apply_perks(state) -> void:
 	for _i in state.buildings.size():
 		perk_blds.append(1.0)
 
+	# Legacy pre-S9 flat perks — no longer purchasable (the live tree grants the
+	# branch perks handled below). Retained only so imported/old saves keep their
+	# bonuses; new games never populate these keys.
 	for key in perks:
 		match key:
 			"click_power_1":

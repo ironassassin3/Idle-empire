@@ -77,5 +77,5 @@ const _RAW: Array = [
 	["Arms Broker", 5000000000.0, 283000000.0, 1.20, "Supply and demand, emphasis supply", "arms",
 		"Generates 0.1 Influence fragments per hour per broker"],
 	["Crime Syndicate HQ", 40000000000.0, 3290000000.0, 1.20, "The whole city answers to you", "hq",
-		"Global multiplier: ×1.1 all income per HQ owned"],
+		"Global multiplier: ×1.06 all income per HQ owned"],
 ]
