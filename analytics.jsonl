@@ -17,3 +17,635 @@
 {"v": 2, "ts": 1781587252.508, "session": "8c9c5c6486e8", "event": "rank_up", "props": {"rank": "Street Hustler", "influence": 0}}
 {"v": 2, "ts": 1781587253.605, "session": "8c9c5c6486e8", "event": "session_end", "props": {"duration_s": 1427.2, "prestige_count": 0, "influence": 0, "lifetime_earnings": 2585706111.005567, "near_prestige": false}}
 {"v": 2, "ts": 1781587268.134, "session": "8c9c5c6486e8", "event": "session_end", "props": {"duration_s": 1441.8, "prestige_count": 0, "influence": 0, "lifetime_earnings": 3387317521.7587724, "near_prestige": false}}
+{"v": 2, "ts": 1781661531.736, "session": "07d166788c6f", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 1603790167777.7917, "buildings": 292, "returning": true}}
+{"v": 2, "ts": 1781661531.736, "session": "07d166788c6f", "event": "offline_return", "props": {"gain": 1600402850256.033, "secs_away": 43200.0, "capped": true}}
+{"v": 2, "ts": 1781661546.099, "session": "9e362e41e89c", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 1603790167777.7917, "buildings": 292, "returning": true}}
+{"v": 2, "ts": 1781661546.099, "session": "9e362e41e89c", "event": "offline_return", "props": {"gain": 1600402850256.033, "secs_away": 43200.0, "capped": true}}
+{"v": 2, "ts": 1781661546.734, "session": "5dcc06954dcf", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 1603790167777.7917, "buildings": 292, "returning": true}}
+{"v": 2, "ts": 1781661546.735, "session": "5dcc06954dcf", "event": "offline_return", "props": {"gain": 1600402850256.033, "secs_away": 43200.0, "capped": true}}
+{"v": 2, "ts": 1781661547.097, "session": "99c3d44579c1", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 1603790167777.7917, "buildings": 292, "returning": true}}
+{"v": 2, "ts": 1781661547.097, "session": "99c3d44579c1", "event": "offline_return", "props": {"gain": 1600402850256.033, "secs_away": 43200.0, "capped": true}}
+{"v": 2, "ts": 1781661559.98, "session": "1c0e74f70418", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 1603790167777.7917, "buildings": 292, "returning": true}}
+{"v": 2, "ts": 1781661559.98, "session": "1c0e74f70418", "event": "offline_return", "props": {"gain": 1600402850256.033, "secs_away": 43200.0, "capped": true}}
+{"v": 2, "ts": 1781661570.71, "session": "9c698a98ea30", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 1603790167777.7917, "buildings": 292, "returning": true}}
+{"v": 2, "ts": 1781661570.71, "session": "9c698a98ea30", "event": "offline_return", "props": {"gain": 1600402850256.033, "secs_away": 43200.0, "capped": true}}
+{"v": 2, "ts": 1781733560.596, "session": "7d7c4c2536e2", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781733560.674, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781733560.674, "session": "7d7c4c2536e2", "event": "first_territory", "props": {"session_time_s": 0.1}}
+{"v": 2, "ts": 1781733560.675, "session": "7d7c4c2536e2", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781733560.675, "session": "7d7c4c2536e2", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781733560.675, "session": "7d7c4c2536e2", "event": "rank_up", "props": {"rank": "Associate", "influence": 7}}
+{"v": 2, "ts": 1781733560.676, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781733560.676, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781733560.677, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781733560.677, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781733560.677, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781733560.678, "session": "7d7c4c2536e2", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781733560.692, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781733560.692, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781733560.692, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781733560.693, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781733560.715, "session": "7d7c4c2536e2", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.49M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18506746.78, "needed": 20000000.0, "pct": 0.925}}}
+{"v": 2, "ts": 1781733560.715, "session": "7d7c4c2536e2", "event": "prestige", "props": {"count": 1, "influence_gain": 13, "total_influence": 37, "lifetime_earnings": 22217255.37003595, "time_to_prestige_s": 485.0}}
+{"v": 2, "ts": 1781733560.717, "session": "7d7c4c2536e2", "event": "rank_up", "props": {"rank": "Capo", "influence": 37}}
+{"v": 2, "ts": 1781733560.717, "session": "7d7c4c2536e2", "event": "rank_up", "props": {"rank": "Underboss", "influence": 53}}
+{"v": 2, "ts": 1781733560.719, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781733560.719, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781733560.72, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781733560.72, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781733560.72, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781733560.721, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781733560.721, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781733560.721, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781733560.722, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781733560.722, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781733560.723, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781733560.723, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781733560.723, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781733560.723, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781733560.724, "session": "7d7c4c2536e2", "event": "territory_captured", "props": {"name": "Federal Building", "perk": ""}}
+{"v": 2, "ts": 1781733560.728, "session": "7d7c4c2536e2", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 7.13M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 170608558.8, "needed": 177738042.96, "pct": 0.96}}}
+{"v": 2, "ts": 1781733560.728, "session": "7d7c4c2536e2", "event": "prestige", "props": {"count": 2, "influence_gain": 19, "total_influence": 87, "lifetime_earnings": 182904708.33612725, "time_to_prestige_s": 531.0}}
+{"v": 2, "ts": 1781733794.346, "session": "0a3ebf84f641", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781733794.348, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781733794.348, "session": "0a3ebf84f641", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781733794.348, "session": "0a3ebf84f641", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781733794.349, "session": "0a3ebf84f641", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781733794.349, "session": "0a3ebf84f641", "event": "rank_up", "props": {"rank": "Associate", "influence": 7}}
+{"v": 2, "ts": 1781733794.35, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781733794.351, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781733794.352, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781733794.352, "session": "0a3ebf84f641", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781733794.361, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781733794.362, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781733794.373, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781733794.374, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781733794.375, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781733794.376, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781733794.39, "session": "0a3ebf84f641", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 917.5K more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 19082453.71, "needed": 20000000.0, "pct": 0.954}}}
+{"v": 2, "ts": 1781733794.393, "session": "0a3ebf84f641", "event": "rank_up", "props": {"rank": "Capo", "influence": 27}}
+{"v": 2, "ts": 1781733794.399, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781733794.399, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781733794.4, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781733794.401, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781733794.402, "session": "0a3ebf84f641", "event": "rank_up", "props": {"rank": "Underboss", "influence": 51}}
+{"v": 2, "ts": 1781733794.41, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781733794.411, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781733794.412, "session": "0a3ebf84f641", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781733853.358, "session": "566e9ebdc5de", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781733885.562, "session": "441e3e49a1e3", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781733916.221, "session": "c118bbe27ed0", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781733916.222, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781733916.223, "session": "c118bbe27ed0", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781733916.223, "session": "c118bbe27ed0", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781733916.223, "session": "c118bbe27ed0", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781733916.223, "session": "c118bbe27ed0", "event": "rank_up", "props": {"rank": "Associate", "influence": 7}}
+{"v": 2, "ts": 1781733916.235, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781733916.235, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781733916.236, "session": "c118bbe27ed0", "event": "rank_up", "props": {"rank": "Made Man", "influence": 14}}
+{"v": 2, "ts": 1781733916.236, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781733916.237, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781733916.247, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781733916.249, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781733916.249, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781733916.258, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781733916.259, "session": "c118bbe27ed0", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781733916.271, "session": "c118bbe27ed0", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.99M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18006055.79, "needed": 20000000.0, "pct": 0.9}}}
+{"v": 2, "ts": 1781734026.765, "session": "3303530f8355", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734026.865, "session": "3303530f8355", "event": "first_influence", "props": {"influence": 1, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781734026.865, "session": "3303530f8355", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781734027.042, "session": "3303530f8355", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781734027.078, "session": "3303530f8355", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781734027.118, "session": "3303530f8355", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.87M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18134167.28, "needed": 20000000.0, "pct": 0.907}}}
+{"v": 2, "ts": 1781734028.537, "session": "4590aaa959dc", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734028.54, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781734028.54, "session": "4590aaa959dc", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781734028.54, "session": "4590aaa959dc", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781734028.54, "session": "4590aaa959dc", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781734028.541, "session": "4590aaa959dc", "event": "rank_up", "props": {"rank": "Associate", "influence": 7}}
+{"v": 2, "ts": 1781734028.552, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781734028.553, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781734028.554, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781734028.554, "session": "4590aaa959dc", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781734028.555, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781734028.566, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781734028.568, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781734028.577, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781734028.578, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781734028.579, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781734028.579, "session": "4590aaa959dc", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.61M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18390878.77, "needed": 20000000.0, "pct": 0.92}}}
+{"v": 2, "ts": 1781734028.587, "session": "4590aaa959dc", "event": "rank_up", "props": {"rank": "Capo", "influence": 27}}
+{"v": 2, "ts": 1781734028.591, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781734028.592, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781734028.602, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781734028.602, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781734028.603, "session": "4590aaa959dc", "event": "rank_up", "props": {"rank": "Underboss", "influence": 51}}
+{"v": 2, "ts": 1781734028.603, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781734028.605, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781734028.613, "session": "4590aaa959dc", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781734172.624, "session": "9be6d6a9b642", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734172.709, "session": "9be6d6a9b642", "event": "first_influence", "props": {"influence": 1, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781734172.709, "session": "9be6d6a9b642", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781734172.866, "session": "9be6d6a9b642", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781734172.903, "session": "9be6d6a9b642", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781734172.971, "session": "9be6d6a9b642", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.99M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18007833.67, "needed": 20000000.0, "pct": 0.9}}}
+{"v": 2, "ts": 1781734174.377, "session": "92c32ba63992", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734174.378, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781734174.378, "session": "92c32ba63992", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781734174.378, "session": "92c32ba63992", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781734174.378, "session": "92c32ba63992", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781734174.379, "session": "92c32ba63992", "event": "rank_up", "props": {"rank": "Associate", "influence": 7}}
+{"v": 2, "ts": 1781734174.38, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781734174.381, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781734174.391, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781734174.391, "session": "92c32ba63992", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781734174.392, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781734174.394, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781734174.404, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781734174.405, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781734174.406, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781734174.417, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781734174.43, "session": "92c32ba63992", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.83M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18170049.02, "needed": 20000000.0, "pct": 0.909}}}
+{"v": 2, "ts": 1781734174.443, "session": "92c32ba63992", "event": "rank_up", "props": {"rank": "Capo", "influence": 27}}
+{"v": 2, "ts": 1781734174.452, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781734174.453, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781734174.454, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781734174.455, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781734174.455, "session": "92c32ba63992", "event": "rank_up", "props": {"rank": "Underboss", "influence": 51}}
+{"v": 2, "ts": 1781734174.463, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781734174.464, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781734174.465, "session": "92c32ba63992", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781734393.51, "session": "92bc0d04de8e", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734393.623, "session": "92bc0d04de8e", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781734393.623, "session": "92bc0d04de8e", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781734393.738, "session": "92bc0d04de8e", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781734393.795, "session": "92bc0d04de8e", "event": "rank_up", "props": {"rank": "Made Man", "influence": 14}}
+{"v": 2, "ts": 1781734393.84, "session": "92bc0d04de8e", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.99M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18006700.88, "needed": 20000000.0, "pct": 0.9}}}
+{"v": 2, "ts": 1781734395.289, "session": "2908589feb26", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734395.29, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781734395.29, "session": "2908589feb26", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781734395.29, "session": "2908589feb26", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781734395.291, "session": "2908589feb26", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781734395.291, "session": "2908589feb26", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781734395.292, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781734395.293, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781734395.305, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781734395.306, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781734395.307, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781734395.329, "session": "2908589feb26", "event": "rank_up", "props": {"rank": "Made Man", "influence": 14}}
+{"v": 2, "ts": 1781734395.333, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781734395.334, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781734395.343, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781734395.344, "session": "2908589feb26", "event": "rank_up", "props": {"rank": "Capo", "influence": 27}}
+{"v": 2, "ts": 1781734395.346, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781734395.347, "session": "2908589feb26", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 896.6K more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 19103380.74, "needed": 20000000.0, "pct": 0.955}}}
+{"v": 2, "ts": 1781734395.357, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781734395.357, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781734395.358, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781734395.368, "session": "2908589feb26", "event": "rank_up", "props": {"rank": "Underboss", "influence": 52}}
+{"v": 2, "ts": 1781734395.368, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781734395.369, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781734395.37, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781734395.371, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781734395.597, "session": "2908589feb26", "event": "territory_captured", "props": {"name": "Federal Building", "perk": ""}}
+{"v": 2, "ts": 1781734477.573, "session": "710495ac136c", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781734477.663, "session": "710495ac136c", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781734477.663, "session": "710495ac136c", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781734477.771, "session": "710495ac136c", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781734477.861, "session": "710495ac136c", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781734477.936, "session": "710495ac136c", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.99M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18012870.28, "needed": 20000000.0, "pct": 0.901}}}
+{"v": 2, "ts": 1781755266.489, "session": "fb5993ebd38b", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781755266.491, "session": "fb5993ebd38b", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781755266.491, "session": "fb5993ebd38b", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781755266.491, "session": "fb5993ebd38b", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781755266.491, "session": "fb5993ebd38b", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781755266.492, "session": "fb5993ebd38b", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781755266.492, "session": "fb5993ebd38b", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781755266.493, "session": "fb5993ebd38b", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781755266.504, "session": "fb5993ebd38b", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781755266.505, "session": "fb5993ebd38b", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781755266.505, "session": "fb5993ebd38b", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781755266.525, "session": "fb5993ebd38b", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781755266.538, "session": "fb5993ebd38b", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.57M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18427220.04, "needed": 20000000.0, "pct": 0.921}}}
+{"v": 2, "ts": 1781755404.045, "session": "d01465a1d7a5", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781755404.047, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781755404.047, "session": "d01465a1d7a5", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781755404.047, "session": "d01465a1d7a5", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781755404.047, "session": "d01465a1d7a5", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781755404.049, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781755404.082, "session": "d01465a1d7a5", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781755404.087, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781755404.088, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781755404.09, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781755404.1, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781755404.116, "session": "d01465a1d7a5", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781755404.13, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781755404.154, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781755404.155, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781755404.156, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781755404.157, "session": "d01465a1d7a5", "event": "rank_up", "props": {"rank": "Capo", "influence": 25}}
+{"v": 2, "ts": 1781755404.157, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781755404.167, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781755404.172, "session": "d01465a1d7a5", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.75M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18251616.18, "needed": 20000000.0, "pct": 0.913}}}
+{"v": 2, "ts": 1781755404.181, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781755404.19, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781755404.192, "session": "d01465a1d7a5", "event": "rank_up", "props": {"rank": "Underboss", "influence": 52}}
+{"v": 2, "ts": 1781755404.192, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781755404.193, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781755404.201, "session": "d01465a1d7a5", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781755404.979, "session": "1fcf9c9fcb93", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781755405.121, "session": "1fcf9c9fcb93", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781755405.121, "session": "1fcf9c9fcb93", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781755405.197, "session": "1fcf9c9fcb93", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781755405.228, "session": "1fcf9c9fcb93", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781755405.31, "session": "1fcf9c9fcb93", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.99M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18009949.9, "needed": 20000000.0, "pct": 0.9}}}
+{"v": 2, "ts": 1781755545.683, "session": "05da972271a8", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781755545.685, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781755545.686, "session": "05da972271a8", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781755545.686, "session": "05da972271a8", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781755545.686, "session": "05da972271a8", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781755545.688, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781755545.703, "session": "05da972271a8", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781755545.708, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781755545.71, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781755545.711, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781755545.723, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781755545.74, "session": "05da972271a8", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781755545.746, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781755545.754, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781755545.755, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781755545.755, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781755545.756, "session": "05da972271a8", "event": "rank_up", "props": {"rank": "Capo", "influence": 25}}
+{"v": 2, "ts": 1781755545.756, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781755545.762, "session": "05da972271a8", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.08M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18922353.15, "needed": 20000000.0, "pct": 0.946}}}
+{"v": 2, "ts": 1781755545.765, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781755545.766, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781755545.776, "session": "05da972271a8", "event": "rank_up", "props": {"rank": "Underboss", "influence": 51}}
+{"v": 2, "ts": 1781755545.776, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781755545.777, "session": "05da972271a8", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781755768.822, "session": "ef4adbf0572d", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781755768.955, "session": "ef4adbf0572d", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781755768.955, "session": "ef4adbf0572d", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781755769.043, "session": "ef4adbf0572d", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781755769.099, "session": "ef4adbf0572d", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781755769.136, "session": "ef4adbf0572d", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.76M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18236542.04, "needed": 20000000.0, "pct": 0.912}}}
+{"v": 2, "ts": 1781755769.176, "session": "ef4adbf0572d", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781755769.335, "session": "88201fddf7b7", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781755769.336, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781755769.337, "session": "88201fddf7b7", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781755769.337, "session": "88201fddf7b7", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781755769.337, "session": "88201fddf7b7", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781755769.339, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781755769.37, "session": "88201fddf7b7", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781755769.379, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781755769.39, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781755769.391, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781755769.396, "session": "88201fddf7b7", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781755769.4, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781755769.402, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781755769.403, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781755769.414, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781755769.415, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781755769.415, "session": "88201fddf7b7", "event": "rank_up", "props": {"rank": "Capo", "influence": 25}}
+{"v": 2, "ts": 1781755769.416, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781755769.416, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781755769.429, "session": "88201fddf7b7", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.67M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18334638.41, "needed": 20000000.0, "pct": 0.917}}}
+{"v": 2, "ts": 1781755769.439, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781755769.45, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781755769.452, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781755769.452, "session": "88201fddf7b7", "event": "rank_up", "props": {"rank": "Underboss", "influence": 53}}
+{"v": 2, "ts": 1781755769.453, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781755769.461, "session": "88201fddf7b7", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756114.935, "session": "07a3276715dc", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756114.936, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756114.936, "session": "07a3276715dc", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756114.937, "session": "07a3276715dc", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781756114.937, "session": "07a3276715dc", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756114.95, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756114.965, "session": "07a3276715dc", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781756114.966, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756114.967, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756114.977, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756114.99, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756115.001, "session": "07a3276715dc", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756115.018, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756115.027, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756115.028, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756115.029, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756115.029, "session": "07a3276715dc", "event": "rank_up", "props": {"rank": "Capo", "influence": 25}}
+{"v": 2, "ts": 1781756115.03, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756115.031, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756115.036, "session": "07a3276715dc", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.3M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18695448.68, "needed": 20000000.0, "pct": 0.935}}}
+{"v": 2, "ts": 1781756115.04, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756115.042, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756115.051, "session": "07a3276715dc", "event": "rank_up", "props": {"rank": "Underboss", "influence": 52}}
+{"v": 2, "ts": 1781756115.052, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756115.053, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781756115.053, "session": "07a3276715dc", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756116.778, "session": "efaab738dad6", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756116.937, "session": "efaab738dad6", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781756116.937, "session": "efaab738dad6", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756117.047, "session": "efaab738dad6", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756117.087, "session": "efaab738dad6", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756117.107, "session": "efaab738dad6", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.71M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18286189.9, "needed": 20000000.0, "pct": 0.914}}}
+{"v": 2, "ts": 1781756117.149, "session": "efaab738dad6", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756142.493, "session": "00c5847e5f51", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756142.495, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756142.495, "session": "00c5847e5f51", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756142.495, "session": "00c5847e5f51", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 1}}
+{"v": 2, "ts": 1781756142.495, "session": "00c5847e5f51", "event": "first_influence", "props": {"influence": 3, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756142.497, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756142.522, "session": "00c5847e5f51", "event": "rank_up", "props": {"rank": "Associate", "influence": 6}}
+{"v": 2, "ts": 1781756142.533, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756142.534, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756142.536, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756142.537, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756142.548, "session": "00c5847e5f51", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756142.559, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756142.561, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756142.571, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756142.571, "session": "00c5847e5f51", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just -446K more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 20446027.32, "needed": 20000000.0, "pct": 1.022}}}
+{"v": 2, "ts": 1781756142.572, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756142.572, "session": "00c5847e5f51", "event": "rank_up", "props": {"rank": "Capo", "influence": 25}}
+{"v": 2, "ts": 1781756142.574, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756142.583, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756142.584, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756142.584, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756142.585, "session": "00c5847e5f51", "event": "rank_up", "props": {"rank": "Underboss", "influence": 52}}
+{"v": 2, "ts": 1781756142.586, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756142.595, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Warehouse Row", "perk": ""}}
+{"v": 2, "ts": 1781756142.595, "session": "00c5847e5f51", "event": "territory_captured", "props": {"name": "Hotel Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756149.126, "session": "6ecdc91f9bf6", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756149.267, "session": "6ecdc91f9bf6", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781756149.267, "session": "6ecdc91f9bf6", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756149.361, "session": "6ecdc91f9bf6", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756149.42, "session": "6ecdc91f9bf6", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756236.383, "session": "9e194927b383", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756236.385, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756236.386, "session": "9e194927b383", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756236.386, "session": "9e194927b383", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756236.386, "session": "9e194927b383", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756236.387, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756236.426, "session": "9e194927b383", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756236.427, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756236.45, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756236.478, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756236.482, "session": "9e194927b383", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756236.488, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756236.5, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756236.502, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756236.518, "session": "9e194927b383", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 523.5K more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 19476455.93, "needed": 20000000.0, "pct": 0.974}}}
+{"v": 2, "ts": 1781756236.541, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756236.542, "session": "9e194927b383", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756236.551, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756236.551, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756236.552, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756236.553, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756236.562, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756236.701, "session": "9e194927b383", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756238.232, "session": "0d975f8016bc", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756238.386, "session": "0d975f8016bc", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781756238.386, "session": "0d975f8016bc", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756238.46, "session": "0d975f8016bc", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756238.507, "session": "0d975f8016bc", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756238.54, "session": "0d975f8016bc", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.97M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18033411.36, "needed": 20000000.0, "pct": 0.902}}}
+{"v": 2, "ts": 1781756238.576, "session": "0d975f8016bc", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756267.339, "session": "5571f5c5dfb8", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756267.341, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756267.341, "session": "5571f5c5dfb8", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756267.341, "session": "5571f5c5dfb8", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756267.342, "session": "5571f5c5dfb8", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756267.343, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756267.419, "session": "5571f5c5dfb8", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756267.42, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756267.431, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756267.433, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756267.436, "session": "5571f5c5dfb8", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756267.446, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756267.458, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756267.459, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756267.479, "session": "5571f5c5dfb8", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.84M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18159817.03, "needed": 20000000.0, "pct": 0.908}}}
+{"v": 2, "ts": 1781756267.505, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756267.506, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756267.513, "session": "5571f5c5dfb8", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756267.516, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756267.516, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756267.517, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756267.519, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756267.662, "session": "5571f5c5dfb8", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756269.166, "session": "c1e61435b2a3", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756269.311, "session": "c1e61435b2a3", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781756269.311, "session": "c1e61435b2a3", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756269.42, "session": "c1e61435b2a3", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756269.477, "session": "c1e61435b2a3", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756269.523, "session": "c1e61435b2a3", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 945.3K more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 19054677.21, "needed": 20000000.0, "pct": 0.953}}}
+{"v": 2, "ts": 1781756294.726, "session": "2510b43f8148", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756294.729, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756294.729, "session": "2510b43f8148", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756294.729, "session": "2510b43f8148", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756294.73, "session": "2510b43f8148", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756294.73, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756294.792, "session": "2510b43f8148", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756294.793, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756294.805, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756294.807, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756294.812, "session": "2510b43f8148", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756294.818, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756294.828, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756294.84, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756294.84, "session": "2510b43f8148", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.66M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18338191.34, "needed": 20000000.0, "pct": 0.917}}}
+{"v": 2, "ts": 1781756294.863, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756294.864, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756294.866, "session": "2510b43f8148", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756294.874, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756294.874, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756294.884, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756294.885, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756295.018, "session": "2510b43f8148", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756296.696, "session": "7508d7223986", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756296.829, "session": "7508d7223986", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781756296.829, "session": "7508d7223986", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756296.915, "session": "7508d7223986", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756296.963, "session": "7508d7223986", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756297.008, "session": "7508d7223986", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.95M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18045060.39, "needed": 20000000.0, "pct": 0.902}}}
+{"v": 2, "ts": 1781756297.035, "session": "7508d7223986", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756325.518, "session": "2f24478e6bd5", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756325.52, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756325.52, "session": "2f24478e6bd5", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756325.52, "session": "2f24478e6bd5", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756325.52, "session": "2f24478e6bd5", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756325.522, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756325.599, "session": "2f24478e6bd5", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756325.608, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756325.609, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756325.635, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756325.636, "session": "2f24478e6bd5", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756325.646, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756325.647, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756325.648, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756325.662, "session": "2f24478e6bd5", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.65M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18346129.43, "needed": 20000000.0, "pct": 0.917}}}
+{"v": 2, "ts": 1781756325.683, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756325.692, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756325.692, "session": "2f24478e6bd5", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756325.693, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756325.693, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756325.694, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756325.695, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756325.84, "session": "2f24478e6bd5", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756327.576, "session": "7b3a2031cc7f", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756327.744, "session": "7b3a2031cc7f", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781756327.744, "session": "7b3a2031cc7f", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756327.847, "session": "7b3a2031cc7f", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756327.905, "session": "7b3a2031cc7f", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756327.937, "session": "7b3a2031cc7f", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.79M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18206068.57, "needed": 20000000.0, "pct": 0.91}}}
+{"v": 2, "ts": 1781756327.963, "session": "7b3a2031cc7f", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756341.568, "session": "5bbde9600157", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756341.57, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756341.57, "session": "5bbde9600157", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756341.57, "session": "5bbde9600157", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756341.571, "session": "5bbde9600157", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756341.571, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756341.623, "session": "5bbde9600157", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756341.625, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756341.637, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756341.684, "session": "5bbde9600157", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756341.686, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756341.688, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756341.699, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756341.701, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756341.727, "session": "5bbde9600157", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.8M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18199639.98, "needed": 20000000.0, "pct": 0.91}}}
+{"v": 2, "ts": 1781756341.76, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756341.761, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756341.767, "session": "5bbde9600157", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756341.771, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756341.772, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756341.772, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756341.773, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756341.916, "session": "5bbde9600157", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756343.57, "session": "8bd37ed15aa2", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756343.751, "session": "8bd37ed15aa2", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781756343.751, "session": "8bd37ed15aa2", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756343.874, "session": "8bd37ed15aa2", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756343.918, "session": "8bd37ed15aa2", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756343.939, "session": "8bd37ed15aa2", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.85M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18146554.72, "needed": 20000000.0, "pct": 0.907}}}
+{"v": 2, "ts": 1781756343.988, "session": "8bd37ed15aa2", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756355.434, "session": "b01bca41aa09", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756355.436, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756355.436, "session": "b01bca41aa09", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756355.436, "session": "b01bca41aa09", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756355.436, "session": "b01bca41aa09", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756355.437, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756355.53, "session": "b01bca41aa09", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756355.541, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756355.542, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756355.578, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756355.581, "session": "b01bca41aa09", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756355.582, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756355.602, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756355.604, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756355.629, "session": "b01bca41aa09", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.09M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18910878.5, "needed": 20000000.0, "pct": 0.946}}}
+{"v": 2, "ts": 1781756355.657, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756355.658, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756355.659, "session": "b01bca41aa09", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756355.66, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756355.661, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756355.669, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756355.67, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756355.819, "session": "b01bca41aa09", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756357.525, "session": "5315ecd0aba4", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756357.699, "session": "5315ecd0aba4", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781756357.699, "session": "5315ecd0aba4", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756357.805, "session": "5315ecd0aba4", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756357.89, "session": "5315ecd0aba4", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756357.94, "session": "5315ecd0aba4", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.3M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18701518.53, "needed": 20000000.0, "pct": 0.935}}}
+{"v": 2, "ts": 1781756357.971, "session": "5315ecd0aba4", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756366.372, "session": "bdc1a6136167", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756366.374, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756366.374, "session": "bdc1a6136167", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756366.375, "session": "bdc1a6136167", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756366.375, "session": "bdc1a6136167", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756366.376, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756366.434, "session": "bdc1a6136167", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756366.437, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756366.439, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756366.475, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756366.476, "session": "bdc1a6136167", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756366.476, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756366.489, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756366.5, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756366.52, "session": "bdc1a6136167", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.99M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18005615.21, "needed": 20000000.0, "pct": 0.9}}}
+{"v": 2, "ts": 1781756366.562, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756366.563, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756366.569, "session": "bdc1a6136167", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756366.573, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756366.573, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756366.574, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756366.575, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756366.709, "session": "bdc1a6136167", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756368.34, "session": "6ef10aef2c80", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756368.512, "session": "6ef10aef2c80", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781756368.512, "session": "6ef10aef2c80", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756368.607, "session": "6ef10aef2c80", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756368.673, "session": "6ef10aef2c80", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756368.727, "session": "6ef10aef2c80", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.53M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18466237.96, "needed": 20000000.0, "pct": 0.923}}}
+{"v": 2, "ts": 1781756368.769, "session": "6ef10aef2c80", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756386.389, "session": "ffeda14f0d9a", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756386.393, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781756386.393, "session": "ffeda14f0d9a", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781756386.394, "session": "ffeda14f0d9a", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781756386.394, "session": "ffeda14f0d9a", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756386.405, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781756386.455, "session": "ffeda14f0d9a", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756386.456, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781756386.467, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781756386.522, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781756386.536, "session": "ffeda14f0d9a", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781756386.537, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781756386.558, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781756386.559, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781756386.609, "session": "ffeda14f0d9a", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.88M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18123539.09, "needed": 20000000.0, "pct": 0.906}}}
+{"v": 2, "ts": 1781756386.651, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781756386.652, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781756386.654, "session": "ffeda14f0d9a", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781756386.661, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781756386.662, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781756386.663, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781756386.663, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781756386.806, "session": "ffeda14f0d9a", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
+{"v": 2, "ts": 1781756388.471, "session": "8415a7771efc", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756388.614, "session": "8415a7771efc", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781756388.614, "session": "8415a7771efc", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781756388.718, "session": "8415a7771efc", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781756388.762, "session": "8415a7771efc", "event": "rank_up", "props": {"rank": "Made Man", "influence": 13}}
+{"v": 2, "ts": 1781756388.801, "session": "8415a7771efc", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 1.92M more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 18083486.28, "needed": 20000000.0, "pct": 0.904}}}
+{"v": 2, "ts": 1781756388.832, "session": "8415a7771efc", "event": "rank_up", "props": {"rank": "Capo", "influence": 34}}
+{"v": 2, "ts": 1781756822.651, "session": "843a875b3d1d", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756836.394, "session": "4bdb2ba20303", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781756836.523, "session": "4bdb2ba20303", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.1}}
+{"v": 2, "ts": 1781756836.523, "session": "4bdb2ba20303", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781765901.367, "session": "e2f9d11486e6", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781765901.525, "session": "e2f9d11486e6", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.2}}
+{"v": 2, "ts": 1781765901.525, "session": "e2f9d11486e6", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781765903.12, "session": "598ae70c18c6", "event": "session_start", "props": {"prestige_count": 0, "influence": 0, "lifetime_earnings": 0.0, "buildings": 0, "returning": false}}
+{"v": 2, "ts": 1781765903.123, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Downtown", "perk": "cash"}}
+{"v": 2, "ts": 1781765903.123, "session": "598ae70c18c6", "event": "first_territory", "props": {"session_time_s": 0.0}}
+{"v": 2, "ts": 1781765903.124, "session": "598ae70c18c6", "event": "first_influence", "props": {"influence": 2, "session_time_s": 0.0}}
+{"v": 2, "ts": 1781765903.124, "session": "598ae70c18c6", "event": "rank_up", "props": {"rank": "Crew Member", "influence": 2}}
+{"v": 2, "ts": 1781765903.14, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Eastside Heights", "perk": ""}}
+{"v": 2, "ts": 1781765903.182, "session": "598ae70c18c6", "event": "rank_up", "props": {"rank": "Associate", "influence": 5}}
+{"v": 2, "ts": 1781765903.193, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Industrial District", "perk": "operations"}}
+{"v": 2, "ts": 1781765903.196, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Shopping District", "perk": ""}}
+{"v": 2, "ts": 1781765903.234, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Sunset Gardens", "perk": ""}}
+{"v": 2, "ts": 1781765903.248, "session": "598ae70c18c6", "event": "rank_up", "props": {"rank": "Made Man", "influence": 12}}
+{"v": 2, "ts": 1781765903.25, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Rail Yards", "perk": ""}}
+{"v": 2, "ts": 1781765903.274, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Waterfront", "perk": "smuggling"}}
+{"v": 2, "ts": 1781765903.281, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Civic Center", "perk": ""}}
+{"v": 2, "ts": 1781765903.305, "session": "598ae70c18c6", "event": "push_notification", "props": {"title": "You're almost there", "body": "Just 974.4K more and you can Prestige. Don't leave now.", "payload": {"trigger": "near_prestige", "lifetime": 19025563.49, "needed": 20000000.0, "pct": 0.951}}}
+{"v": 2, "ts": 1781765903.33, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Millbrook Park", "perk": ""}}
+{"v": 2, "ts": 1781765903.331, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Entertainment Row", "perk": ""}}
+{"v": 2, "ts": 1781765903.333, "session": "598ae70c18c6", "event": "rank_up", "props": {"rank": "Capo", "influence": 36}}
+{"v": 2, "ts": 1781765903.341, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Harbor View", "perk": ""}}
+{"v": 2, "ts": 1781765903.342, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Machine Quarter", "perk": ""}}
+{"v": 2, "ts": 1781765903.343, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Market Square", "perk": ""}}
+{"v": 2, "ts": 1781765903.343, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "Police Precinct", "perk": ""}}
+{"v": 2, "ts": 1781765903.498, "session": "598ae70c18c6", "event": "territory_captured", "props": {"name": "City Hall", "perk": "politics"}}
