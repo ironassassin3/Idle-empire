@@ -14,6 +14,7 @@ const AUTOLOADS := [
 	["GameState", "res://scripts/autoload/game_state.gd"],
 	["SaveManager", "res://scripts/autoload/save_manager.gd"],
 	["AudioManager", "res://scripts/autoload/audio_manager.gd"],
+	["Telemetry", "res://scripts/autoload/telemetry.gd"],
 ]
 
 

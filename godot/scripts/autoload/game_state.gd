@@ -18,6 +18,13 @@ const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 signal stats_changed
 signal notification(message: String, color: Color)
+## Telemetry signals — emitted at key state transitions. The Telemetry autoload
+## merely listens, so the headless sims never depend on it; emitting with no
+## listeners connected is a safe no-op.
+signal prestiged(info: Dictionary)
+signal ranked_up(rank: String)
+signal run_started(info: Dictionary)
+signal tutorial_advanced(step: int)
 
 var balance: float = 0.0
 var lifetime_earnings: float = 0.0
@@ -28,6 +35,9 @@ var next_prestige_earnings: float = 0.0
 var arms_influence_frac: float = 0.0  # Arms Broker special: fractional Influence accrual
 var click_count: int = 0
 var play_time: float = 0.0
+# Runtime-only: play_time at last prestige / run start, for per-cycle telemetry
+# timing. Not saved — measured within the current session.
+var _last_prestige_play_time: float = 0.0
 var heat: float = 0.0
 var total_heat_generated: float = 0.0
 var influence: int = 0
@@ -166,9 +176,20 @@ const COIN_SPAWN_MAX := 60.0
 
 
 func set_simulation_active(active: bool) -> void:
+	var was_active := simulation_active
 	simulation_active = active
 	if not active:
 		_autosave_timer = 0.0
+	elif not was_active:
+		# A play session began (entered the game screen). Anchor cycle timing here
+		# so per-prestige durations are measured within this session.
+		_last_prestige_play_time = play_time
+		run_started.emit({
+			"prestige_count": prestige_count,
+			"tokens": prestige_tokens,
+			"play_time": play_time,
+			"balance": balance,
+		})
 
 
 func _ready() -> void:
@@ -305,6 +326,7 @@ func _check_rank_up() -> void:
 	if current == _last_rank:
 		return
 	_last_rank = current
+	ranked_up.emit(current)
 	notification.emit("Rank Up → %s" % current, GameTheme.GOLD_BRIGHT)
 	_TutorialSystem.push_milestone(self, "RANK UP\n%s" % current, 6.0)
 	_play_sfx("rankup")
@@ -547,6 +569,9 @@ func do_prestige() -> bool:
 			next_prestige_earnings * GameConfig.PRESTIGE_EARNINGS_GROWTH,
 			prestige_route_earnings * 0.5,
 		)
+	var _tele_cycle: float = play_time - _last_prestige_play_time
+	var _tele_route: float = float(prestige_route_earnings)
+	var _tele_branch: String = str(prestige_branch)
 	balance = 0.0
 	lifetime_earnings = 0.0
 	prestige_route_earnings = 0.0
@@ -570,6 +595,17 @@ func do_prestige() -> bool:
 	_DragonSystem.reset_for_prestige(self)
 	_PrestigeTree.apply_perks(self)
 	notification.emit("Prestige! +%d Influence" % gain, GameTheme.GOLD_BRIGHT)
+	_last_prestige_play_time = play_time
+	prestiged.emit({
+		"n": prestige_count,
+		"gain": gain,
+		"tokens": prestige_tokens,
+		"rank": rank_label(),
+		"branch": _tele_branch,
+		"route_earnings": _tele_route,
+		"cycle_secs": _tele_cycle,
+		"play_time": play_time,
+	})
 	_mark_ips_dirty()
 	stats_changed.emit()
 	SaveManager.save_game()

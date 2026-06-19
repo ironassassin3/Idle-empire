@@ -26,6 +26,7 @@ const TAB_TUTORIALS := {
 static func advance_tutorial(state) -> void:
 	if state.tutorial_step < STEPS.size():
 		state.tutorial_step += 1
+		state.tutorial_advanced.emit(state.tutorial_step)
 
 
 static func skip_tutorial(state) -> void:
