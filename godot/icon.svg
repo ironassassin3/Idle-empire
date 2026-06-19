@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" fill="#08070a"/>
-  <circle cx="64" cy="64" r="42" fill="none" stroke="#c8a35a" stroke-width="4"/>
-  <text x="64" y="74" text-anchor="middle" font-family="serif" font-size="48" fill="#ecca7d">$</text>
+  <!-- Criminal Empire launcher icon. Code-drawn (noir + gold crown). No raster/AI assets. -->
+  <rect width="128" height="128" fill="#0d0b12"/>
+  <circle cx="64" cy="64" r="52" fill="none" stroke="#1b1622" stroke-width="6"/>
+  <g fill="#ecca7d" stroke="#c8a35a" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M30 90 L30 52 L48 70 L64 40 L80 70 L98 52 L98 90 Z"/>
+    <rect x="30" y="84" width="68" height="14" rx="3"/>
+  </g>
+  <rect x="34" y="88" width="60" height="3" fill="#0d0b12" opacity="0.5"/>
+  <circle cx="30" cy="50" r="4.5" fill="#c0392b"/>
+  <circle cx="64" cy="37" r="5" fill="#c0392b"/>
+  <circle cx="98" cy="50" r="4.5" fill="#c0392b"/>
 </svg>

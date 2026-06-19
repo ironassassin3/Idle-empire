@@ -13,6 +13,10 @@ func _ready() -> void:
 	_continue_btn.pressed.connect(_on_continue)
 	_new_btn.pressed.connect(_on_new)
 	_import_btn.pressed.connect(_on_import)
+	# Dev-only: the importer reads a hardcoded desktop path (d:/2d_game/) and is
+	# useless on a device. Show it only when running inside the editor so it never
+	# ships in any exported build.
+	_import_btn.visible = OS.has_feature("editor")
 	_refresh_save_ui()
 
 

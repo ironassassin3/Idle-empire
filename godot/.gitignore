@@ -1,0 +1,9 @@
+# Export / build artifacts
+/build/
+/android/build/
+*.apk
+*.aab
+
+# Signing — never commit keystores or secrets
+*.keystore
+*.jks
