@@ -50,7 +50,7 @@ const DEFS: Array = [
 	["Prestige Legend", "Prestige 10 times", "prestige", "prest_10"],
 	["Infinite Loop", "Prestige 25 times", "prestige", "prest_25"],
 	["Perk Collector", "Buy 3 prestige perks", "prestige", "perk_3"],
-	["Full Perk Tree", "Buy all 10 prestige perks", "prestige", "perk_10"],
+	["Full Perk Tree", "Buy 10 prestige perks", "prestige", "perk_10"],
 	["Influential", "Earn 20 influence", "prestige", "inf_20"],
 	["First Manager", "Hire your first manager", "manager", "mgr_1"],
 	["Full Staff", "Hire 5 managers", "manager", "mgr_5"],
@@ -67,7 +67,7 @@ const DEFS: Array = [
 	["Speed Runner", "Prestige within 10 minutes", "secret", "speed_prest"],
 	["No Manager Run", "Reach $1B with no managers hired", "secret", "nomgr_1b"],
 	["The Phantom", "Earn $1M while offline", "secret", "offline_1m"],
-	["Night Owl", "Buy the Night Shift prestige perk", "secret", "perk_offline"],
+	["Night Owl", "Buy the Off the Books (Kingpin) prestige perk", "secret", "perk_offline"],
 	["First District", "Capture your first district", "territory", "terr_1"],
 	["Expanding Turf", "Capture 5 territories", "territory", "terr_5"],
 	["City Spreader", "Control half the city", "territory", "terr_half"],
@@ -249,7 +249,7 @@ static func _meets(state, check_id: String) -> bool:
 		"speed_prest": return state.prestige_count >= 1 and state.play_time < 600.0
 		"nomgr_1b": return state.lifetime_earnings >= 1_000_000_000.0 and _mgr_count(state) == 0
 		"offline_1m": return state.offline_gain >= 1_000_000.0
-		"perk_offline": return "offline_1" in state.perks_purchased
+		"perk_offline": return "kp_ledger" in state.perks_purchased
 		"terr_1": return state.total_territories_captured >= 1
 		"terr_5": return state.total_territories_captured >= 5
 		"terr_half": return _player_control_pct(state) >= 0.5
