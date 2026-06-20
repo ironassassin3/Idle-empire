@@ -28,6 +28,6 @@ theme_override_font_sizes/font_size = 11
 text = "Effect"
 
 [node name="BuyBtn" type="Button" parent="HBox"]
-custom_minimum_size = Vector2(80, 44)
+custom_minimum_size = Vector2(80, 48)
 layout_mode = 2
 text = "Buy"

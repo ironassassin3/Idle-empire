@@ -162,22 +162,30 @@ func _refresh_perks(branch: String) -> void:
 
 func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, tier: int, meta: Dictionary) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(200, 110)
+	panel.custom_minimum_size = Vector2(220, 128)
+	panel.add_theme_stylebox_override("panel", GameTheme.make_row_card_flat(
+		GameTheme.RowAffordance.OWNED if key in GameState.perks_purchased else GameTheme.RowAffordance.LOCKED
+	))
 	var vbox := VBoxContainer.new()
 	panel.add_child(vbox)
 	var tier_l := Label.new()
 	tier_l.text = "TIER %d" % tier
 	tier_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	tier_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	vbox.add_child(tier_l)
 	var name_l := Label.new()
 	name_l.text = perk_name
+	name_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	name_l.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	vbox.add_child(name_l)
 	var eff_l := Label.new()
 	eff_l.text = effect
 	eff_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	eff_l.add_theme_color_override("font_color", GameTheme.GREEN if key in GameState.perks_purchased else GameTheme.TEXT_MUTED)
+	eff_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	eff_l.add_theme_color_override("font_color", GameTheme.GREEN if key in GameState.perks_purchased else GameTheme.TEXT)
 	vbox.add_child(eff_l)
 	var btn := Button.new()
+	btn.custom_minimum_size.y = 48.0
 	var owned: bool = key in GameState.perks_purchased
 	var gate: Dictionary = PrestigeTree.can_buy_perk(GameState, key)
 	if owned:
@@ -186,18 +194,18 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 	elif gate.get("ok", false):
 		btn.text = "Buy (%d inf)" % cost
 		btn.pressed.connect(_on_buy_perk.bind(key))
+		panel.add_theme_stylebox_override("panel", GameTheme.make_row_card_flat(GameTheme.RowAffordance.BUYABLE))
 	else:
 		btn.text = str(gate.get("reason", "Locked"))
 		btn.disabled = true
 	vbox.add_child(btn)
 	var detail: String = PrestigeTree.perk_detail(key)
 	if not detail.is_empty():
-		btn.tooltip_text = detail
 		var detail_l := Label.new()
 		detail_l.text = detail
 		detail_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		detail_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		detail_l.add_theme_font_size_override("font_size", 11)
+		detail_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 		vbox.add_child(detail_l)
 	return panel
 

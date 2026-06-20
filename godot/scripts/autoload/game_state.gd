@@ -133,6 +133,7 @@ var fps_cap: int = 60
 var show_particles: bool = true
 var notifications_enabled: bool = false
 var telemetry_consent: bool = true
+var ui_text_scale: int = 0  # 0=100%, 1=125% (P14.6 a11y)
 
 # P14 — global buy multiplier chip (×1 / ×10 / Max). Persisted in save.
 var buy_mult_mode: int = 0  # 0=×1, 1=×10, 2=Max
@@ -869,6 +870,7 @@ func apply_save_data(data: Dictionary) -> void:
 	mute_all = _b(data, "mute_all", false)
 	fps_cap = _i(data, "fps_cap", 60)
 	show_particles = _b(data, "show_particles", true)
+	ui_text_scale = clampi(_i(data, "ui_text_scale", 0), 0, 1)
 	notifications_enabled = _b(data, "notifications_enabled", false)
 	telemetry_consent = _b(data, "telemetry_consent", true)
 	buy_mult_mode = clampi(_i(data, "buy_mult_mode", 0), 0, 2)
@@ -1016,6 +1018,7 @@ func to_save_data() -> Dictionary:
 		"mute_all": mute_all,
 		"fps_cap": fps_cap,
 		"show_particles": show_particles,
+		"ui_text_scale": ui_text_scale,
 		"notifications_enabled": notifications_enabled,
 		"telemetry_consent": telemetry_consent,
 		"buy_mult_mode": buy_mult_mode,

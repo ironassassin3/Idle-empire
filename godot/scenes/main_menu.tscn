@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://mainmenu001"]
+[gd_scene load_steps=3 format=3 uid="uid://mainmenu001"]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/menu_ledger_panel.gd" id="2"]
 
 [node name="MainMenu" type="CanvasLayer"]
 layer = 1
@@ -13,7 +14,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.102, 0.082, 0.125, 1)
+color = Color(0.031, 0.027, 0.039, 1)
 
 [node name="Margin" type="MarginContainer" parent="."]
 anchors_preset = 15
@@ -21,61 +22,105 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
 [node name="Center" type="CenterContainer" parent="Margin"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="VBox" type="VBoxContainer" parent="Margin/Center"]
+[node name="LedgerPanel" type="PanelContainer" parent="Margin/Center"]
+custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_constants/separation = 16
+script = ExtResource("2")
 
-[node name="Title" type="Label" parent="Margin/Center/VBox"]
+[node name="VBox" type="VBoxContainer" parent="Margin/Center/LedgerPanel"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.84, 0.49, 1)
-theme_override_font_sizes/font_size = 44
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Margin/Center/LedgerPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.925, 0.792, 0.49, 1)
+theme_override_font_sizes/font_size = 52
 text = "CRIMINAL EMPIRE"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="Margin/Center/VBox"]
+[node name="Subtitle" type="Label" parent="Margin/Center/LedgerPanel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.7, 0.62, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
+theme_override_font_sizes/font_size = 18
 text = "Build the syndicate. Rule the city."
 horizontal_alignment = 1
 
-[node name="ContinueBtn" type="Button" parent="Margin/Center/VBox"]
-custom_minimum_size = Vector2(300, 48)
+[node name="PreviewCard" type="PanelContainer" parent="Margin/Center/LedgerPanel/VBox"]
+visible = false
+layout_mode = 2
+
+[node name="PreviewVBox" type="VBoxContainer" parent="Margin/Center/LedgerPanel/VBox/PreviewCard"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PreviewHead" type="Label" parent="Margin/Center/LedgerPanel/VBox/PreviewCard/PreviewVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.784, 0.639, 0.353, 1)
+theme_override_font_sizes/font_size = 12
+text = "LAST RUN"
+horizontal_alignment = 1
+
+[node name="PrestigeLabel" type="Label" parent="Margin/Center/LedgerPanel/VBox/PreviewCard/PreviewVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.925, 0.792, 0.49, 1)
+theme_override_font_sizes/font_size = 22
+text = "Prestige ×0"
+horizontal_alignment = 1
+
+[node name="InfluenceLabel" type="Label" parent="Margin/Center/LedgerPanel/VBox/PreviewCard/PreviewVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.88, 0.83, 1)
+theme_override_font_sizes/font_size = 15
+text = "0 Influence"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="Margin/Center/LedgerPanel/VBox/PreviewCard/PreviewVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
+theme_override_font_sizes/font_size = 15
+text = "0 min played"
+horizontal_alignment = 1
+
+[node name="ContinueBtn" type="Button" parent="Margin/Center/LedgerPanel/VBox"]
+custom_minimum_size = Vector2(280, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Continue"
 
-[node name="NewBtn" type="Button" parent="Margin/Center/VBox"]
-custom_minimum_size = Vector2(300, 48)
+[node name="NewBtn" type="Button" parent="Margin/Center/LedgerPanel/VBox"]
+custom_minimum_size = Vector2(280, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "New Game"
 
-[node name="ImportBtn" type="Button" parent="Margin/Center/VBox"]
-custom_minimum_size = Vector2(300, 48)
+[node name="ImportBtn" type="Button" parent="Margin/Center/LedgerPanel/VBox"]
+custom_minimum_size = Vector2(280, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Import pygame save.json"
 
-[node name="Preview" type="Label" parent="Margin/Center/VBox"]
+[node name="ImportNote" type="Label" parent="Margin/Center/LedgerPanel/VBox"]
+visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.7, 0.62, 1)
+theme_override_colors/font_color = Color(0.604, 0.29, 0.29, 1)
 theme_override_font_sizes/font_size = 13
+text = "No save.json found in parent folder (d:/2d_game/)"
 horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="Version" type="Label" parent="Margin/Center/VBox"]
+[node name="Version" type="Label" parent="Margin/Center/LedgerPanel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.5, 0.45, 1)
+theme_override_colors/font_color = Color(0.333, 0.314, 0.275, 1)
 theme_override_font_sizes/font_size = 12
 text = "v1.0-godot"
 horizontal_alignment = 1
