@@ -42,6 +42,7 @@ Device checklist: [`../DEVICE_TEST_CHECKLIST.md`](../DEVICE_TEST_CHECKLIST.md)
 | Meta | 74 achievements, 21 goals, syndicate events, tutorial, offline/daily return |
 | P5 | Dragon patron, golden coin, Pete/Sal/Promoter/Rudy/Rob, rival epitaph overlay |
 | P6 | `audio_manager.gd` — procedural SFX + ambient music, motion cues |
+| P6 music plan | Procedural 8-bit mafia score spec + motif scaffold � [MUSIC_ARCHITECTURE.md](../MUSIC_ARCHITECTURE.md), scripts/audio/music_defs.gd (MusicDefs) |
 | P7 | Bottom bar nav, Turf subtabs, safe-area insets, 44–56px touch targets |
 | P7 UI | Tiered Stats tab (`stats_dashboard.gd`), turf badges (★/•), prestige perk labels |
 

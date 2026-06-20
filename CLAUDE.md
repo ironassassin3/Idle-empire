@@ -112,6 +112,7 @@ Strings in `_milestone_queue` **must** use `\n` as line separator:
 
 - **No generative-AI assets** — images, sprites, textures, UI art, audio, or marketing visuals.
 - **Code-built by default** — pygame/Godot primitives, theme tokens, procedural SFX.
+- **Procedural music (Godot):** motif/scales/tempo scaffold � [MUSIC_ARCHITECTURE.md](MUSIC_ARCHITECTURE.md), godot/scripts/audio/music_defs.gd (MusicDefs); PCM/sequencer in M1+.
 - **Hand-authored only** when the project owner explicitly supplies files (agents must not AI-generate on their behalf).
 
 ## Presentation Saga (pygame — **archived**)
