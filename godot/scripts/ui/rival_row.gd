@@ -6,17 +6,17 @@ const _RivalSystem = preload("res://scripts/systems/rival_system.gd")
 
 var rival_index: int = -1
 
-@onready var _name: Label = $VBox/Top/NameLabel
-@onready var _badge: Label = $VBox/Top/BadgeLabel
-@onready var _leader: Label = $VBox/LeaderLabel
-@onready var _trait: Label = $VBox/TraitLabel
-@onready var _stats: Label = $VBox/StatsLabel
-@onready var _flavor: Label = $VBox/FlavorLabel
-@onready var _actions: HBoxContainer = $VBox/Actions
-@onready var _attack: Button = $VBox/Actions/AttackBtn
-@onready var _bribe: Button = $VBox/Actions/BribeBtn
-@onready var _negotiate: Button = $VBox/Actions/NegotiateBtn
-@onready var _sabotage: Button = $VBox/Actions/SabotageBtn
+@onready var _name: Label = $Margin/VBox/Top/NameLabel
+@onready var _badge: Label = $Margin/VBox/Top/BadgeLabel
+@onready var _leader: Label = $Margin/VBox/LeaderLabel
+@onready var _trait: Label = $Margin/VBox/TraitLabel
+@onready var _stats: Label = $Margin/VBox/StatsLabel
+@onready var _flavor: Label = $Margin/VBox/FlavorLabel
+@onready var _actions: HBoxContainer = $Margin/VBox/Actions
+@onready var _attack: Button = $Margin/VBox/Actions/AttackBtn
+@onready var _bribe: Button = $Margin/VBox/Actions/BribeBtn
+@onready var _negotiate: Button = $Margin/VBox/Actions/NegotiateBtn
+@onready var _sabotage: Button = $Margin/VBox/Actions/SabotageBtn
 
 
 func setup(index: int) -> void:
@@ -25,11 +25,26 @@ func setup(index: int) -> void:
 
 
 func _ready() -> void:
+	GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.LOCKED)
+	for btn in [_attack, _bribe, _negotiate, _sabotage]:
+		GameTheme.apply_row_buy_button(btn)
+	_apply_label_scale()
 	_attack.pressed.connect(func(): action_pressed.emit(rival_index, "attack"))
 	_bribe.pressed.connect(func(): action_pressed.emit(rival_index, "bribe"))
 	_negotiate.pressed.connect(func(): action_pressed.emit(rival_index, "negotiate"))
 	_sabotage.pressed.connect(func(): action_pressed.emit(rival_index, "sabotage"))
 	GameState.stats_changed.connect(_refresh)
+	if rival_index >= 0:
+		_refresh()
+
+
+func _apply_label_scale() -> void:
+	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	_badge.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_leader.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_trait.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_stats.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_flavor.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
 func _refresh() -> void:

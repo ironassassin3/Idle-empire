@@ -7,13 +7,13 @@ signal hire_pressed(index: int)
 var manager_index: int = -1
 var _affordance: int = GameTheme.RowAffordance.LOCKED
 
-@onready var _name: Label = $VBox/Header/NameLabel
-@onready var _title: Label = $VBox/Header/TitleLabel
-@onready var _desc: Label = $VBox/DescLabel
-@onready var _bonus: Label = $VBox/BonusLabel
-@onready var _status: Label = $VBox/StatusLabel
-@onready var _hire: Button = $VBox/HireBtn
-@onready var _target: Button = $VBox/TargetBtn
+@onready var _name: Label = $Margin/VBox/Header/NameLabel
+@onready var _title: Label = $Margin/VBox/Header/TitleLabel
+@onready var _desc: Label = $Margin/VBox/DescLabel
+@onready var _bonus: Label = $Margin/VBox/BonusLabel
+@onready var _status: Label = $Margin/VBox/StatusLabel
+@onready var _hire: Button = $Margin/VBox/HireBtn
+@onready var _target: Button = $Margin/VBox/TargetBtn
 
 
 func setup(index: int) -> void:
@@ -27,9 +27,22 @@ func setup(index: int) -> void:
 
 
 func _ready() -> void:
+	for btn in [_hire, _target]:
+		GameTheme.apply_row_buy_button(btn)
+	_apply_label_scale()
 	_hire.pressed.connect(func(): hire_pressed.emit(manager_index))
 	_target.pressed.connect(_on_cycle_promoter_target)
 	GameState.stats_changed.connect(_refresh)
+	if manager_index >= 0:
+		_refresh()
+
+
+func _apply_label_scale() -> void:
+	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_bonus.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
 func _draw() -> void:
