@@ -58,6 +58,10 @@ const TEX_WAX_SEAL := "res://assets/ui/textures/wax_seal.png"
 
 const _SLICE_MARGIN := 24
 const _CARD_SLICE := 18
+# List rows (72–96px tall) cannot use panel card margins — 18+8 per side leaves ~20px
+# interior and clips labels/buttons. Tight slice keeps rustic frame without eating content.
+const _ROW_SLICE := 5
+const _ROW_CONTENT := 3.0
 
 static var _rustic_textures: Dictionary = {}
 static var _rustic_style_cache: Dictionary = {}
@@ -523,7 +527,7 @@ static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 
 static func row_card_style(affordance: int) -> StyleBox:
 	if _rustic_active:
-		var base := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _CARD_SLICE, 8.0)
+		var base := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _ROW_SLICE, _ROW_CONTENT)
 		if base != null:
 			var sb := base.duplicate() as StyleBoxTexture
 			sb.modulate_color = _row_card_modulate(affordance)
@@ -531,11 +535,11 @@ static func row_card_style(affordance: int) -> StyleBox:
 	if texture_exists(TEX_CARD):
 		var tex := StyleBoxTexture.new()
 		tex.texture = load(TEX_CARD)
-		tex.texture_margin_left = _CARD_SLICE
-		tex.texture_margin_top = _CARD_SLICE
-		tex.texture_margin_right = _CARD_SLICE
-		tex.texture_margin_bottom = _CARD_SLICE
-		tex.set_content_margin_all(8.0)
+		tex.texture_margin_left = _ROW_SLICE
+		tex.texture_margin_top = _ROW_SLICE
+		tex.texture_margin_right = _ROW_SLICE
+		tex.texture_margin_bottom = _ROW_SLICE
+		tex.set_content_margin_all(_ROW_CONTENT)
 		return tex
 	return make_row_card_flat(affordance)
 
