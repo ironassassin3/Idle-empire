@@ -1,6 +1,6 @@
 # UI Overhaul Architecture — Criminal Empire (Godot 1.0)
 
-**Status:** Design document (2026-06). **P14 in progress** — first tranche landed 2026-06-19.  
+**Status:** Design document (2026-06). **P14 code-first complete** — P14.0–P14.9 landed 2026-06-20 (MM textures + device capture deferred).  
 **Recommended phase ID:** **P14 — Touch-First Retention UI** (extends [`P13_REPORT.md`](P13_REPORT.md) Material Maker skin + [`MUSIC_ARCHITECTURE.md`](MUSIC_ARCHITECTURE.md) audio layers).  
 **Policy:** [`ART_POLICY.md`](ART_POLICY.md) — Material Maker procedural textures OK; no generative AI; motion/fills stay code-drawn.  
 **Ship surface:** `godot/scripts/ui/game_screen.gd` (5-tab bottom nav, portrait 720×1280, 9 logical tabs collapsed to 5+Turf subtabs).
@@ -13,12 +13,12 @@
 | **P14.1** Theme foundation (code-first) | ✅ Done (fallback) | `GameTheme` StyleBox helpers + MM texture hooks; `UI_RUSTIC_THEME` flag |
 | **P14.2** Main menu | ✅ Done (code-first) | Ledger panel + brackets; save preview card; 52px buttons |
 | **P14.3** Header / economy HUD / buy-mult | ✅ Done | Cash-dominant header, ×1/×10/Max chip, advice chip, rank truncate |
-| **P14.4** Bottom nav tab badges | ✅ Partial | Bldgs/Upgrs/Mgrs pill counts; Turf ★/• preserved; no MM tab strip |
+| **P14.4** Bottom nav tab badges | ✅ Done (code-first) | Pills; active tab gold rule; MM tab strip PNG deferred |
 | **P14.5** Row affordance | ✅ Done (code-first) | Wax seal + green/gold/grey borders; Pete pick border; buy_mult on Bldgs |
 | **P14.6** Stats / Config / prestige tree | ✅ Done (code-first) | Text scale on stats/tabs/config; IAP row cards; prestige perk labels |
 | **P14.7** Overlays, onboarding, motion | ✅ Done (code-first) | Ledger bracket frames; overlay queue; reduced-motion via Particles OFF |
 | **P14.8** Atmosphere + device prep | ✅ Done (code-first) | Film grain overlay; M1 music buses + famiglia loop; heat tension stub |
-| **P14.9** Telemetry validation | ⬜ Pending | Funnel validation; `P14_REPORT.md` started |
+| **P14.9** Telemetry validation | ✅ Done | Probe + analyze_telemetry P14 funnel; P14_REPORT.md |
 
 ---
 
@@ -299,6 +299,7 @@ Use existing `Telemetry` autoload (mock → remote). No new gameplay systems.
 | `ui_overlay_dismiss_ms` | dismiss handlers | Friction if median >8s on offline |
 | `ui_buy_mult_changed` | multiplier chip | Power users ↑ session length |
 | `ui_badge_click` | tab press while badge active | Badges drive intended tab switches |
+| `ui_badge_impression` | badge count becomes visible / changes | Badge surfacing without click |
 | `ui_prestige_tree_open` | tree overlay | Prestige funnel engagement |
 | `ui_config_open` | gear press | Support burden proxy |
 | `ui_first_building_buy_ms` | first purchase | FTUE regression guard |
