@@ -71,6 +71,8 @@ func _process(delta: float) -> bool:
 				var queue_ok: bool = daily_pending and not _game_state.show_daily_overlay
 				_telemetry.log_event("ui_overlay_queue_ok", {"ok": queue_ok})
 				_screen._open_tab(_screen.Tab.BLDGS)
+				var row_ok := _assert_building_rows_visible()
+				_telemetry.log_event("ui_building_rows_ok", {"ok": row_ok, "count": _count_building_rows()})
 				if _game_state.can_buy_building(0, 1):
 					_game_state.buy_building(0, 1)
 					var ms: int = _game_state.record_first_building_buy_ms()
@@ -100,6 +102,41 @@ func _process(delta: float) -> bool:
 				print(JSON.stringify(out))
 				quit(0 if out["ok"] else 1)
 	return false
+
+
+func _count_building_rows() -> int:
+	var list: Node = _screen.find_child("BldgsScroll", true, false)
+	if list == null:
+		return 0
+	list = list.get_node_or_null("List")
+	if list == null:
+		return 0
+	var count := 0
+	for c in list.get_children():
+		if c.get_script() == null:
+			continue
+		if str(c.get_script().resource_path).ends_with("building_row.gd"):
+			count += 1
+	return count
+
+
+func _assert_building_rows_visible() -> bool:
+	if _count_building_rows() != 11:
+		return false
+	var list: Node = _screen.find_child("BldgsScroll", true, false).get_node("List")
+	for c in list.get_children():
+		if c.get_script() == null:
+			continue
+		if not str(c.get_script().resource_path).ends_with("building_row.gd"):
+			continue
+		var hbox: HBoxContainer = c.get_child(0) as HBoxContainer
+		var name_lbl: Label = hbox.get_node("Info/NameLabel") as Label
+		var buy1: Button = hbox.get_node("Buy1") as Button
+		if name_lbl.text.strip_edges().is_empty() or buy1.text.strip_edges().is_empty():
+			return false
+		if hbox.size.y <= 0.0 or name_lbl.size.y <= 0.0:
+			return false
+	return true
 
 
 func _read_ui_event_kinds(path: String) -> PackedStringArray:
