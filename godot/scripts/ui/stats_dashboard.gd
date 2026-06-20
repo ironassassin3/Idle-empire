@@ -8,9 +8,6 @@ const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 const _CrewSystem = preload("res://scripts/systems/crew_system.gd")
 const _AchievementSystem = preload("res://scripts/systems/achievement_system.gd")
 
-static var _card_style: StyleBoxFlat
-
-
 static func rebuild(host: VBoxContainer, state) -> void:
 	for child in host.get_children():
 		host.remove_child(child)
@@ -44,35 +41,22 @@ static func rebuild(host: VBoxContainer, state) -> void:
 	_add_lifetime_section(host, state)
 
 
-static func _card_stylebox() -> StyleBoxFlat:
-	if _card_style == null:
-		_card_style = StyleBoxFlat.new()
-		_card_style.bg_color = GameTheme.BG_CARD
-		_card_style.border_color = GameTheme.ACCENT
-		_card_style.set_border_width_all(1)
-		_card_style.set_corner_radius_all(6)
-		_card_style.content_margin_left = 8
-		_card_style.content_margin_right = 8
-		_card_style.content_margin_top = 6
-		_card_style.content_margin_bottom = 6
-	return _card_style
+static func _card_stylebox() -> StyleBox:
+	return GameTheme.stat_card_style()
 
 
 static func _section_header(parent: Control, title: String) -> void:
+	var strip := PanelContainer.new()
+	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if GameTheme.is_rustic_active():
+		strip.add_theme_stylebox_override("panel", GameTheme.list_section_header_style())
 	var row := HBoxContainer.new()
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	parent.add_child(row)
+	strip.add_child(row)
 	var lbl := Label.new()
 	lbl.text = title
-	lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	GameTheme.apply_list_section_title(lbl)
 	row.add_child(lbl)
-	var sep := ColorRect.new()
-	sep.color = Color(GameTheme.ACCENT, 0.35)
-	sep.custom_minimum_size = Vector2(0, 1)
-	sep.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sep.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(sep)
+	parent.add_child(strip)
 
 
 static func _add_muted_line(parent: Control, text: String) -> void:

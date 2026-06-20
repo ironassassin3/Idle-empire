@@ -154,13 +154,13 @@ static func _rustic_tab_style(active: bool) -> StyleBox:
 static func _row_card_modulate(affordance: int) -> Color:
 	match affordance:
 		RowAffordance.OWNED:
-			return Color(GREEN, 0.92)
-		RowAffordance.PETE:
-			return Color(GOLD_BRIGHT, 0.95)
-		RowAffordance.BUYABLE:
 			return Color(GREEN, 1.05)
+		RowAffordance.PETE:
+			return Color(GOLD_BRIGHT, 1.08)
+		RowAffordance.BUYABLE:
+			return Color(GREEN, 1.12)
 		_:
-			return Color(TEXT_MUTED, 0.88)
+			return Color(TEXT_MUTED, 0.95)
 
 
 static func header_strip_style() -> StyleBox:
@@ -170,6 +170,71 @@ static func header_strip_style() -> StyleBox:
 			sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
 			return sb
 	return make_panel_flat()
+
+
+static func list_section_header_style() -> StyleBox:
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_HEADER_STRIP, 6, 8.0)
+		if sb != null:
+			sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+			return sb
+	var flat := StyleBoxFlat.new()
+	flat.bg_color = Color(BG_CARD, 1.0)
+	flat.border_color = Color(GOLD, 0.55)
+	flat.set_border_width_all(2)
+	flat.set_corner_radius_all(4)
+	flat.content_margin_left = 10.0
+	flat.content_margin_right = 10.0
+	flat.content_margin_top = 8.0
+	flat.content_margin_bottom = 6.0
+	return flat
+
+
+static func config_section_header_style() -> StyleBox:
+	return list_section_header_style()
+
+
+static func config_row_style() -> StyleBox:
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_CARD, 10, 8.0)
+		if sb != null:
+			var dup := sb.duplicate() as StyleBoxTexture
+			dup.modulate_color = Color(TEXT, 0.92)
+			return dup
+	var sb_flat := StyleBoxFlat.new()
+	sb_flat.bg_color = BG_CARD
+	sb_flat.border_color = Color(GOLD, 0.25)
+	sb_flat.set_border_width_all(1)
+	sb_flat.set_corner_radius_all(6)
+	sb_flat.content_margin_left = 10.0
+	sb_flat.content_margin_right = 10.0
+	sb_flat.content_margin_top = 6.0
+	sb_flat.content_margin_bottom = 6.0
+	return sb_flat
+
+
+static func stat_card_style() -> StyleBox:
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _CARD_SLICE, 10.0)
+		if sb != null:
+			var dup := sb.duplicate() as StyleBoxTexture
+			dup.modulate_color = Color(1.1, 1.06, 0.98, 1.0)
+			return dup
+	return make_row_card_flat(RowAffordance.LOCKED)
+
+
+static func apply_list_section_title(lbl: Label) -> void:
+	if lbl == null:
+		return
+	lbl.add_theme_color_override("font_color", GOLD_BRIGHT)
+	lbl.add_theme_font_size_override("font_size", scaled_font(12))
+
+
+static func apply_subtab_header_label(lbl: Label) -> void:
+	if lbl == null:
+		return
+	lbl.add_theme_color_override("font_color", GOLD_BRIGHT)
+	lbl.add_theme_font_size_override("font_size", scaled_font(12))
 
 
 static func tab_bar_bg_style() -> StyleBox:

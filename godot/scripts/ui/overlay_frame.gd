@@ -7,7 +7,7 @@ const _INSET := 10.0
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", GameTheme.overlay_ledger_style())
-	mouse_filter = MOUSE_FILTER_IGNORE
+	mouse_filter = MOUSE_FILTER_STOP
 	queue_redraw()
 
 
