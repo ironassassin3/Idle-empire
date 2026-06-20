@@ -61,6 +61,15 @@ func _process(delta: float) -> bool:
 				_elapsed = 0.0
 		3:
 			if _elapsed >= 0.05:
+				# P14 overlay queue: offline → daily dismiss must advance without UI click.
+				_game_state.show_offline_overlay = true
+				_game_state.show_daily_overlay = false
+				_game_state.daily_reward = 250.0
+				_game_state.dismiss_offline_overlay()
+				var daily_pending: bool = _game_state.show_daily_overlay
+				_game_state.dismiss_offline_overlay()
+				var queue_ok: bool = daily_pending and not _game_state.show_daily_overlay
+				_telemetry.log_event("ui_overlay_queue_ok", {"ok": queue_ok})
 				_screen._open_tab(_screen.Tab.BLDGS)
 				if _game_state.can_buy_building(0, 1):
 					_game_state.buy_building(0, 1)

@@ -949,7 +949,8 @@ func _apply_daily_reward() -> void:
 	daily_reward = reward
 	balance += reward
 	lifetime_earnings += reward
-	show_daily_overlay = true
+	# Queue behind offline return (pygame save_load parity).
+	show_daily_overlay = daily_reward > 0.0 and not show_offline_overlay
 
 
 func to_save_data() -> Dictionary:
@@ -1200,8 +1201,12 @@ func dismiss_offline_overlay() -> void:
 	if show_offline_overlay:
 		show_offline_overlay = false
 		_offline_ad_doubled = false
+		if daily_reward > 0.0:
+			show_daily_overlay = true
+		stats_changed.emit()
 		return
 	show_daily_overlay = false
+	stats_changed.emit()
 
 
 func can_double_offline_via_ad() -> bool:

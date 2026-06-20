@@ -32,6 +32,7 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _advice_chip: Button = $Root/VBox/Header/AdviceChip
 @onready var _buy_mult_chip: Button = $Root/VBox/Header/BuyMultChip
 @onready var _heat_bar: ProgressBar = $Root/VBox/Body/Left/HeatBar
+@onready var _left_col: VBoxContainer = $Root/VBox/Body/Left
 @onready var _heat_label: Label = $Root/VBox/Body/Left/HeatLabel
 @onready var _coin_btn: Button = $Root/VBox/Body/Left/CoinBtn
 @onready var _shield_label: Label = $Root/VBox/Body/Left/ShieldLabel
@@ -136,6 +137,7 @@ const _STATS_UI_INTERVAL := 0.1
 var _last_event_key: String = ""
 var _notif_default_font_size: int = 0
 var _overlay_kind: String = ""
+var _active_overlay_kind: String = ""
 var _overlay_shown_at: int = 0
 var _tab_badge_snapshot: Dictionary = {}
 var _tab_badge_impressions: Dictionary = {}
@@ -211,6 +213,7 @@ func _ready() -> void:
 	offline_vbox.move_child(_offline_watch_ad, offline_vbox.get_child_count() - 1)
 	_offline_watch_ad.pressed.connect(_on_offline_watch_ad)
 	_apply_overlay_theme()
+	_overlay_dim.gui_input.connect(_on_overlay_dim_input)
 	_coin_ad_btn = Button.new()
 	_coin_ad_btn.text = "Ad → coin"
 	_coin_btn.get_parent().add_child(_coin_ad_btn)
@@ -250,12 +253,14 @@ func _apply_rustic_surfaces() -> void:
 		return
 	_wrap_strip_panel(_header, GameTheme.header_strip_style())
 	_wrap_strip_panel(_bottom_bar, GameTheme.tab_bar_bg_style())
+	_wrap_body_panel(_left_col, GameTheme.panel_style())
 	for scroll in [
 		_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
 		_crew_scroll, _ops_scroll, _stats_scroll, _mgrs_scroll, _config_scroll,
 	]:
 		_wrap_content_panel(scroll)
 	_dragon_hud.add_theme_stylebox_override("panel", GameTheme.panel_style())
+	_apply_rustic_subtab_headers()
 
 
 func _wrap_strip_panel(inner: Control, style: StyleBox) -> void:
@@ -295,6 +300,35 @@ func _wrap_content_panel(scroll: ScrollContainer) -> void:
 	scroll.set_meta("_rustic_panel", true)
 
 
+func _wrap_body_panel(inner: Control, style: StyleBox) -> void:
+	if inner.get_meta("_rustic_wrapped", false):
+		return
+	var parent := inner.get_parent()
+	if parent == null:
+		return
+	var idx := inner.get_index()
+	var shell := PanelContainer.new()
+	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shell.add_theme_stylebox_override("panel", style)
+	parent.remove_child(inner)
+	shell.add_child(inner)
+	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(shell)
+	parent.move_child(shell, idx)
+	inner.set_meta("_rustic_wrapped", true)
+
+
+func _apply_rustic_subtab_headers() -> void:
+	for lbl in [
+		_turf_bonus, _turf_milestones, _turf_control, _rivals_impact,
+		_rivals_activity, _crew_summary, _crew_lock, _ops_summary, _ops_lock,
+	]:
+		GameTheme.apply_subtab_header_label(lbl)
+
+
 func _apply_overlay_theme() -> void:
 	_milestone_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_milestone_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))
@@ -317,6 +351,7 @@ func _apply_overlay_theme() -> void:
 	GameTheme.apply_overlay_cta(_milestone_dismiss, true)
 	_milestone_dismiss.text = "Tap to continue"
 	GameTheme.apply_overlay_cta(_offline_continue, true)
+	_offline_continue.mouse_filter = Control.MOUSE_FILTER_STOP
 	GameTheme.apply_overlay_cta(_offline_watch_ad, false)
 	GameTheme.apply_overlay_cta(_elim_dismiss, true)
 	_elim_dismiss.text = "Tap to continue"
@@ -348,6 +383,7 @@ func _maybe_log_badge_click(tab: Tab) -> void:
 
 
 func _populate_buildings() -> void:
+	_add_list_section_header(_bldgs_list, "FRONT BUSINESSES")
 	for i in GameState.buildings.size():
 		var row: Control = BUILDING_ROW.instantiate()
 		_bldgs_list.add_child(row)
@@ -356,6 +392,7 @@ func _populate_buildings() -> void:
 
 
 func _populate_upgrades() -> void:
+	_add_list_section_header(_upgrs_list, "EMPIRE UPGRADES")
 	for i in GameState.upgrades.size():
 		if GameState.upgrades[i].purchased:
 			continue
@@ -366,6 +403,7 @@ func _populate_upgrades() -> void:
 
 
 func _populate_managers() -> void:
+	_add_list_section_header(_mgrs_list, "SYNDICATE MANAGERS")
 	for i in GameState.managers.size():
 		var row: Control = MANAGER_ROW.instantiate()
 		_mgrs_list.add_child(row)
@@ -531,8 +569,15 @@ func _refresh_overlays() -> void:
 	var pick := _pick_blocking_overlay()
 	var blocking: bool = pick.get("blocking", false)
 	var overlay_kind: String = str(pick.get("kind", ""))
-	_hide_all_overlay_panels()
-	_apply_active_overlay(overlay_kind)
+	if overlay_kind != _active_overlay_kind:
+		_hide_all_overlay_panels()
+		_apply_active_overlay(overlay_kind)
+		_active_overlay_kind = overlay_kind
+	elif overlay_kind in ["offline", "daily"]:
+		_refresh_offline_panel_extras(overlay_kind)
+	elif overlay_kind == "elim" and not GameTheme.ui_reduced_motion():
+		var pulse: float = 0.6 + 0.4 * sin(_ui_time * 3.0)
+		_elim_dismiss.modulate = Color(1.0, 1.0, 1.0, pulse)
 	_sync_overlay_telemetry(overlay_kind, blocking)
 	_overlay_dim.visible = blocking
 	if not _TutorialSystem.is_complete(GameState) and not blocking:
@@ -614,6 +659,30 @@ func _apply_active_overlay(overlay_kind: String) -> void:
 				_rebuild_event_choices()
 		_:
 			_last_event_key = ""
+
+
+func _refresh_offline_panel_extras(overlay_kind: String) -> void:
+	if overlay_kind != "offline":
+		_offline_watch_ad.visible = false
+		return
+	_offline_watch_ad.visible = (
+		Monetization.ads_available() and GameState.can_double_offline_via_ad()
+	)
+
+
+func _on_overlay_dim_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var mb := event as InputEventMouseButton
+	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	match _active_overlay_kind:
+		"offline", "daily":
+			_dismiss_offline()
+		"milestone":
+			_dismiss_milestone()
+		"elim":
+			_dismiss_elim()
 
 
 func _sync_overlay_telemetry(overlay_kind: String, _blocking: bool) -> void:
@@ -1000,6 +1069,7 @@ func _refresh_rivals_tab() -> void:
 func _refresh_upgrade_list() -> void:
 	for child in _upgrs_list.get_children():
 		child.queue_free()
+	_add_list_section_header(_upgrs_list, "EMPIRE UPGRADES")
 	for i in GameState.upgrades.size():
 		if GameState.upgrades[i].purchased:
 			continue
@@ -1301,16 +1371,36 @@ func _build_config_tab() -> void:
 	_config_body.add_child(note)
 
 
+func _add_list_section_header(parent: Control, title: String) -> void:
+	var strip := PanelContainer.new()
+	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if GameTheme.is_rustic_active():
+		strip.add_theme_stylebox_override("panel", GameTheme.list_section_header_style())
+	var lbl := Label.new()
+	lbl.text = title
+	GameTheme.apply_list_section_title(lbl)
+	strip.add_child(lbl)
+	parent.add_child(strip)
+
+
 func _add_config_header(text: String) -> void:
+	var strip := PanelContainer.new()
+	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	strip.add_theme_stylebox_override("panel", GameTheme.config_section_header_style())
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.add_theme_color_override("font_color", GameTheme.GOLD)
-	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
-	_config_body.add_child(lbl)
+	GameTheme.apply_list_section_title(lbl)
+	strip.add_child(lbl)
+	_config_body.add_child(strip)
 
 
 func _add_cycle_row(label: String, options: Array, index: int, cb: Callable) -> void:
+	var panel := PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", GameTheme.config_row_style())
 	var row := HBoxContainer.new()
+	panel.add_child(row)
 	var lbl := Label.new()
 	lbl.text = label
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1326,7 +1416,7 @@ func _add_cycle_row(label: String, options: Array, index: int, cb: Callable) -> 
 		cb.call(holder.i)
 	)
 	row.add_child(btn)
-	_config_body.add_child(row)
+	_config_body.add_child(panel)
 
 
 func _add_iap_row(label: String, product_id: String, hint: String) -> void:

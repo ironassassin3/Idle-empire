@@ -90,6 +90,7 @@
 | `sim_smoke.py` | **PASS** | (2026-06-20 P14.9) |
 | `sim_godot_soak.py` | **PASS** | 60s soak + income parity (2026-06-20 P14.9) |
 | `telemetry_probe.gd` | **PASS** | ≥5 UI event kinds → JSONL (2026-06-20 P14.9) |
+| Overlay collect fix | **2026-06-20** | `_refresh_overlays` no longer toggles panel visibility every frame (broke CTA clicks); offline→daily queue matches pygame; `telemetry_probe` asserts dismiss queue |
 | `analyze_telemetry.py` | **PASS** | P14 funnel section on probe output |
 | Moto G device matrix | **Pending** | [`docs/ui/capture_matrix/README.md`](docs/ui/capture_matrix/README.md) |
 | Owner first-prestige review | **Pending** | Manual |
