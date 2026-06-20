@@ -101,6 +101,28 @@ static func make_tab_badge_flat() -> StyleBoxFlat:
 	return sb
 
 
+static func make_tab_strip_flat(active: bool) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = TAB_ACTIVE if active else TAB_IDLE
+	sb.border_color = GOLD_BRIGHT if active else Color(GOLD, 0.2)
+	sb.set_border_width_all(0)
+	sb.set_border_width(Side.SIDE_BOTTOM, 3 if active else 1)
+	sb.set_corner_radius_all(0)
+	sb.content_margin_left = 4.0
+	sb.content_margin_right = 4.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 4.0
+	return sb
+
+
+static func tab_strip_style(active: bool) -> StyleBox:
+	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_TAB_BAR):
+		var tex := StyleBoxTexture.new()
+		tex.texture = load(TEX_TAB_BAR)
+		return tex
+	return make_tab_strip_flat(active)
+
+
 static func panel_style() -> StyleBox:
 	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_PANEL):
 		var tex := StyleBoxTexture.new()
@@ -208,10 +230,23 @@ static func apply_overlay_cta(btn: Button, primary: bool = true) -> void:
 	btn.custom_minimum_size.y = maxf(float(btn.custom_minimum_size.y), float(OVERLAY_BTN_MIN_H))
 
 
-static func apply_tab_button(btn: Button) -> void:
+static func apply_tab_button(btn: Button, active: bool = false) -> void:
 	if btn == null:
 		return
 	btn.add_theme_font_size_override("font_size", scaled_font(FONT_TAB))
+	var normal := tab_strip_style(active)
+	var hover := tab_strip_style(active)
+	if hover is StyleBoxFlat:
+		(hover as StyleBoxFlat).bg_color = (hover as StyleBoxFlat).bg_color.lightened(0.06)
+	var pressed := tab_strip_style(active)
+	if pressed is StyleBoxFlat:
+		(pressed as StyleBoxFlat).bg_color = (pressed as StyleBoxFlat).bg_color.darkened(0.05)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", tab_strip_style(active))
+	btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT_MUTED)
+	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
 
 
 static func apply_menu_button(btn: Button, primary: bool = false) -> void:

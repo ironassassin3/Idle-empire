@@ -26,7 +26,12 @@ func _ready() -> void:
 	_remote_sink = RemoteSink.new()
 	if not REMOTE_ENDPOINT.is_empty():
 		_remote_sink.configure(REMOTE_ENDPOINT, self)
-	if DisplayServer.get_name() == "headless":
+	if _is_probe_run():
+		enabled = true
+		_session = "probe-%05d" % (randi() % 100000)
+		_connect_game_signals()
+		return
+	elif DisplayServer.get_name() == "headless":
 		enabled = false
 		return
 	_session = "%d-%05d" % [int(Time.get_unix_time_from_system()), randi() % 100000]
@@ -86,9 +91,9 @@ func flush() -> void:
 	if _buffer.is_empty():
 		return
 	var batch := _buffer.duplicate()
+	if _local_sink == null or not _local_sink.append_lines(batch):
+		return
 	_buffer.clear()
-	if _local_sink != null:
-		_local_sink.append_lines(batch)
 	if _remote_sink != null:
 		_remote_sink.enqueue(batch)
 
@@ -117,3 +122,30 @@ func _on_ranked_up(rank: String) -> void:
 func _on_tutorial_advanced(step: int) -> void:
 	log_event("ftue_step", {"step": step})
 	log_event("ui_tutorial_step", {"step": step})
+
+
+func _is_probe_run() -> bool:
+	for pack in [OS.get_cmdline_user_args(), OS.get_cmdline_args()]:
+		if "--telemetry-probe" in pack:
+			return true
+	return false
+
+
+## Headless probe — custom JSONL path (see scripts/tools/telemetry_probe.gd).
+func configure_probe_sink(path: String) -> void:
+	if path.is_empty() or _local_sink == null:
+		return
+	_local_sink.set_output_path(path)
+	enabled = true
+	if _session.is_empty():
+		_session = "probe-%05d" % (randi() % 100000)
+
+
+func get_output_path() -> String:
+	if _local_sink == null:
+		return ""
+	return _local_sink.get_output_path()
+
+
+func probe_status() -> Dictionary:
+	return {"enabled": enabled, "buffer": _buffer.size(), "session": _session, "path": get_output_path()}

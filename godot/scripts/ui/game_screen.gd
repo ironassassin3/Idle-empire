@@ -135,6 +135,7 @@ var _notif_default_font_size: int = 0
 var _overlay_kind: String = ""
 var _overlay_shown_at: int = 0
 var _tab_badge_snapshot: Dictionary = {}
+var _tab_badge_impressions: Dictionary = {}
 var _music_ctx_timer := 0.0
 const STATS_REFRESH_INTERVAL := 0.2
 const _BASE_MARGIN := 12
@@ -236,7 +237,8 @@ func _apply_header_theme() -> void:
 	_advice_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP - 1))
 	for tab_btn in [_tab_bldgs, _tab_upgrs, _tab_mgrs, _tab_turf, _tab_stats,
 			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
-		GameTheme.apply_tab_button(tab_btn)
+		GameTheme.apply_tab_button(tab_btn, false)
+	_refresh_tab_strip()
 
 
 func _apply_overlay_theme() -> void:
@@ -424,6 +426,22 @@ func _set_tab(tab: Tab) -> void:
 	else:
 		_close_achievements_panel()
 	Telemetry.log_event("ui_tab_open", {"tab": _tab_name(tab)})
+	_refresh_tab_strip()
+
+
+func _refresh_tab_strip() -> void:
+	var tab: Tab = _tab
+	var is_turf: bool = tab in _TURF_TABS
+	GameTheme.apply_tab_button(_tab_bldgs, tab == Tab.BLDGS)
+	GameTheme.apply_tab_button(_tab_upgrs, tab == Tab.UPGRS)
+	GameTheme.apply_tab_button(_tab_mgrs, tab == Tab.MGRS)
+	GameTheme.apply_tab_button(_tab_turf, is_turf)
+	GameTheme.apply_tab_button(_tab_stats, tab == Tab.STATS)
+	if is_turf:
+		GameTheme.apply_tab_button(_sub_territory, tab == Tab.TURF)
+		GameTheme.apply_tab_button(_sub_rivals, tab == Tab.RIVALS)
+		GameTheme.apply_tab_button(_sub_crew, tab == Tab.CREW)
+		GameTheme.apply_tab_button(_sub_ops, tab == Tab.OPS)
 
 
 func _process(delta: float) -> void:
@@ -1067,6 +1085,7 @@ func _on_operation_action(index: int) -> void:
 func _on_prestige() -> void:
 	if GameState.tutorial_step == 4:
 		_TutorialSystem.advance_tutorial(GameState)
+	Telemetry.log_event("ui_prestige_tree_open", {"eligible": GameState.can_prestige()})
 	_prestige_tree.open()
 
 
@@ -1113,6 +1132,14 @@ func _refresh_tab_badges() -> void:
 		"upgrs": aff_upgrs,
 		"mgrs": hire_mgrs,
 	}
+	for key in ["bldgs", "upgrs", "mgrs"]:
+		var count: int = int(_tab_badge_snapshot.get(key, 0))
+		if count <= 0:
+			continue
+		var prev: int = int(_tab_badge_impressions.get(key, -1))
+		if prev != count:
+			_tab_badge_impressions[key] = count
+			Telemetry.log_event("ui_badge_impression", {"tab": key, "count": count})
 	_tab_bldgs.text = GameTheme.tab_label_with_badge("Bldgs", aff_bldgs)
 	_tab_upgrs.text = GameTheme.tab_label_with_badge("Upgrs", aff_upgrs)
 	_tab_mgrs.text = GameTheme.tab_label_with_badge("Mgrs", hire_mgrs)
