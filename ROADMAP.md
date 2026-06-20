@@ -313,6 +313,17 @@ save-migration test matrix doc.
 
 ---
 
+## P15 — City-First UI Rebuild v2 (presentation track)
+
+**Goal:** Restore visible city/skyline fantasy (pygame Phase 124 parity) and retire rustic-ledger default; keep P14 UX patterns.  
+**Status:** Architecture only — see [`UI_REBUILD_V2_ARCHITECTURE.md`](UI_REBUILD_V2_ARCHITECTURE.md). **No implementation until owner picks concept direction.**  
+**Priority tie:** Retention + Engagement (15-second empire test).  
+**Scope (in):** P15.0–P15.8 (`city_view` module, layout restructure, theme v2, hustle-on-city, validation).  
+**Out of scope:** New mechanics/tabs; generative-AI art; executing rebuild in architecture phase.  
+**Dependencies:** P14 complete ✓; owner sign-off on Concept A/B/C (doc §5–6).
+
+---
+
 ## Cross-track sync rule (prototype ↔ Godot 1.0)
 
 - **Godot = ship target.** Player UI, audio, mobile UX, and new features land here only.

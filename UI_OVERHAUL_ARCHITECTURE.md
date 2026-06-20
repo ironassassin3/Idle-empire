@@ -1,5 +1,7 @@
 # UI Overhaul Architecture — Criminal Empire (Godot 1.0)
 
+> **Superseded for future UI work by [`UI_REBUILD_V2_ARCHITECTURE.md`](UI_REBUILD_V2_ARCHITECTURE.md)** (city-first rebuild); P14 UX patterns herein remain valid.
+
 **Status:** Design document (2026-06). **P14 code-first complete** — P14.0–P14.9 landed 2026-06-20 (MM textures + device capture deferred).  
 **Recommended phase ID:** **P14 — Touch-First Retention UI** (extends [`P13_REPORT.md`](P13_REPORT.md) Material Maker skin + [`MUSIC_ARCHITECTURE.md`](MUSIC_ARCHITECTURE.md) audio layers).  
 **Policy:** [`ART_POLICY.md`](ART_POLICY.md) — Material Maker procedural textures OK; no generative AI; motion/fills stay code-drawn.  
