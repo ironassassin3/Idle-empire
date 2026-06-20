@@ -55,6 +55,7 @@ Full plan: [`ROADMAP.md`](ROADMAP.md). Reports: `P5_REPORT.md` … `P9_REPORT.md
 | [`PROJECT_RULES.md`](PROJECT_RULES.md) | Mechanics rules, prestige, save schema |
 | [`ROADMAP.md`](ROADMAP.md) | Godot → mobile launch phases |
 | [`godot/P2_HANDOFF.md`](godot/P2_HANDOFF.md) | Session handoff for Godot work |
+| [`UI_OVERHAUL_ARCHITECTURE.md`](UI_OVERHAUL_ARCHITECTURE.md) | P14 touch-first UI overhaul (Godot) |
 
 ## Balance / pacing (recent)
 

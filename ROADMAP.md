@@ -302,6 +302,17 @@ save-migration test matrix doc.
 
 ---
 
+## P14 — Touch-First Retention UI (UX overhaul track)
+
+**Goal:** Research-backed UI overhaul—economy HUD, badges, progressive disclosure, overlays, accessibility—on top of P13 surfaces.  
+**Status:** Planned — see [`UI_OVERHAUL_ARCHITECTURE.md`](UI_OVERHAUL_ARCHITECTURE.md).  
+**Priority tie:** Retention + Mobile UX.  
+**Scope (in):** P14.0–P14.9 sub-phases (theme/HUD/rows/overlays/FTUE telemetry); integrates P13 Material Maker + [`MUSIC_ARCHITECTURE.md`](MUSIC_ARCHITECTURE.md) M1–M2 layers.  
+**Out of scope:** New mechanics/tabs/currencies; generative-AI art.  
+**Dependencies:** P7 layout ✓; P13.1 theme recommended first; P8 device pass before P14.8 sign-off.
+
+---
+
 ## Cross-track sync rule (prototype ↔ Godot 1.0)
 
 - **Godot = ship target.** Player UI, audio, mobile UX, and new features land here only.
