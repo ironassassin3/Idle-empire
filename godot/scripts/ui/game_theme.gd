@@ -36,6 +36,8 @@ const FONT_MENU_PREVIEW_LEAD := 22
 const FONT_MENU_PREVIEW_BODY := 15
 const FONT_MENU_VERSION := 12
 const MENU_BTN_MIN_H := 52
+const OVERLAY_BTN_MIN_H := 48
+const FONT_TAB := 13
 
 # P14 row affordance — code-drawn wax seal + border tints.
 enum RowAffordance { LOCKED, BUYABLE, PETE, OWNED }
@@ -139,6 +141,11 @@ static func scaled_font(base: int) -> int:
 	return int(round(float(base) * text_scale_mult()))
 
 
+## Particles OFF doubles as reduced-motion (P14.7) — skip overlay pulses / heavy UI motion.
+static func ui_reduced_motion() -> bool:
+	return not GameState.show_particles
+
+
 static func make_menu_ledger_flat() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color("141018")
@@ -182,8 +189,29 @@ static func menu_ledger_style() -> StyleBox:
 	return make_menu_ledger_flat()
 
 
+static func overlay_ledger_style() -> StyleBox:
+	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_MODAL):
+		var tex := StyleBoxTexture.new()
+		tex.texture = load(TEX_MODAL)
+		return tex
+	return make_menu_ledger_flat()
+
+
 static func menu_preview_style() -> StyleBox:
 	return make_menu_preview_flat()
+
+
+static func apply_overlay_cta(btn: Button, primary: bool = true) -> void:
+	if btn == null:
+		return
+	apply_menu_button(btn, primary)
+	btn.custom_minimum_size.y = maxf(float(btn.custom_minimum_size.y), float(OVERLAY_BTN_MIN_H))
+
+
+static func apply_tab_button(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.add_theme_font_size_override("font_size", scaled_font(FONT_TAB))
 
 
 static func apply_menu_button(btn: Button, primary: bool = false) -> void:

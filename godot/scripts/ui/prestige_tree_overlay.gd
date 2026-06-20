@@ -34,7 +34,7 @@ var _ui_time: float = 0.0
 
 func _process(delta: float) -> void:
 	_ui_time += delta
-	if _prestige_dialog.visible:
+	if _prestige_dialog.visible and not GameTheme.ui_reduced_motion():
 		var pulse: float = 0.85 + 0.15 * sin(_ui_time * 4.0)
 		_prestige_dialog.modulate = Color(1.0, 0.92, 0.55, pulse)
 	else:
@@ -44,6 +44,7 @@ func _process(delta: float) -> void:
 func _ready() -> void:
 	layer = 10
 	visible = false
+	_apply_dialog_theme()
 	_build_branch_buttons()
 	_back_btn.pressed.connect(close)
 	_prestige_btn.pressed.connect(_on_prestige_pressed)
@@ -53,6 +54,21 @@ func _ready() -> void:
 	_prestige_yes.pressed.connect(_confirm_prestige)
 	_prestige_no.pressed.connect(_cancel_prestige_dialog)
 	GameState.stats_changed.connect(_refresh)
+
+
+func _apply_dialog_theme() -> void:
+	GameTheme.apply_overlay_cta(_branch_yes, true)
+	GameTheme.apply_overlay_cta(_branch_no, false)
+	GameTheme.apply_overlay_cta(_prestige_yes, true)
+	GameTheme.apply_overlay_cta(_prestige_no, false)
+	_branch_dialog_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_branch_dialog_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
+	_branch_dialog_body.add_theme_color_override("font_color", GameTheme.TEXT)
+	_branch_dialog_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_prestige_gain.add_theme_color_override("font_color", GameTheme.TEXT)
+	_prestige_gain.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_prestige_rank.add_theme_color_override("font_color", GameTheme.GOLD)
+	_prestige_rank.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 
 
 func open() -> void:

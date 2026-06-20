@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://gamescreen001"]
+[gd_scene load_steps=6 format=3 uid="uid://gamescreen001"]
 
 [ext_resource type="Script" path="res://scripts/ui/game_screen.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://prestigetreeoverlay" path="res://scenes/prestige_tree_overlay.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/dragon_patron_overlay.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/ui/overlay_dim.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/overlay_frame.gd" id="5"]
 
 [node name="GameScreen" type="CanvasLayer"]
 layer = 1
@@ -508,9 +510,11 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
 color = Color(0, 0, 0, 0.65)
+script = ExtResource("4")
 
 [node name="MilestonePanel" type="PanelContainer" parent="OverlayLayer"]
 visible = false
+script = ExtResource("5")
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -544,6 +548,7 @@ text = "Continue"
 
 [node name="EventPanel" type="PanelContainer" parent="OverlayLayer"]
 visible = false
+script = ExtResource("5")
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -575,6 +580,7 @@ theme_override_constants/separation = 6
 
 [node name="OfflinePanel" type="PanelContainer" parent="OverlayLayer"]
 visible = false
+script = ExtResource("5")
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -608,6 +614,7 @@ text = "Continue"
 
 [node name="ElimPanel" type="PanelContainer" parent="OverlayLayer"]
 visible = false
+script = ExtResource("5")
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5

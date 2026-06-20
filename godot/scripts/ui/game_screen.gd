@@ -102,6 +102,7 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _event_desc: Label = $OverlayLayer/EventPanel/VBox/Desc
 @onready var _event_choices: VBoxContainer = $OverlayLayer/EventPanel/VBox/Choices
 @onready var _offline_panel: PanelContainer = $OverlayLayer/OfflinePanel
+@onready var _offline_title: Label = $OverlayLayer/OfflinePanel/VBox/Title
 @onready var _offline_body: Label = $OverlayLayer/OfflinePanel/VBox/Body
 @onready var _offline_continue: Button = $OverlayLayer/OfflinePanel/VBox/ContinueBtn
 var _offline_watch_ad: Button
@@ -131,6 +132,7 @@ const _STATS_UI_INTERVAL := 0.1
 var _last_event_key: String = ""
 var _notif_default_font_size: int = 0
 var _overlay_kind: String = ""
+var _overlay_shown_at: int = 0
 var _tab_badge_snapshot: Dictionary = {}
 const STATS_REFRESH_INTERVAL := 0.2
 const _BASE_MARGIN := 12
@@ -198,6 +200,7 @@ func _ready() -> void:
 	offline_vbox.add_child(_offline_watch_ad)
 	offline_vbox.move_child(_offline_watch_ad, offline_vbox.get_child_count() - 1)
 	_offline_watch_ad.pressed.connect(_on_offline_watch_ad)
+	_apply_overlay_theme()
 	_coin_ad_btn = Button.new()
 	_coin_ad_btn.text = "Ad → coin"
 	_coin_btn.get_parent().add_child(_coin_ad_btn)
@@ -226,6 +229,36 @@ func _apply_header_theme() -> void:
 	_buy_mult_chip.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_buy_mult_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP))
 	_advice_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP - 1))
+	for tab_btn in [_tab_bldgs, _tab_upgrs, _tab_mgrs, _tab_turf, _tab_stats,
+			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
+		GameTheme.apply_tab_button(tab_btn)
+
+
+func _apply_overlay_theme() -> void:
+	_milestone_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_milestone_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))
+	_milestone_body.add_theme_color_override("font_color", GameTheme.TEXT)
+	_milestone_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_event_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_event_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(17))
+	_event_desc.add_theme_color_override("font_color", GameTheme.TEXT)
+	_event_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_offline_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_offline_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
+	_offline_body.add_theme_color_override("font_color", GameTheme.TEXT)
+	_offline_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_elim_name.add_theme_color_override("font_color", GameTheme.GOLD)
+	_elim_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))
+	_elim_flavor.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_elim_flavor.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_elim_rewards.add_theme_color_override("font_color", GameTheme.GREEN)
+	_elim_rewards.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_overlay_cta(_milestone_dismiss, true)
+	_milestone_dismiss.text = "Tap to continue"
+	GameTheme.apply_overlay_cta(_offline_continue, true)
+	GameTheme.apply_overlay_cta(_offline_watch_ad, false)
+	GameTheme.apply_overlay_cta(_elim_dismiss, true)
+	_elim_dismiss.text = "Tap to continue"
 
 
 func _tab_name(tab: Tab) -> String:
@@ -413,69 +446,12 @@ func _process(delta: float) -> void:
 
 
 func _refresh_overlays() -> void:
-	var blocking := false
-	var overlay_kind := ""
-	_milestone_panel.visible = false
-	_event_panel.visible = false
-	_offline_panel.visible = false
-	_offline_watch_ad.visible = false
-	_elim_panel.visible = false
-
-	if GameState.show_offline_overlay:
-		blocking = true
-		overlay_kind = "offline"
-		_offline_panel.visible = true
-		_offline_body.text = _offline_body_text(false)
-		_offline_continue.text = "Continue"
-		_offline_watch_ad.visible = (
-			Monetization.ads_available() and GameState.can_double_offline_via_ad()
-		)
-	elif GameState.show_daily_overlay:
-		blocking = true
-		overlay_kind = "daily"
-		_offline_panel.visible = true
-		_offline_body.text = _offline_body_text(true)
-		_offline_continue.text = "Collect"
-		_offline_watch_ad.visible = false
-	elif GameState.elim_overlay_active:
-		blocking = true
-		overlay_kind = "elim"
-		_elim_panel.visible = true
-		_elim_name.text = GameState.elim_overlay_name
-		_elim_flavor.text = GameState.elim_overlay_flavor
-		_elim_rewards.text = GameState.elim_overlay_rewards
-		var pulse: float = 0.6 + 0.4 * sin(_ui_time * 3.0)
-		_elim_dismiss.modulate = Color(1.0, 1.0, 1.0, pulse)
-	elif not GameState.milestone_queue.is_empty() and GameState.milestone_timer > 0.0:
-		blocking = true
-		overlay_kind = "milestone"
-		_milestone_panel.visible = true
-		var raw: String = str(GameState.milestone_queue[0])
-		var parts: PackedStringArray = raw.split("\n", false)
-		if parts.size() >= 2:
-			_milestone_title.text = parts[0]
-			_milestone_body.text = "\n".join(parts.slice(1))
-		else:
-			_milestone_title.text = raw
-			_milestone_body.text = ""
-	elif not GameState.pending_event.is_empty():
-		blocking = true
-		overlay_kind = "event"
-		_event_panel.visible = true
-		_event_title.text = str(GameState.pending_event.get("title", "Syndicate Event"))
-		_event_desc.text = str(GameState.pending_event.get("description", ""))
-		var event_key: String = str(GameState.pending_event.get("title", ""))
-		if event_key != _last_event_key:
-			_last_event_key = event_key
-			_rebuild_event_choices()
-	else:
-		_last_event_key = ""
-
-	if overlay_kind != _overlay_kind:
-		if not overlay_kind.is_empty():
-			Telemetry.log_event("ui_overlay_shown", {"kind": overlay_kind})
-		_overlay_kind = overlay_kind
-
+	var pick := _pick_blocking_overlay()
+	var blocking: bool = pick.get("blocking", false)
+	var overlay_kind: String = str(pick.get("kind", ""))
+	_hide_all_overlay_panels()
+	_apply_active_overlay(overlay_kind)
+	_sync_overlay_telemetry(overlay_kind, blocking)
 	_overlay_dim.visible = blocking
 	if not _TutorialSystem.is_complete(GameState) and not blocking:
 		_tutorial_banner.visible = true
@@ -486,6 +462,92 @@ func _refresh_overlays() -> void:
 	if not GameState.event_outcome.is_empty():
 		_notif.text = GameState.event_outcome
 		_notif.add_theme_color_override("font_color", GameTheme.GOLD)
+
+
+## Single-flight overlay queue — offline → daily → elim → milestone → event (never parallel).
+func _pick_blocking_overlay() -> Dictionary:
+	if GameState.show_offline_overlay:
+		return {"kind": "offline", "blocking": true}
+	if GameState.show_daily_overlay:
+		return {"kind": "daily", "blocking": true}
+	if GameState.elim_overlay_active:
+		return {"kind": "elim", "blocking": true}
+	if not GameState.milestone_queue.is_empty() and GameState.milestone_timer > 0.0:
+		return {"kind": "milestone", "blocking": true}
+	if not GameState.pending_event.is_empty():
+		return {"kind": "event", "blocking": true}
+	return {"kind": "", "blocking": false}
+
+
+func _hide_all_overlay_panels() -> void:
+	_milestone_panel.visible = false
+	_event_panel.visible = false
+	_offline_panel.visible = false
+	_offline_watch_ad.visible = false
+	_elim_panel.visible = false
+	_elim_dismiss.modulate = Color.WHITE
+
+
+func _apply_active_overlay(overlay_kind: String) -> void:
+	match overlay_kind:
+		"offline":
+			_offline_panel.visible = true
+			_offline_title.text = "WELCOME BACK, BOSS"
+			_offline_body.text = _offline_body_text(false)
+			_offline_continue.text = "Tap to continue"
+			_offline_watch_ad.visible = (
+				Monetization.ads_available() and GameState.can_double_offline_via_ad()
+			)
+		"daily":
+			_offline_panel.visible = true
+			_offline_title.text = "DAILY REWARD"
+			_offline_body.text = _offline_body_text(true)
+			_offline_continue.text = "Collect reward"
+			_offline_watch_ad.visible = false
+		"elim":
+			_elim_panel.visible = true
+			_elim_name.text = GameState.elim_overlay_name
+			_elim_flavor.text = GameState.elim_overlay_flavor
+			_elim_rewards.text = GameState.elim_overlay_rewards
+			if not GameTheme.ui_reduced_motion():
+				var pulse: float = 0.6 + 0.4 * sin(_ui_time * 3.0)
+				_elim_dismiss.modulate = Color(1.0, 1.0, 1.0, pulse)
+		"milestone":
+			_milestone_panel.visible = true
+			var raw: String = str(GameState.milestone_queue[0])
+			var parts: PackedStringArray = raw.split("\n", false)
+			if parts.size() >= 2:
+				_milestone_title.text = parts[0]
+				_milestone_body.text = "\n".join(parts.slice(1))
+			else:
+				_milestone_title.text = raw
+				_milestone_body.text = ""
+		"event":
+			_event_panel.visible = true
+			_event_title.text = str(GameState.pending_event.get("title", "Syndicate Event"))
+			_event_desc.text = str(GameState.pending_event.get("description", ""))
+			var event_key: String = str(GameState.pending_event.get("title", ""))
+			if event_key != _last_event_key:
+				_last_event_key = event_key
+				_rebuild_event_choices()
+		_:
+			_last_event_key = ""
+
+
+func _sync_overlay_telemetry(overlay_kind: String, _blocking: bool) -> void:
+	if overlay_kind != _overlay_kind:
+		if not overlay_kind.is_empty():
+			Telemetry.log_event("ui_overlay_shown", {"kind": overlay_kind})
+			_overlay_shown_at = Time.get_ticks_msec()
+		_overlay_kind = overlay_kind
+
+
+func _log_overlay_dismiss(kind: String) -> void:
+	if kind.is_empty() or _overlay_shown_at <= 0:
+		return
+	var ms: int = Time.get_ticks_msec() - _overlay_shown_at
+	Telemetry.log_event("ui_overlay_dismiss_ms", {"kind": kind, "ms": ms})
+	_overlay_shown_at = 0
 
 
 func _offline_body_text(daily_only: bool) -> String:
@@ -525,22 +587,28 @@ func _rebuild_event_choices() -> void:
 		var ch: Dictionary = choices[i]
 		var btn := Button.new()
 		btn.text = "%s\n%s" % [ch.get("label", "?"), ch.get("desc", "")]
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		GameTheme.apply_overlay_cta(btn, true)
 		var idx: int = i
 		btn.pressed.connect(func(): _pick_event_choice(idx))
 		_event_choices.add_child(btn)
 
 
 func _pick_event_choice(idx: int) -> void:
+	_log_overlay_dismiss("event")
 	_EventSystem.resolve_event(GameState, idx)
 	GameState.stats_changed.emit()
 	_refresh_overlays()
 
 
 func _dismiss_milestone() -> void:
+	_log_overlay_dismiss("milestone")
 	_TutorialSystem.dismiss_milestone(GameState)
 
 
 func _dismiss_offline() -> void:
+	var kind := "offline" if GameState.show_offline_overlay else "daily"
+	_log_overlay_dismiss(kind)
 	GameState.dismiss_offline_overlay()
 	_refresh_overlays()
 
@@ -554,6 +622,7 @@ func _on_coin_watch_ad() -> void:
 
 
 func _dismiss_elim() -> void:
+	_log_overlay_dismiss("elim")
 	GameState.dismiss_elimination_overlay()
 	_refresh_overlays()
 
@@ -567,7 +636,7 @@ func _update_motion_cues() -> void:
 		for i in 3:
 			pips += "● " if i < filled else "○ "
 		_shield_label.text = "SHIELD %s" % pips.strip_edges()
-		if frac >= 1.0:
+		if frac >= 1.0 and not GameTheme.ui_reduced_motion():
 			var pulse: float = 0.6 + 0.4 * sin(_ui_time * 3.0)
 			_shield_label.modulate = Color(1.0, 1.0, 1.0, pulse)
 			_heat_bar.modulate = Color(0.85, 0.95, 1.0, pulse)
@@ -1080,10 +1149,18 @@ func _build_config_tab() -> void:
 	_add_cycle_row("Text scale", ["100%", "125%"], GameState.ui_text_scale, func(i):
 		GameState.ui_text_scale = i
 		_apply_header_theme()
+		_apply_overlay_theme()
+		if _tab == Tab.STATS:
+			_refresh_stats_tab()
+		elif _tab == Tab.CONFIG:
+			_build_config_tab()
 		SaveManager.save_game()
 	)
 	_add_cycle_row("FPS Cap", ["30", "60", "120"], [30, 60, 120].find(GameState.fps_cap), func(i): _set_fps_cap(i))
-	_add_cycle_row("Particles", ["ON", "OFF"], 0 if GameState.show_particles else 1, func(i): GameState.show_particles = i == 0)
+	_add_cycle_row("Particles / motion", ["ON", "OFF"], 0 if GameState.show_particles else 1, func(i):
+		GameState.show_particles = i == 0
+		SaveManager.save_game()
+	)
 	_add_config_header("RETENTION")
 	_add_cycle_row("Notifications", ["OFF", "ON"], 1 if GameState.notifications_enabled else 0, func(i):
 		var on: bool = i == 1
@@ -1137,6 +1214,7 @@ func _add_config_header(text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_color_override("font_color", GameTheme.GOLD)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_config_body.add_child(lbl)
 
 
@@ -1145,10 +1223,12 @@ func _add_cycle_row(label: String, options: Array, index: int, cb: Callable) -> 
 	var lbl := Label.new()
 	lbl.text = label
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	row.add_child(lbl)
 	var btn := Button.new()
 	var holder: Dictionary = {"i": clampi(index, 0, options.size() - 1)}
 	btn.text = str(options[holder.i])
+	GameTheme.apply_menu_button(btn, false)
 	btn.pressed.connect(func():
 		holder.i = (int(holder.i) + 1) % options.size()
 		btn.text = str(options[holder.i])
@@ -1163,19 +1243,35 @@ func _add_iap_row(label: String, product_id: String, hint: String) -> void:
 		var owned := Label.new()
 		owned.text = "%s — owned" % label
 		owned.add_theme_color_override("font_color", GameTheme.GREEN)
+		owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 		_config_body.add_child(owned)
 		return
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", GameTheme.make_row_card_flat(GameTheme.RowAffordance.BUYABLE))
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	panel.add_child(row)
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(vbox)
 	var lbl := Label.new()
 	lbl.text = label
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(lbl)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	vbox.add_child(lbl)
+	var hint_lbl := Label.new()
+	hint_lbl.text = hint
+	hint_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint_lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	hint_lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	vbox.add_child(hint_lbl)
 	var btn := Button.new()
 	btn.text = "Buy"
-	btn.tooltip_text = hint
+	btn.custom_minimum_size.x = 96.0
+	GameTheme.apply_overlay_cta(btn, true)
 	btn.pressed.connect(func(): Monetization.purchase(product_id))
 	row.add_child(btn)
-	_config_body.add_child(row)
+	_config_body.add_child(panel)
 
 
 func _vol_index(v: float) -> int:
