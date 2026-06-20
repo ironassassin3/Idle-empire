@@ -1,9 +1,9 @@
 # P13 — Rustic Noir UI Overhaul (Material Maker + Theme)
 
-**Status:** Planned — owner-approved direction (2026-06).  
+**Status:** Planned — owner-approved direction (2026-06). **Procedural ship path landed (P14 rustic bake).**  
 **Goal:** Commercial idle-game polish while keeping organized-crime ledger identity.  
-**Toolchain:** [Material Maker](https://github.com/RodZill4/material-maker) (MIT) → PNG → Godot `StyleBoxTexture`.  
-**Policy:** [`ART_POLICY.md`](ART_POLICY.md) §4 — procedural graphs, not generative AI.
+**Toolchain:** Procedural GDScript bake (default) · [Material Maker](https://github.com/RodZill4/material-maker) PNG drop-in (optional upgrade) → Godot `StyleBoxTexture`.  
+**Policy:** [`ART_POLICY.md`](ART_POLICY.md) §4 — procedural graphs/code bake, not generative AI.
 
 ---
 

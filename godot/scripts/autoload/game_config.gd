@@ -29,5 +29,5 @@ const OFFLINE_CAP_HOURS := 12.0
 const OFFLINE_EFFICIENCY := 0.6
 const SHOW_PARTICLES := true
 
-# P14 — flip to true once Material Maker rustic_noir graphs are exported to assets/ui/textures/.
-const UI_RUSTIC_THEME := false
+# P14 rustic noir — procedural bake at startup; set false to force flat StyleBoxFlat UI.
+const UI_RUSTIC_THEME := true

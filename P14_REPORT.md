@@ -11,7 +11,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | P14.0 Research lock | ✅ | Doc + capture matrix + telemetry events |
-| P14.1 Theme foundation | ✅ (fallback) | `GameTheme` StyleBox helpers; MM hooks; `UI_RUSTIC_THEME` |
+| P14.1 Theme foundation | ✅ | `GameTheme` + procedural rustic bake; MM drop-in optional |
 | P14.2 Main menu | ✅ (code-first) | Ledger panel + save preview |
 | P14.3 Header / buy-mult | ✅ | Cash-dominant HUD, advice chip |
 | P14.4 Tab badges + strip | ✅ (code-first) | Pills + active gold rule / inactive muted tabs |
@@ -35,7 +35,8 @@
 - [x] Reduced motion toggle (Particles OFF) skips overlay pulses
 - [x] Film grain atmosphere on `game_screen` (skipped headless / reduced motion)
 - [x] M1 music: Music/SFX buses, menu + famiglia loops, heat tension stub
-- [ ] Material Maker textured surfaces (P14.1 MM export — owner deferred)
+- [x] Procedural rustic noir surfaces (`RusticTextureBaker` + `rustic_noir_theme.tres`)
+- [ ] Material Maker textured surfaces (optional upgrade — drop PNGs in `assets/ui/textures/`)
 - [ ] Device capture matrix filled ([`docs/ui/capture_matrix/`](docs/ui/capture_matrix/README.md))
 
 ### Performance / regression
@@ -97,7 +98,7 @@
 
 ## Remaining (post-P14 code-first)
 
-1. **P14.1 MM textures** — Export Material Maker graphs; flip `GameConfig.UI_RUSTIC_THEME`.
+1. **MM textures (optional)** — Export Material Maker graphs to `godot/assets/ui/textures/`; auto-preferred over procedural bake.
 2. **Device capture** — Fill capture matrix; `DEVICE_TEST_CHECKLIST.md` §A–B on Moto G.
 3. **Owner sign-off** — First-prestige funnel path review from exported JSONL.
 

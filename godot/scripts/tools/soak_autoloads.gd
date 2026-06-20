@@ -18,6 +18,7 @@ const AUTOLOADS := [
 	["Monetization", "res://scripts/autoload/monetization.gd"],
 	["Notifications", "res://scripts/autoload/notifications.gd"],
 	["CloudSave", "res://scripts/autoload/cloud_save.gd"],
+	["RusticUi", "res://scripts/autoload/rustic_ui.gd"],
 ]
 
 

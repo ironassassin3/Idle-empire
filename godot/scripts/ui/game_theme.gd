@@ -1,7 +1,9 @@
 class_name GameTheme
 extends RefCounted
 ## Noir palette + P14 typography / StyleBox helpers — mirrors src/theme.py Phase 127.
-## Material Maker texture paths are wired here; flat StyleBoxFlat fallbacks until P14.1 MM export.
+## Rustic surfaces: procedural bake (RusticTextureBaker) with MM PNG drop-in override.
+
+const RusticTextureBaker = preload("res://scripts/ui/rustic_texture_baker.gd")
 
 const BG := Color("08070a")
 const BG_PANEL := Color("121018")
@@ -54,6 +56,134 @@ const TEX_TAB_BAR := "res://assets/ui/textures/tab_bar.png"
 const TEX_MODAL := "res://assets/ui/textures/modal_frame.png"
 const TEX_WAX_SEAL := "res://assets/ui/textures/wax_seal.png"
 
+const _SLICE_MARGIN := 24
+const _CARD_SLICE := 18
+
+static var _rustic_textures: Dictionary = {}
+static var _rustic_style_cache: Dictionary = {}
+static var _rustic_init_done: bool = false
+static var _rustic_active: bool = false
+
+
+static func is_rustic_active() -> bool:
+	return _rustic_active
+
+
+static func init_rustic() -> void:
+	if _rustic_init_done:
+		return
+	_rustic_init_done = true
+	_rustic_active = false
+	_rustic_textures.clear()
+	_rustic_style_cache.clear()
+	if not GameConfig.UI_RUSTIC_THEME:
+		return
+	var loaded: Dictionary = RusticTextureBaker.load_or_bake()
+	if loaded.is_empty():
+		push_warning("GameTheme: rustic theme requested but bake produced no textures")
+		return
+	_rustic_textures = loaded
+	_rustic_active = true
+
+
+static func apply_rustic_theme(tree: SceneTree = null) -> void:
+	if not _rustic_active:
+		return
+	var theme_path := "res://theme/rustic_noir_theme.tres"
+	if not ResourceLoader.exists(theme_path):
+		return
+	var theme := (load(theme_path) as Theme).duplicate(true)
+	if theme == null:
+		return
+	var btn_n := _rustic_btn_style(RusticTextureBaker.KEY_BTN_NORMAL)
+	var btn_h := _rustic_btn_style(RusticTextureBaker.KEY_BTN_HOVER)
+	var btn_p := _rustic_btn_style(RusticTextureBaker.KEY_BTN_PRESSED)
+	if btn_n != null:
+		theme.set_stylebox("normal", &"Button", btn_n)
+	if btn_h != null:
+		theme.set_stylebox("hover", &"Button", btn_h)
+	if btn_p != null:
+		theme.set_stylebox("pressed", &"Button", btn_p)
+	var panel := _rustic_slice_style(RusticTextureBaker.KEY_PANEL, _SLICE_MARGIN)
+	if panel != null:
+		theme.set_stylebox("panel", &"PanelContainer", panel)
+	if tree != null and tree.root != null:
+		tree.root.theme = theme
+
+
+static func _rustic_tex(key: String) -> Texture2D:
+	return _rustic_textures.get(key) as Texture2D
+
+
+static func _rustic_slice_style(key: String, margin: int, content: float = 8.0) -> StyleBoxTexture:
+	if not _rustic_active:
+		return null
+	var cache_key := "%s|%d|%.1f" % [key, margin, content]
+	if _rustic_style_cache.has(cache_key):
+		return _rustic_style_cache[cache_key]
+	var tex := _rustic_tex(key)
+	if tex == null:
+		return null
+	var sb := StyleBoxTexture.new()
+	sb.texture = tex
+	sb.texture_margin_left = margin
+	sb.texture_margin_top = margin
+	sb.texture_margin_right = margin
+	sb.texture_margin_bottom = margin
+	sb.set_content_margin_all(content)
+	_rustic_style_cache[cache_key] = sb
+	return sb
+
+
+static func _rustic_btn_style(key: String) -> StyleBoxTexture:
+	return _rustic_slice_style(key, 10, 10.0)
+
+
+static func _rustic_tab_style(active: bool) -> StyleBox:
+	if not _rustic_active:
+		return null
+	var key := RusticTextureBaker.KEY_TAB_ACTIVE if active else RusticTextureBaker.KEY_TAB_IDLE
+	var sb := _rustic_slice_style(key, 8, 6.0)
+	if sb == null:
+		return null
+	sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	sb.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	return sb
+
+
+static func _row_card_modulate(affordance: int) -> Color:
+	match affordance:
+		RowAffordance.OWNED:
+			return Color(GREEN, 0.92)
+		RowAffordance.PETE:
+			return Color(GOLD_BRIGHT, 0.95)
+		RowAffordance.BUYABLE:
+			return Color(GREEN, 1.05)
+		_:
+			return Color(TEXT_MUTED, 0.88)
+
+
+static func header_strip_style() -> StyleBox:
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_HEADER_STRIP, 6, 6.0)
+		if sb != null:
+			sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+			return sb
+	return make_panel_flat()
+
+
+static func tab_bar_bg_style() -> StyleBox:
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_TAB_BAR_BG, 6, 4.0)
+		if sb != null:
+			sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+			return sb
+	var sb_flat := StyleBoxFlat.new()
+	sb_flat.bg_color = BG_PANEL
+	sb_flat.border_color = Color(GOLD, 0.25)
+	sb_flat.set_border_width(Side.SIDE_TOP, 1)
+	return sb_flat
+
 
 static func truncate(text: String, max_chars: int) -> String:
 	if text.length() <= max_chars:
@@ -62,7 +192,7 @@ static func truncate(text: String, max_chars: int) -> String:
 
 
 static func texture_exists(path: String) -> bool:
-	return not path.is_empty() and ResourceLoader.exists(path)
+	return not path.is_empty() and FileAccess.file_exists(path)
 
 
 static func make_panel_flat() -> StyleBoxFlat:
@@ -116,7 +246,10 @@ static func make_tab_strip_flat(active: bool) -> StyleBoxFlat:
 
 
 static func tab_strip_style(active: bool) -> StyleBox:
-	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_TAB_BAR):
+	var rustic := _rustic_tab_style(active)
+	if rustic != null:
+		return rustic
+	if _rustic_active and texture_exists(TEX_TAB_BAR):
 		var tex := StyleBoxTexture.new()
 		tex.texture = load(TEX_TAB_BAR)
 		return tex
@@ -124,9 +257,18 @@ static func tab_strip_style(active: bool) -> StyleBox:
 
 
 static func panel_style() -> StyleBox:
-	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_PANEL):
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_PANEL, _SLICE_MARGIN)
+		if sb != null:
+			return sb
+	if texture_exists(TEX_PANEL):
 		var tex := StyleBoxTexture.new()
 		tex.texture = load(TEX_PANEL)
+		tex.texture_margin_left = _SLICE_MARGIN
+		tex.texture_margin_top = _SLICE_MARGIN
+		tex.texture_margin_right = _SLICE_MARGIN
+		tex.texture_margin_bottom = _SLICE_MARGIN
+		tex.set_content_margin_all(8.0)
 		return tex
 	return make_panel_flat()
 
@@ -208,13 +350,26 @@ static func make_menu_button_flat(primary: bool = false) -> StyleBoxFlat:
 
 
 static func menu_ledger_style() -> StyleBox:
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_MODAL, _SLICE_MARGIN, 28.0)
+		if sb != null:
+			return sb
 	return make_menu_ledger_flat()
 
 
 static func overlay_ledger_style() -> StyleBox:
-	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_MODAL):
+	if _rustic_active:
+		var sb := _rustic_slice_style(RusticTextureBaker.KEY_MODAL, _SLICE_MARGIN, 20.0)
+		if sb != null:
+			return sb
+	if texture_exists(TEX_MODAL):
 		var tex := StyleBoxTexture.new()
 		tex.texture = load(TEX_MODAL)
+		tex.texture_margin_left = _SLICE_MARGIN
+		tex.texture_margin_top = _SLICE_MARGIN
+		tex.texture_margin_right = _SLICE_MARGIN
+		tex.texture_margin_bottom = _SLICE_MARGIN
+		tex.set_content_margin_all(20.0)
 		return tex
 	return make_menu_ledger_flat()
 
@@ -253,14 +408,28 @@ static func apply_menu_button(btn: Button, primary: bool = false) -> void:
 	if btn == null:
 		return
 	btn.custom_minimum_size.y = maxf(float(btn.custom_minimum_size.y), float(MENU_BTN_MIN_H))
-	var normal := make_menu_button_flat(primary)
-	var hover := make_menu_button_flat(primary)
-	hover.bg_color = hover.bg_color.lightened(0.08)
-	var pressed := make_menu_button_flat(primary)
-	pressed.bg_color = pressed.bg_color.darkened(0.06)
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
+	if _rustic_active:
+		var normal := _rustic_btn_style(RusticTextureBaker.KEY_BTN_NORMAL)
+		var hover := _rustic_btn_style(RusticTextureBaker.KEY_BTN_HOVER)
+		var pressed := _rustic_btn_style(RusticTextureBaker.KEY_BTN_PRESSED)
+		if normal != null:
+			btn.add_theme_stylebox_override("normal", normal)
+		if hover != null:
+			btn.add_theme_stylebox_override("hover", hover)
+		if pressed != null:
+			btn.add_theme_stylebox_override("pressed", pressed)
+		btn.add_theme_stylebox_override("disabled", make_menu_button_flat(false))
+		btn.add_theme_color_override("font_color", GOLD_BRIGHT if primary else TEXT)
+		btn.add_theme_font_size_override("font_size", scaled_font(16 if primary else 15))
+		return
+	var normal_flat := make_menu_button_flat(primary)
+	var hover_flat := make_menu_button_flat(primary)
+	hover_flat.bg_color = hover_flat.bg_color.lightened(0.08)
+	var pressed_flat := make_menu_button_flat(primary)
+	pressed_flat.bg_color = pressed_flat.bg_color.darkened(0.06)
+	btn.add_theme_stylebox_override("normal", normal_flat)
+	btn.add_theme_stylebox_override("hover", hover_flat)
+	btn.add_theme_stylebox_override("pressed", pressed_flat)
 	btn.add_theme_stylebox_override("disabled", make_menu_button_flat(false))
 	btn.add_theme_color_override("font_color", GOLD_BRIGHT if primary else TEXT)
 	btn.add_theme_font_size_override("font_size", scaled_font(16 if primary else 15))
@@ -288,9 +457,20 @@ static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 
 
 static func row_card_style(affordance: int) -> StyleBox:
-	if GameConfig.UI_RUSTIC_THEME and texture_exists(TEX_CARD):
+	if _rustic_active:
+		var base := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _CARD_SLICE, 8.0)
+		if base != null:
+			var sb := base.duplicate() as StyleBoxTexture
+			sb.modulate_color = _row_card_modulate(affordance)
+			return sb
+	if texture_exists(TEX_CARD):
 		var tex := StyleBoxTexture.new()
 		tex.texture = load(TEX_CARD)
+		tex.texture_margin_left = _CARD_SLICE
+		tex.texture_margin_top = _CARD_SLICE
+		tex.texture_margin_right = _CARD_SLICE
+		tex.texture_margin_bottom = _CARD_SLICE
+		tex.set_content_margin_all(8.0)
 		return tex
 	return make_row_card_flat(affordance)
 

@@ -41,6 +41,9 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _prestige_info: Label = $Root/VBox/Body/Left/PrestigeInfo
 @onready var _buff_label: Label = $Root/VBox/Body/Left/BuffLabel
 # Bottom nav bar (5 primary tabs) + Turf subtab bar + header gear.
+@onready var _bottom_bar: HBoxContainer = $Root/VBox/BottomBar
+@onready var _header: HBoxContainer = $Root/VBox/Header
+@onready var _body_right: VBoxContainer = $Root/VBox/Body/Right
 @onready var _tab_bldgs: Button = $Root/VBox/BottomBar/BldgsBtn
 @onready var _tab_upgrs: Button = $Root/VBox/BottomBar/UpgrsBtn
 @onready var _tab_mgrs: Button = $Root/VBox/BottomBar/MgrsBtn
@@ -171,6 +174,7 @@ func _ready() -> void:
 		AudioManager.set_music_mode(MusicDefs.MusicMode.PLAYING_AMBIENT)
 	_apply_safe_area()
 	_apply_header_theme()
+	_apply_rustic_surfaces()
 	get_viewport().size_changed.connect(_apply_safe_area)
 	_heat_bar.max_value = 100.0
 	_populate_buildings()
@@ -239,6 +243,56 @@ func _apply_header_theme() -> void:
 			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
 		GameTheme.apply_tab_button(tab_btn, false)
 	_refresh_tab_strip()
+
+
+func _apply_rustic_surfaces() -> void:
+	if not GameTheme.is_rustic_active():
+		return
+	_wrap_strip_panel(_header, GameTheme.header_strip_style())
+	_wrap_strip_panel(_bottom_bar, GameTheme.tab_bar_bg_style())
+	for scroll in [
+		_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
+		_crew_scroll, _ops_scroll, _stats_scroll, _mgrs_scroll, _config_scroll,
+	]:
+		_wrap_content_panel(scroll)
+	_dragon_hud.add_theme_stylebox_override("panel", GameTheme.panel_style())
+
+
+func _wrap_strip_panel(inner: Control, style: StyleBox) -> void:
+	if inner.get_meta("_rustic_wrapped", false):
+		return
+	var parent := inner.get_parent()
+	if parent == null:
+		return
+	var idx := inner.get_index()
+	var shell := PanelContainer.new()
+	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shell.add_theme_stylebox_override("panel", style)
+	parent.remove_child(inner)
+	shell.add_child(inner)
+	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	parent.add_child(shell)
+	parent.move_child(shell, idx)
+	inner.set_meta("_rustic_wrapped", true)
+
+
+func _wrap_content_panel(scroll: ScrollContainer) -> void:
+	if scroll.get_meta("_rustic_panel", false):
+		return
+	var parent := scroll.get_parent()
+	if parent == null:
+		return
+	var idx := scroll.get_index()
+	var panel := PanelContainer.new()
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", GameTheme.panel_style())
+	parent.remove_child(scroll)
+	panel.add_child(scroll)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(panel)
+	parent.move_child(panel, idx)
+	scroll.set_meta("_rustic_panel", true)
 
 
 func _apply_overlay_theme() -> void:
@@ -1284,7 +1338,7 @@ func _add_iap_row(label: String, product_id: String, hint: String) -> void:
 		_config_body.add_child(owned)
 		return
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", GameTheme.make_row_card_flat(GameTheme.RowAffordance.BUYABLE))
+	panel.add_theme_stylebox_override("panel", GameTheme.row_card_style(GameTheme.RowAffordance.BUYABLE))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	panel.add_child(row)
