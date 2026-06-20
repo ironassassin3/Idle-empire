@@ -179,7 +179,7 @@ func _refresh_perks(branch: String) -> void:
 func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, tier: int, meta: Dictionary) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(220, 128)
-	panel.add_theme_stylebox_override("panel", GameTheme.make_row_card_flat(
+	panel.add_theme_stylebox_override("panel", GameTheme.row_card_style(
 		GameTheme.RowAffordance.OWNED if key in GameState.perks_purchased else GameTheme.RowAffordance.LOCKED
 	))
 	var vbox := VBoxContainer.new()
@@ -210,7 +210,7 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 	elif gate.get("ok", false):
 		btn.text = "Buy (%d inf)" % cost
 		btn.pressed.connect(_on_buy_perk.bind(key))
-		panel.add_theme_stylebox_override("panel", GameTheme.make_row_card_flat(GameTheme.RowAffordance.BUYABLE))
+		panel.add_theme_stylebox_override("panel", GameTheme.row_card_style(GameTheme.RowAffordance.BUYABLE))
 	else:
 		btn.text = str(gate.get("reason", "Locked"))
 		btn.disabled = true
