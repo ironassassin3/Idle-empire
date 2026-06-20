@@ -11,10 +11,12 @@
 |-------|--------|-------|
 | **P14.0** Research lock & metrics | ✅ Done | Doc frozen; `docs/ui/capture_matrix/`; UI telemetry events wired |
 | **P14.1** Theme foundation (code-first) | ✅ Done (fallback) | `GameTheme` StyleBox helpers + MM texture hooks; `UI_RUSTIC_THEME` flag |
-| **P14.2** Main menu | ⬜ Next | Deferred — no MM textures yet |
+| **P14.2** Main menu | ✅ Done (code-first) | Ledger panel + brackets; save preview card; 52px buttons |
 | **P14.3** Header / economy HUD / buy-mult | ✅ Done | Cash-dominant header, ×1/×10/Max chip, advice chip, rank truncate |
 | **P14.4** Bottom nav tab badges | ✅ Partial | Bldgs/Upgrs/Mgrs pill counts; Turf ★/• preserved; no MM tab strip |
-| **P14.5–P14.9** | ⬜ Pending | Rows, overlays polish, device pass, funnel validation |
+| **P14.5** Row affordance | ✅ Done (code-first) | Wax seal + green/gold/grey borders; Pete pick border; buy_mult on Bldgs |
+| **P14.6** Stats / Config / prestige tree | ⬜ Partial | Text scale toggle (100%/125%); prestige perk labels always visible |
+| **P14.7–P14.9** | ⬜ Pending | Overlays polish, device pass, funnel validation |
 
 ---
 

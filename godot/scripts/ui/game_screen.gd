@@ -224,8 +224,8 @@ func _apply_header_theme() -> void:
 	_advice_chip.add_theme_stylebox_override("pressed", GameTheme.chip_style(true))
 	_advice_chip.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_buy_mult_chip.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
-	_buy_mult_chip.add_theme_font_size_override("font_size", GameTheme.FONT_CHIP)
-	_advice_chip.add_theme_font_size_override("font_size", GameTheme.FONT_CHIP - 1)
+	_buy_mult_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP))
+	_advice_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP - 1))
 
 
 func _tab_name(tab: Tab) -> String:
@@ -1077,6 +1077,11 @@ func _build_config_tab() -> void:
 		AudioManager.apply_from_state(GameState)
 	)
 	_add_config_header("DISPLAY")
+	_add_cycle_row("Text scale", ["100%", "125%"], GameState.ui_text_scale, func(i):
+		GameState.ui_text_scale = i
+		_apply_header_theme()
+		SaveManager.save_game()
+	)
 	_add_cycle_row("FPS Cap", ["30", "60", "120"], [30, 60, 120].find(GameState.fps_cap), func(i): _set_fps_cap(i))
 	_add_cycle_row("Particles", ["ON", "OFF"], 0 if GameState.show_particles else 1, func(i): GameState.show_particles = i == 0)
 	_add_config_header("RETENTION")
