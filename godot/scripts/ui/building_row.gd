@@ -25,7 +25,7 @@ func setup(index: int) -> void:
 
 
 func _ready() -> void:
-	_buy1.pressed.connect(func(): buy_pressed.emit(building_index, 1))
+	_buy1.pressed.connect(_on_buy_primary)
 	_buy10.pressed.connect(func(): buy_pressed.emit(building_index, 10))
 	_buy_max.pressed.connect(_on_buy_max)
 	GameState.stats_changed.connect(_refresh)
@@ -44,14 +44,21 @@ func _refresh() -> void:
 		modulate = Color.WHITE
 	_owned.text = "Owned: %d" % _building.owned
 	_income.text = "%s/s" % FormatUtil.format_money(_building.income_per_second())
-	var cost1 := _building.current_cost()
-	_buy1.text = "Buy\n%s" % FormatUtil.format_money(cost1)
+	var qty := GameState.effective_buy_qty(building_index)
+	var cost_qty := _building.cost_for_n(qty)
+	_buy1.text = "%s\n%s" % [GameState.buy_mult_label(), FormatUtil.format_money(cost_qty)]
 	_buy10.text = "×10\n%s" % FormatUtil.format_money(_building.cost_for_n(10))
 	var max_n := _max_affordable()
 	_buy_max.text = "Max (%d)" % max_n if max_n > 0 else "Max"
-	_buy1.disabled = not GameState.can_buy_building(building_index, 1)
+	_buy1.disabled = not GameState.can_buy_building(building_index, qty)
 	_buy10.disabled = not GameState.can_buy_building(building_index, 10)
 	_buy_max.disabled = max_n <= 0
+
+
+func _on_buy_primary() -> void:
+	var qty := GameState.effective_buy_qty(building_index)
+	if qty > 0:
+		buy_pressed.emit(building_index, qty)
 
 
 func _max_affordable() -> int:

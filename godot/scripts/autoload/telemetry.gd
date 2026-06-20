@@ -116,3 +116,4 @@ func _on_ranked_up(rank: String) -> void:
 
 func _on_tutorial_advanced(step: int) -> void:
 	log_event("ftue_step", {"step": step})
+	log_event("ui_tutorial_step", {"step": step})

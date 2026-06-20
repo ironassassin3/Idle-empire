@@ -24,9 +24,12 @@ const OPERATION_ROW := preload("res://scenes/operation_row.tscn")
 
 enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 
-@onready var _balance: Label = $Root/VBox/Header/Balance
-@onready var _ips: Label = $Root/VBox/Header/Income
-@onready var _rank: Label = $Root/VBox/Header/Rank
+@onready var _balance: Label = $Root/VBox/Header/EconomyCol/Balance
+@onready var _ips: Label = $Root/VBox/Header/EconomyCol/Income
+@onready var _rank: Label = $Root/VBox/Header/RankChip/Rank
+@onready var _rank_chip: PanelContainer = $Root/VBox/Header/RankChip
+@onready var _advice_chip: Button = $Root/VBox/Header/AdviceChip
+@onready var _buy_mult_chip: Button = $Root/VBox/Header/BuyMultChip
 @onready var _heat_bar: ProgressBar = $Root/VBox/Body/Left/HeatBar
 @onready var _heat_label: Label = $Root/VBox/Body/Left/HeatLabel
 @onready var _coin_btn: Button = $Root/VBox/Body/Left/CoinBtn
@@ -80,7 +83,6 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _stats_ach_list: Label = $Root/VBox/Body/Right/StatsScroll/VBox/AchPanel/AchList
 @onready var _stats_ach_close: Button = $Root/VBox/Body/Right/StatsScroll/VBox/AchPanel/AchCloseBtn
 @onready var _notif: Label = $Root/VBox/Notif
-@onready var _menu_btn: Button = $Root/VBox/Header/MenuBtn
 @onready var _prestige_tree: CanvasLayer = $PrestigeTreeOverlay
 @onready var _dragon_patron: CanvasLayer = $DragonPatronOverlay
 @onready var _dragon_hud: PanelContainer = $Root/VBox/Body/Left/DragonHud
@@ -128,6 +130,8 @@ var _stats_ui_timer: float = 0.0
 const _STATS_UI_INTERVAL := 0.1
 var _last_event_key: String = ""
 var _notif_default_font_size: int = 0
+var _overlay_kind: String = ""
+var _tab_badge_snapshot: Dictionary = {}
 const STATS_REFRESH_INTERVAL := 0.2
 const _BASE_MARGIN := 12
 
@@ -156,7 +160,9 @@ func _apply_safe_area() -> void:
 
 func _ready() -> void:
 	GameState.set_simulation_active(true)
+	GameState.mark_ui_session_start()
 	_apply_safe_area()
+	_apply_header_theme()
 	get_viewport().size_changed.connect(_apply_safe_area)
 	_heat_bar.max_value = 100.0
 	_populate_buildings()
@@ -172,13 +178,14 @@ func _ready() -> void:
 	_hustle.pressed.connect(_on_hustle)
 	_coin_btn.pressed.connect(_on_coin)
 	_prestige_btn.pressed.connect(_on_prestige)
-	_menu_btn.pressed.connect(_on_menu)
-	_tab_bldgs.pressed.connect(func(): _set_tab(Tab.BLDGS))
-	_tab_upgrs.pressed.connect(func(): _set_tab(Tab.UPGRS))
-	_tab_mgrs.pressed.connect(func(): _set_tab(Tab.MGRS))
+	_buy_mult_chip.pressed.connect(_on_buy_mult_chip)
+	_advice_chip.pressed.connect(_on_advice_chip)
+	_tab_bldgs.pressed.connect(func(): _open_tab(Tab.BLDGS))
+	_tab_upgrs.pressed.connect(func(): _open_tab(Tab.UPGRS))
+	_tab_mgrs.pressed.connect(func(): _open_tab(Tab.MGRS))
 	_tab_turf.pressed.connect(_open_turf)
-	_tab_stats.pressed.connect(func(): _set_tab(Tab.STATS))
-	_cfg_btn.pressed.connect(func(): _set_tab(Tab.CONFIG))
+	_tab_stats.pressed.connect(func(): _open_tab(Tab.STATS))
+	_cfg_btn.pressed.connect(func(): _open_tab(Tab.CONFIG))
 	_sub_territory.pressed.connect(func(): _set_turf_subtab(Tab.TURF))
 	_sub_rivals.pressed.connect(func(): _set_turf_subtab(Tab.RIVALS))
 	_sub_crew.pressed.connect(func(): _set_turf_subtab(Tab.CREW))
@@ -202,6 +209,48 @@ func _ready() -> void:
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
 	_refresh_all()
+	Telemetry.log_event("ui_session_start", {"tab": _tab_name(_tab)})
+
+
+func _apply_header_theme() -> void:
+	GameTheme.apply_economy_hud(_balance, _ips, _rank)
+	_rank_chip.add_theme_stylebox_override("panel", GameTheme.chip_style(false))
+	_buy_mult_chip.add_theme_stylebox_override("normal", GameTheme.chip_style(true))
+	_buy_mult_chip.add_theme_stylebox_override("hover", GameTheme.chip_style(true))
+	_buy_mult_chip.add_theme_stylebox_override("pressed", GameTheme.chip_style(true))
+	_buy_mult_chip.add_theme_stylebox_override("disabled", GameTheme.chip_style(false))
+	_advice_chip.add_theme_stylebox_override("normal", GameTheme.chip_style(false))
+	_advice_chip.add_theme_stylebox_override("hover", GameTheme.chip_style(true))
+	_advice_chip.add_theme_stylebox_override("pressed", GameTheme.chip_style(true))
+	_advice_chip.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_buy_mult_chip.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_buy_mult_chip.add_theme_font_size_override("font_size", GameTheme.FONT_CHIP)
+	_advice_chip.add_theme_font_size_override("font_size", GameTheme.FONT_CHIP - 1)
+
+
+func _tab_name(tab: Tab) -> String:
+	match tab:
+		Tab.BLDGS: return "bldgs"
+		Tab.UPGRS: return "upgrs"
+		Tab.MGRS: return "mgrs"
+		Tab.TURF: return "turf"
+		Tab.RIVALS: return "rivals"
+		Tab.CREW: return "crew"
+		Tab.OPS: return "ops"
+		Tab.STATS: return "stats"
+		Tab.CONFIG: return "config"
+		_: return "unknown"
+
+
+func _open_tab(tab: Tab) -> void:
+	_maybe_log_badge_click(tab)
+	_set_tab(tab)
+
+
+func _maybe_log_badge_click(tab: Tab) -> void:
+	var key := _tab_name(tab)
+	if _tab_badge_snapshot.get(key, 0) > 0:
+		Telemetry.log_event("ui_badge_click", {"tab": key, "count": _tab_badge_snapshot[key]})
 
 
 func _populate_buildings() -> void:
@@ -333,8 +382,10 @@ func _set_tab(tab: Tab) -> void:
 		_refresh_stats_tab()
 	elif tab == Tab.CONFIG:
 		_build_config_tab()
+		Telemetry.log_event("ui_config_open", {})
 	else:
 		_close_achievements_panel()
+	Telemetry.log_event("ui_tab_open", {"tab": _tab_name(tab)})
 
 
 func _process(delta: float) -> void:
@@ -363,57 +414,41 @@ func _process(delta: float) -> void:
 
 func _refresh_overlays() -> void:
 	var blocking := false
-	if GameState.show_offline_overlay or GameState.show_daily_overlay:
+	var overlay_kind := ""
+	_milestone_panel.visible = false
+	_event_panel.visible = false
+	_offline_panel.visible = false
+	_offline_watch_ad.visible = false
+	_elim_panel.visible = false
+
+	if GameState.show_offline_overlay:
 		blocking = true
+		overlay_kind = "offline"
 		_offline_panel.visible = true
-		var hours: int = int(GameState.offline_secs_away / 3600.0)
-		var mins: int = int(int(GameState.offline_secs_away) % 3600 / 60.0)
-		var away: String = "Away for %dh %dm" % [hours, mins] if hours > 0 else "Away for %dm" % mins
-		var cap_note: String = "\nCap reached — check in sooner for more" if GameState.offline_capped else ""
-		var rival_news: String = ""
-		if not GameState.offline_rival_events.is_empty():
-			rival_news = "\n\nWhile you were away:\n• " + "\n• ".join(GameState.offline_rival_events)
-		var body_text: String = (
-			"%s\n\nCash earned: +%s%s\n\nOps ready: %d\nTerritory: %d / %d\nRivals active: %d (%d at war)%s"
-			% [
-				away,
-				FormatUtil.format_money(GameState.offline_gain),
-				cap_note,
-				GameState.return_ops_ready,
-				GameState.return_territory_player,
-				GameState.return_territory_total,
-				GameState.return_rival_active,
-				GameState.return_rival_at_war,
-				rival_news,
-			]
-		)
-		if GameState.show_daily_overlay:
-			body_text += "\n\n★ Daily reward — day %d streak: +%s" % [
-				GameState.daily_streak, FormatUtil.format_money(GameState.daily_reward),
-			]
-		_offline_body.text = body_text
+		_offline_body.text = _offline_body_text(false)
+		_offline_continue.text = "Continue"
 		_offline_watch_ad.visible = (
 			Monetization.ads_available() and GameState.can_double_offline_via_ad()
 		)
+	elif GameState.show_daily_overlay:
+		blocking = true
+		overlay_kind = "daily"
+		_offline_panel.visible = true
+		_offline_body.text = _offline_body_text(true)
+		_offline_continue.text = "Collect"
+		_offline_watch_ad.visible = false
 	elif GameState.elim_overlay_active:
 		blocking = true
+		overlay_kind = "elim"
 		_elim_panel.visible = true
 		_elim_name.text = GameState.elim_overlay_name
 		_elim_flavor.text = GameState.elim_overlay_flavor
 		_elim_rewards.text = GameState.elim_overlay_rewards
 		var pulse: float = 0.6 + 0.4 * sin(_ui_time * 3.0)
 		_elim_dismiss.modulate = Color(1.0, 1.0, 1.0, pulse)
-	elif not GameState.pending_event.is_empty():
-		blocking = true
-		_event_panel.visible = true
-		_event_title.text = str(GameState.pending_event.get("title", "Syndicate Event"))
-		_event_desc.text = str(GameState.pending_event.get("description", ""))
-		var event_key: String = str(GameState.pending_event.get("title", ""))
-		if event_key != _last_event_key:
-			_last_event_key = event_key
-			_rebuild_event_choices()
 	elif not GameState.milestone_queue.is_empty() and GameState.milestone_timer > 0.0:
 		blocking = true
+		overlay_kind = "milestone"
 		_milestone_panel.visible = true
 		var raw: String = str(GameState.milestone_queue[0])
 		var parts: PackedStringArray = raw.split("\n", false)
@@ -423,13 +458,24 @@ func _refresh_overlays() -> void:
 		else:
 			_milestone_title.text = raw
 			_milestone_body.text = ""
+	elif not GameState.pending_event.is_empty():
+		blocking = true
+		overlay_kind = "event"
+		_event_panel.visible = true
+		_event_title.text = str(GameState.pending_event.get("title", "Syndicate Event"))
+		_event_desc.text = str(GameState.pending_event.get("description", ""))
+		var event_key: String = str(GameState.pending_event.get("title", ""))
+		if event_key != _last_event_key:
+			_last_event_key = event_key
+			_rebuild_event_choices()
 	else:
-		_milestone_panel.visible = false
-		_event_panel.visible = false
-		_offline_panel.visible = false
-		_offline_watch_ad.visible = false
-		_elim_panel.visible = false
 		_last_event_key = ""
+
+	if overlay_kind != _overlay_kind:
+		if not overlay_kind.is_empty():
+			Telemetry.log_event("ui_overlay_shown", {"kind": overlay_kind})
+		_overlay_kind = overlay_kind
+
 	_overlay_dim.visible = blocking
 	if not _TutorialSystem.is_complete(GameState) and not blocking:
 		_tutorial_banner.visible = true
@@ -440,6 +486,35 @@ func _refresh_overlays() -> void:
 	if not GameState.event_outcome.is_empty():
 		_notif.text = GameState.event_outcome
 		_notif.add_theme_color_override("font_color", GameTheme.GOLD)
+
+
+func _offline_body_text(daily_only: bool) -> String:
+	if daily_only:
+		return (
+			"★ Daily reward\n\nDay %d streak\n+%s added to your balance"
+			% [GameState.daily_streak, FormatUtil.format_money(GameState.daily_reward)]
+		)
+	var hours: int = int(GameState.offline_secs_away / 3600.0)
+	var mins: int = int(int(GameState.offline_secs_away) % 3600 / 60.0)
+	var away: String = "Away for %dh %dm" % [hours, mins] if hours > 0 else "Away for %dm" % mins
+	var cap_note: String = "\nCap reached — check in sooner for more" if GameState.offline_capped else ""
+	var rival_news: String = ""
+	if not GameState.offline_rival_events.is_empty():
+		rival_news = "\n\nWhile you were away:\n• " + "\n• ".join(GameState.offline_rival_events)
+	return (
+		"%s\n\nCash earned: +%s%s\n\nOps ready: %d\nTerritory: %d / %d\nRivals active: %d (%d at war)%s"
+		% [
+			away,
+			FormatUtil.format_money(GameState.offline_gain),
+			cap_note,
+			GameState.return_ops_ready,
+			GameState.return_territory_player,
+			GameState.return_territory_total,
+			GameState.return_rival_active,
+			GameState.return_rival_at_war,
+			rival_news,
+		]
+	)
 
 
 func _rebuild_event_choices() -> void:
@@ -542,8 +617,16 @@ func _buff_remaining(name: String) -> float:
 
 func _refresh_all() -> void:
 	_balance.text = FormatUtil.format_money(GameState.balance)
-	_ips.text = "%s/s passive" % FormatUtil.format_money(GameState.income_per_second())
-	_rank.text = "%s  ·  %d Influence" % [GameState.rank_label(), GameState.prestige_tokens]
+	_ips.text = "+%s/s" % FormatUtil.format_money(GameState.income_per_second())
+	var rank_full := "%s · %d Inf" % [GameState.rank_label(), GameState.prestige_tokens]
+	_rank.text = GameTheme.truncate(rank_full, 18)
+	_buy_mult_chip.text = GameState.buy_mult_label()
+	var hint := GameState.next_purchase_hint()
+	if hint.is_empty():
+		_advice_chip.visible = false
+	else:
+		_advice_chip.visible = true
+		_advice_chip.text = GameTheme.truncate("▸ %s" % hint, 16)
 	_heat_bar.value = GameState.heat
 	var heat_col := GameTheme.GREEN if GameState.heat < 60.0 else GameTheme.RED
 	var heat_txt := "Heat %.0f%%" % GameState.heat
@@ -830,9 +913,30 @@ func _on_coin() -> void:
 
 func _on_buy(index: int, qty: int) -> void:
 	var before: int = GameState.total_buildings_owned()
-	GameState.buy_building(index, qty)
+	if not GameState.buy_building(index, qty):
+		return
+	var ms := GameState.record_first_building_buy_ms()
+	if ms >= 0:
+		Telemetry.log_event("ui_first_building_buy_ms", {"ms": ms})
 	if GameState.tutorial_step == 1 and GameState.total_buildings_owned() > before:
 		_TutorialSystem.advance_tutorial(GameState)
+
+
+func _on_buy_mult_chip() -> void:
+	GameState.cycle_buy_mult()
+	_buy_mult_chip.text = GameState.buy_mult_label()
+	Telemetry.log_event("ui_buy_mult_changed", {"mode": GameState.buy_mult_label()})
+
+
+func _on_advice_chip() -> void:
+	var hint := GameState.next_purchase_hint()
+	if hint.is_empty():
+		return
+	for i in GameState.upgrades.size():
+		if GameState.can_buy_upgrade(i) and GameState.upgrades[i].display_name == hint:
+			_open_tab(Tab.UPGRS)
+			return
+	_open_tab(Tab.BLDGS)
 
 
 func _on_upgrade(index: int) -> void:
@@ -922,10 +1026,17 @@ func _is_goal_notification(message: String, color: Color) -> bool:
 
 
 func _refresh_tab_badges() -> void:
-	var bld: int = GameState.total_buildings_owned()
-	_tab_bldgs.text = "Bldgs"
-	_tab_upgrs.text = "Upgrs"
-	_tab_mgrs.text = "Mgrs"
+	var aff_bldgs := GameState.count_affordable_buildings()
+	var aff_upgrs := GameState.count_affordable_upgrades()
+	var hire_mgrs := GameState.count_hireable_managers()
+	_tab_badge_snapshot = {
+		"bldgs": aff_bldgs,
+		"upgrs": aff_upgrs,
+		"mgrs": hire_mgrs,
+	}
+	_tab_bldgs.text = GameTheme.tab_label_with_badge("Bldgs", aff_bldgs)
+	_tab_upgrs.text = GameTheme.tab_label_with_badge("Upgrs", aff_upgrs)
+	_tab_mgrs.text = GameTheme.tab_label_with_badge("Mgrs", hire_mgrs)
 	_tab_stats.text = "Stats"
 	# Turf subtab badges (Crew/Ops lock progress).
 	_sub_territory.text = "Territory"
@@ -933,6 +1044,7 @@ func _refresh_tab_badges() -> void:
 	if _CrewSystem.is_unlocked(GameState):
 		_sub_crew.text = "Crew"
 	else:
+		var bld: int = GameState.total_buildings_owned()
 		_sub_crew.text = "Crew %d/5" % mini(bld, 5)
 	var ready_ops := 0
 	for op in GameState.operations:
@@ -998,6 +1110,10 @@ func _build_config_tab() -> void:
 	restore.pressed.connect(func(): Monetization.restore())
 	_config_body.add_child(restore)
 	_add_config_header("DATA")
+	var menu := Button.new()
+	menu.text = "Save & Main Menu"
+	menu.pressed.connect(_on_menu)
+	_config_body.add_child(menu)
 	var reset_tut := Button.new()
 	reset_tut.text = "Reset Tutorial"
 	reset_tut.pressed.connect(func(): GameState.reset_tutorial(); _build_config_tab())
