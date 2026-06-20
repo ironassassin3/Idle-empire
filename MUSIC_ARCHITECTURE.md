@@ -97,19 +97,21 @@ Criminal Empire is an idle crime syndicate sim with **Italian-American / Sicilia
 
 ## 3. Reference matrix — work → trait → 8-bit adaptation
 
-| Work | Sonic trait | 8-bit adaptation |
-|------|-------------|------------------|
-| Godfather | Trumpet omens in minor | Square lead motif `GODFATHER_MOTIF` @ 110 Hz base, 3/4, vibrato 5 Hz |
-| Godfather | Mandolin café texture | `ARP_MANDOLINO` 16th-note triad arp on square, duty 12% |
-| Godfather Part II | Theme darkens over time | Same motif; increase noise mix + lower duty as `heat` rises |
-| Once Upon a Time in America | Nostalgic waltz | Triangle bass on beats 1–2–3; slow LFO on pad (current `_ambient` swell) |
-| Goodfellas | Paranoid bass riff | Triangle walking pattern `WALK_BASS_PARANOID` at 108 BPM |
-| Casino | Ironic rock pulse | Noise channel hi-hat grid + square off-beat stabs |
-| Sopranos | Bluesy menace | Minor blues scale lead, triangle root, sparse rests |
-| Scarface | Rising synth ambition | `sfxr` square + `p_freq_ramp` up; arp `SCARFACE_RISE` |
-| Gomorrah | Cold procedural violence | Phrygian `E_PHRYGIAN` bass, minimal melody, noise forward |
-| Untouchables | Raid staccato | 1-bar `STINGER_RAID` square + noise burst (share timbre with `error` SFX) |
-| Peaky Blinders | Outlaw dirge pulse | Low square pulse 2+2 bars; use on Rivals tab |
+Constant names below reference [`music_defs.gd`](godot/scripts/audio/music_defs.gd). †-marked rows are not yet in the scaffold — add them in the phase noted.
+
+| Work | Sonic trait | 8-bit adaptation | Const |
+|------|-------------|------------------|-------|
+| Godfather | Trumpet omens in minor | Square lead motif @ ~261 Hz (`ROOT_C4`) base, 3/4, vibrato ~5 Hz | `MOTIF_GODFATHER` |
+| Godfather | Mandolin café texture | 16th-note triad arp on square, duty ~12% | `MOTIF_MANDOLIN_ARP` |
+| Godfather Part II | Theme darkens over time | Same motif; increase noise mix + lower duty as `heat` rises | (reuse `MOTIF_GODFATHER`) |
+| Once Upon a Time in America | Nostalgic waltz | Triangle bass on beats 1–2–3; slow LFO on pad (current `_ambient` swell) | `MOTIF_WALTZ_BASS` |
+| Goodfellas | Paranoid bass riff | Triangle walking pattern at `ALLEGRO` (108 BPM) | `MOTIF_WALK_BASS` † (M3) |
+| Casino | Ironic rock pulse | Noise channel hi-hat grid + square off-beat stabs | — (sequencer rows, M2) |
+| Sopranos | Bluesy menace | `SCALE_MINOR_BLUES` lead, triangle root, sparse rests | `MOTIF_SOPRANOS_HOOK` |
+| Scarface | Rising synth ambition | `sfxr` square + `p_freq_ramp` up; rising arp | `MOTIF_SCARFACE_RISE` |
+| Gomorrah | Cold procedural violence | `SCALE_PHRYGIAN` bass, minimal melody, noise forward | (scale, no motif) |
+| Untouchables | Raid staccato | 1-bar square + noise burst (share timbre with `error` SFX) | `MOTIF_RAID_STAB` |
+| Peaky Blinders | Outlaw dirge pulse | Low square pulse 2+2 bars; use on Rivals tab | — (M3 tension) |
 
 ---
 
@@ -180,7 +182,11 @@ Residential / commercial / government **district_types** use shared templates fr
 | Headless | `_is_headless()` | No audio init |
 | Game hooks | `game_screen.gd` | SFX only (`play`, `cue_for_notification`); **no music state changes** |
 
-**Gap:** P6 report mentions a Music bus; code still routes to **Master**. M1 should add buses.
+**Already scaffolded in `music_defs.gd` (M0):** `MusicMode` / `MusicTempo` / `DistrictMotif` enums; all `SCALE_*` and `MOTIF_*` constants; `AMBIENT_ROOTS` / `AMBIENT_WEIGHTS` / `AMBIENT_LOOP_SEC` / `AMBIENT_VOL`; and the data→music mapping helpers `district_motif_for_type()`, `scale_for_district()`, `motif_intervals_for_district()`. M2 consumes these — the mapping layer does **not** need to be rebuilt.
+
+**Gaps for M1:**
+- P6 report mentions a Music bus; code still routes both pools to **Master**. M1 adds buses (§5.2).
+- `_ambient()` hardcodes `freqs := [110.0, 165.0, 220.0]` / `weights := [1.0, 0.55, 0.4]`; the scaffold already exposes these as `AMBIENT_ROOTS` (note: `ROOT_E3 = 164.81`, not `165.0`) and `AMBIENT_WEIGHTS`. M1 should consume the constants and reconcile the 164.81/165.0 drift.
 
 ### 5.2 Target bus layout
 
@@ -203,20 +209,25 @@ Configure in `default_bus_layout.tres` or `AudioServer` at `AudioManager._ready(
 
 | Stream type | Generator | Notes |
 |-------------|-----------|-------|
-| Long loops | New `music_sequencer.gd` (or methods on `AudioManager`) | Pattern rows from `music_defs.gd`; render to `PackedInt32Array` → `_make_stream()` |
+| Long loops | New `music_sequencer.gd` (or methods on `AudioManager`) | Pattern rows from `music_defs.gd`; sum channels into `PackedInt32Array` → `_make_stream()` (exists), then set loop fields like `_ambient()` |
 | One-shot stingers | `sfxr.gd` | Raids, turf wins—reuse `Sfxr.render` + short params |
 | Existing ambient | `_ambient()` | M1 upgrades frequencies to `AMBIENT_ROOTS` from defs |
 
 **Sequencer sketch (M2):**
 
 ```gdscript
-# Pseudocode — not shipped yet
-func _render_pattern(rows: Array, bpm: int, bars: int, channels: Array) -> AudioStreamWAV:
-    var samples := PackedInt32Array()
+# Pseudocode — not shipped yet. Mirrors _ambient()'s loop-field pattern.
+func _render_pattern(rows: Array, bpm: int, bars: int, beats_per_bar: int) -> AudioStreamWAV:
     var beat_s := 60.0 / float(bpm)
-    # For each row event: square/triangle/noise sample per channel, sum, clamp
-    # Loop length = bars * 4 * beat_s (4/4) or bars * 3 * beat_s (3/4)
-    return _make_loop_stream(samples)
+    var n := int(SAMPLE_RATE * bars * beats_per_bar * beat_s)  # whole-cycle, no boundary click
+    var samples := PackedInt32Array()
+    samples.resize(n)
+    # For each row event: square/triangle/noise sample per channel, sum, clamp to ±32767
+    var stream := _make_stream(samples)         # reuse existing helper
+    stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+    stream.loop_begin = 0
+    stream.loop_end = n
+    return stream
 ```
 
 **Wave sources:**
@@ -300,24 +311,24 @@ Canonical definitions live in [`godot/scripts/audio/music_defs.gd`](godot/script
 
 ### 6.1 Scales (semitone offsets from root MIDI)
 
-| Name | Intervals | Use |
-|------|-----------|-----|
-| `NATURAL_MINOR` | 0,2,3,5,7,8,10 | Godfather nostalgia, home turf |
-| `PHRYGIAN` | 0,1,3,5,7,8,10 | Gomorrah grit, industrial |
-| `DORIAN` | 0,2,3,5,7,9,10 | City Hall politics |
-| `MINOR_BLUES` | 0,3,5,6,7,10 | Sopranos menace |
-| `MAJOR_FANFARE` | 0,2,4,5,7,9,11 | Territory / rank stingers |
+| Const | Intervals | Use |
+|-------|-----------|-----|
+| `SCALE_NATURAL_MINOR` | 0,2,3,5,7,8,10 | Godfather nostalgia, home turf |
+| `SCALE_PHRYGIAN` | 0,1,3,5,7,8,10 | Gomorrah grit, industrial |
+| `SCALE_DORIAN` | 0,2,3,5,7,9,10 | City Hall politics |
+| `SCALE_MINOR_BLUES` | 0,3,5,6,7,10 | Sopranos menace |
+| `SCALE_MAJOR_FANFARE` | 0,2,4,5,7,9,11 | Territory / rank stingers |
 
 ### 6.2 Core motifs (interval sequences from root)
 
-| Key | Semitones | Origin |
-|-----|-----------|--------|
-| `GODFATHER_MOTIF` | 0, +3, +5, +3, 0, −2, 0 | Trumpet leitmotif simplification |
-| `WALTZ_BASS` | root, +5, +7 (per bar) | 3/4 oom-pah-pah |
-| `MANDOLIN_ARP` | triad 0, +4, +7 cycling | Mandolin tremolo |
-| `SCARFACE_RISE` | 0, +4, +7, +12, +12 | Rising ambition |
-| `SOPRANOS_HOOK` | 0, +3, +5, +6, +5, +3, 0 | Bluesy descent |
-| `RAID_STAB` | 0, +1, 0 (staccato) | Untouchables raid |
+| Const | Semitones | Origin |
+|-------|-----------|--------|
+| `MOTIF_GODFATHER` | 0, +3, +5, +3, 0, −2, 0 | Trumpet leitmotif simplification |
+| `MOTIF_WALTZ_BASS` | 0, +7, +12 (per bar) | 3/4 oom-pah-pah (root–fifth–octave) |
+| `MOTIF_MANDOLIN_ARP` | 0, +4, +7, +4 | Mandolin tremolo (triad cycle) |
+| `MOTIF_SCARFACE_RISE` | 0, +4, +7, +12, +12 | Rising ambition |
+| `MOTIF_SOPRANOS_HOOK` | 0, +3, +5, +6, +5, +3, 0 | Bluesy descent |
+| `MOTIF_RAID_STAB` | 0, +1, 0 | Untouchables raid (staccato) |
 
 ### 6.3 Tempo bands (`MusicTempo` enum)
 
@@ -331,12 +342,24 @@ Canonical definitions live in [`godot/scripts/audio/music_defs.gd`](godot/script
 
 ### 6.4 Root frequencies (Hz at A=440)
 
-Ambient pad roots (current `_ambient` uses 110, 165, 220):
+Defined in `music_defs.gd`. `AMBIENT_ROOTS = [ROOT_A2, ROOT_E3, ROOT_A3]`, `AMBIENT_WEIGHTS = [1.0, 0.55, 0.4]`.
 
 - `ROOT_A2 = 110.0` — bass / pad
-- `ROOT_E3 = 164.81`
+- `ROOT_E3 = 164.81` — **drift:** `_ambient()` hardcodes `165.0`; reconcile in M1
 - `ROOT_A3 = 220.0`
 - `ROOT_C4 = 261.63` — melodic center for motifs
+
+### 6.5 Mapping API (already in `music_defs.gd`)
+
+M2 consumes these `static` helpers — do not re-derive the mapping:
+
+| Function | In → out |
+|----------|----------|
+| `district_motif_for_type(district_type: String)` | `"residential"`/`"commercial"`/… → `DistrictMotif` (defaults `HOME`) |
+| `scale_for_district(motif: DistrictMotif)` | `DistrictMotif` → `SCALE_*` (Dorian for politics/gov, Phrygian for ops/industrial/smuggle, blues for cash/commercial, else natural minor) |
+| `motif_intervals_for_district(motif: DistrictMotif)` | `DistrictMotif` → `MOTIF_*` interval array |
+
+> `_ambient()` still uses local literals `[110.0, 165.0, 220.0]` / `[1.0, 0.55, 0.4]` instead of these constants. M1 first task: swap to `MusicDefs.AMBIENT_ROOTS` / `AMBIENT_WEIGHTS` so there is a single source of truth.
 
 ---
 
