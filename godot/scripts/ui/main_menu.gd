@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const MusicDefs = preload("res://scripts/audio/music_defs.gd")
+
 @onready var _continue_btn: Button = $Margin/Center/LedgerPanel/VBox/ContinueBtn
 @onready var _new_btn: Button = $Margin/Center/LedgerPanel/VBox/NewBtn
 @onready var _import_btn: Button = $Margin/Center/LedgerPanel/VBox/ImportBtn
@@ -16,6 +18,8 @@ extends CanvasLayer
 
 func _ready() -> void:
 	GameState.set_simulation_active(false)
+	if AudioManager.is_enabled():
+		AudioManager.set_music_mode(MusicDefs.MusicMode.MENU)
 	_version.text = GameConfig.VERSION
 	_apply_menu_theme()
 	_continue_btn.pressed.connect(_on_continue)
