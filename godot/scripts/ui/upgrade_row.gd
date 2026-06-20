@@ -5,22 +5,30 @@ signal buy_pressed(index: int)
 var upgrade_index: int = -1
 var _affordance: int = GameTheme.RowAffordance.LOCKED
 
-@onready var _name: Label = $HBox/Info/NameLabel
-@onready var _desc: Label = $HBox/Info/DescLabel
-@onready var _buy: Button = $HBox/BuyBtn
+@onready var _name: Label = $Margin/HBox/Info/NameLabel
+@onready var _desc: Label = $Margin/HBox/Info/DescLabel
+@onready var _buy: Button = $Margin/HBox/BuyBtn
 
 
 func setup(index: int) -> void:
 	upgrade_index = index
 	var u := GameState.upgrades[index]
-	_name.text = u.display_name
 	_desc.text = u.description
 	_refresh()
 
 
 func _ready() -> void:
+	GameTheme.apply_row_buy_button(_buy)
+	_apply_label_scale()
 	_buy.pressed.connect(func(): buy_pressed.emit(upgrade_index))
 	GameState.stats_changed.connect(_refresh)
+	if upgrade_index >= 0:
+		_refresh()
+
+
+func _apply_label_scale() -> void:
+	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
 func _draw() -> void:
@@ -31,6 +39,7 @@ func _refresh() -> void:
 	if upgrade_index < 0 or upgrade_index >= GameState.upgrades.size():
 		return
 	var u := GameState.upgrades[upgrade_index]
+	_name.text = u.display_name
 	modulate = Color.WHITE
 	if u.purchased:
 		_buy.text = "Owned"

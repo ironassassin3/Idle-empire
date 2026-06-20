@@ -6,12 +6,12 @@ const _OperationSystem = preload("res://scripts/systems/operation_system.gd")
 
 var operation_index: int = -1
 
-@onready var _icon: Label = $VBox/Top/IconLabel
-@onready var _name: Label = $VBox/Top/NameLabel
-@onready var _desc: Label = $VBox/DescLabel
-@onready var _req: Label = $VBox/ReqLabel
-@onready var _status: Label = $VBox/StatusLabel
-@onready var _action: Button = $VBox/ActionBtn
+@onready var _icon: Label = $Margin/VBox/Top/IconLabel
+@onready var _name: Label = $Margin/VBox/Top/NameLabel
+@onready var _desc: Label = $Margin/VBox/DescLabel
+@onready var _req: Label = $Margin/VBox/ReqLabel
+@onready var _status: Label = $Margin/VBox/StatusLabel
+@onready var _action: Button = $Margin/VBox/ActionBtn
 
 
 func setup(index: int) -> void:
@@ -20,8 +20,21 @@ func setup(index: int) -> void:
 
 
 func _ready() -> void:
+	GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.LOCKED)
+	GameTheme.apply_row_buy_button(_action)
+	_apply_label_scale()
 	_action.pressed.connect(func(): action_pressed.emit(operation_index))
 	GameState.stats_changed.connect(_refresh)
+	if operation_index >= 0:
+		_refresh()
+
+
+func _apply_label_scale() -> void:
+	_icon.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_req.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
 func _refresh() -> void:

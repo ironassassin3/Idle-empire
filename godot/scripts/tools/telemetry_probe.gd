@@ -18,6 +18,8 @@ var _telemetry: Node
 var _game_state: Node
 var _row_probe_ok := false
 var _row_probe_data: Dictionary = {}
+var _upgrade_row_probe_ok := false
+var _upgrade_row_probe_data: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -76,6 +78,11 @@ func _process(delta: float) -> bool:
 				_game_state.dismiss_offline_overlay()
 				var queue_ok: bool = daily_pending and not _game_state.show_daily_overlay
 				_telemetry.log_event("ui_overlay_queue_ok", {"ok": queue_ok})
+				_screen._open_tab(_screen.Tab.UPGRS)
+				var upgrade_probe := _probe_upgrade_rows()
+				_upgrade_row_probe_ok = upgrade_probe.get("ok", false)
+				_upgrade_row_probe_data = upgrade_probe
+				_telemetry.log_event("ui_upgrade_rows_ok", upgrade_probe)
 				_screen._open_tab(_screen.Tab.BLDGS)
 				var row_probe := _probe_building_rows()
 				_row_probe_ok = row_probe.get("ok", false)
@@ -102,10 +109,12 @@ func _process(delta: float) -> bool:
 				var read_path := ProjectSettings.globalize_path(_telemetry.get_output_path())
 				var kinds := _read_ui_event_kinds(read_path)
 				var out := {
-					"ok": kinds.size() >= 5 and _row_probe_ok,
+					"ok": kinds.size() >= 5 and _row_probe_ok and _upgrade_row_probe_ok,
 					"ui_event_kinds": kinds.size(),
 					"building_rows_ok": _row_probe_ok,
 					"building_rows": _row_probe_data,
+					"upgrade_rows_ok": _upgrade_row_probe_ok,
+					"upgrade_rows": _upgrade_row_probe_data,
 					"events": kinds,
 					"output": read_path,
 				}
@@ -165,6 +174,75 @@ func _probe_building_rows() -> Dictionary:
 		if name_lbl.text.strip_edges().is_empty() or buy1.text.strip_edges().is_empty():
 			return {"ok": false, "count": count, "reason": "empty_text", "first_name": first_name}
 		if hbox.size.y <= 0.0 or name_lbl.size.y <= 0.0 or info.size.x <= 0.0 or buy1.size.x <= 0.0:
+			return {
+				"ok": false,
+				"count": count,
+				"reason": "zero_layout",
+				"first_name": first_name,
+				"row_size": str(row_size),
+				"hbox_size": str(hbox_size),
+				"info_size": str(info_size),
+			}
+	return {
+		"ok": true,
+		"count": count,
+		"first_name": first_name,
+		"row_size": str(row_size),
+		"hbox_size": str(hbox_size),
+		"info_size": str(info_size),
+	}
+
+
+func _count_upgrade_rows() -> int:
+	var list: Node = _screen.find_child("UpgrsScroll", true, false)
+	if list == null:
+		return 0
+	list = list.get_node_or_null("List")
+	if list == null:
+		return 0
+	var count := 0
+	for c in list.get_children():
+		if c.get_script() == null:
+			continue
+		if str(c.get_script().resource_path).ends_with("upgrade_row.gd"):
+			count += 1
+	return count
+
+
+func _probe_upgrade_rows() -> Dictionary:
+	var count := _count_upgrade_rows()
+	var list: Node = _screen.find_child("UpgrsScroll", true, false)
+	if list == null:
+		return {"ok": false, "count": count, "reason": "no_scroll"}
+	list = list.get_node_or_null("List")
+	if list == null:
+		return {"ok": false, "count": count, "reason": "no_list"}
+	if count <= 0:
+		return {"ok": false, "count": count, "reason": "row_count"}
+	var first_name := ""
+	var row_size := Vector2.ZERO
+	var hbox_size := Vector2.ZERO
+	var info_size := Vector2.ZERO
+	for c in list.get_children():
+		if c.get_script() == null:
+			continue
+		if not str(c.get_script().resource_path).ends_with("upgrade_row.gd"):
+			continue
+		var margin: MarginContainer = c.get_node_or_null("Margin") as MarginContainer
+		if margin == null:
+			return {"ok": false, "count": count, "reason": "missing_margin"}
+		var hbox: HBoxContainer = margin.get_child(0) as HBoxContainer
+		var info: VBoxContainer = hbox.get_node("Info") as VBoxContainer
+		var name_lbl: Label = info.get_node("NameLabel") as Label
+		var buy: Button = hbox.get_node("BuyBtn") as Button
+		if first_name.is_empty():
+			first_name = name_lbl.text
+			row_size = c.size
+			hbox_size = hbox.size
+			info_size = info.size
+		if name_lbl.text.strip_edges().is_empty() or buy.text.strip_edges().is_empty():
+			return {"ok": false, "count": count, "reason": "empty_text", "first_name": first_name}
+		if hbox.size.y <= 0.0 or name_lbl.size.y <= 0.0 or info.size.x <= 0.0 or buy.size.x <= 0.0:
 			return {
 				"ok": false,
 				"count": count,
