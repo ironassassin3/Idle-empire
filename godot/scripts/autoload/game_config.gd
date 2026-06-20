@@ -28,3 +28,6 @@ const AUTOSAVE_INTERVAL := 30.0
 const OFFLINE_CAP_HOURS := 12.0
 const OFFLINE_EFFICIENCY := 0.6
 const SHOW_PARTICLES := true
+
+# P14 — flip to true once Material Maker rustic_noir_theme.tres is exported.
+const UI_RUSTIC_THEME := false

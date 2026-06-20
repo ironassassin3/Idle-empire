@@ -134,6 +134,13 @@ var show_particles: bool = true
 var notifications_enabled: bool = false
 var telemetry_consent: bool = true
 
+# P14 — global buy multiplier chip (×1 / ×10 / Max). Persisted in save.
+var buy_mult_mode: int = 0  # 0=×1, 1=×10, 2=Max
+
+# P14 UI runtime telemetry anchors (not saved).
+var _ui_session_start_ms: int = 0
+var _ui_first_building_buy_ms: int = -1
+
 # Monetization (Phase C — persisted entitlements)
 var remove_ads: bool = false
 var entitlements: Array = []
@@ -280,6 +287,9 @@ func reset_new_game() -> void:
 	dragon_logistics_timer = 0.0
 	dragon_guaranteed_territory = false
 	dragon_black_last_op_time = -1.0
+	buy_mult_mode = 0
+	_ui_session_start_ms = 0
+	_ui_first_building_buy_ms = -1
 	influence = 0
 	_ManagerSystem.reset_runtime(self)
 	balance = 0.0
@@ -515,6 +525,99 @@ func buy_building(index: int, qty: int = 1) -> bool:
 	stats_changed.emit()
 	_play_sfx("purchase")
 	return true
+
+
+func buy_mult_label() -> String:
+	match buy_mult_mode:
+		1:
+			return "×10"
+		2:
+			return "Max"
+		_:
+			return "×1"
+
+
+func cycle_buy_mult() -> void:
+	buy_mult_mode = (buy_mult_mode + 1) % 3
+
+
+func max_affordable_building(index: int, cap: int = 1000) -> int:
+	if index < 0 or index >= buildings.size():
+		return 0
+	var b: Building = buildings[index]
+	var n := 0
+	var spent := 0.0
+	var temp_owned := b.owned
+	while n < cap:
+		var next_cost := b.base_cost * pow(b.cost_scale, temp_owned)
+		if balance < spent + next_cost:
+			break
+		spent += next_cost
+		temp_owned += 1
+		n += 1
+	return n
+
+
+func effective_buy_qty(index: int) -> int:
+	match buy_mult_mode:
+		1:
+			return 10
+		2:
+			return max_affordable_building(index)
+		_:
+			return 1
+
+
+func count_affordable_buildings() -> int:
+	var n := 0
+	for i in buildings.size():
+		if can_buy_building(i, 1):
+			n += 1
+	return n
+
+
+func count_affordable_upgrades() -> int:
+	var n := 0
+	for i in upgrades.size():
+		if can_buy_upgrade(i):
+			n += 1
+	return n
+
+
+func count_hireable_managers() -> int:
+	var n := 0
+	for i in managers.size():
+		if can_hire_manager(i):
+			n += 1
+	return n
+
+
+func next_purchase_hint() -> String:
+	for i in upgrades.size():
+		if can_buy_upgrade(i):
+			return upgrades[i].display_name
+	var pete_idx: int = _ManagerSystem.pete_recommends_index(self)
+	if pete_idx >= 0:
+		return buildings[pete_idx].display_name
+	for i in buildings.size():
+		if can_buy_building(i, 1):
+			return buildings[i].display_name
+	return ""
+
+
+func mark_ui_session_start() -> void:
+	_ui_session_start_ms = Time.get_ticks_msec()
+	_ui_first_building_buy_ms = -1
+
+
+func record_first_building_buy_ms() -> int:
+	if _ui_first_building_buy_ms >= 0:
+		return -1
+	if _ui_session_start_ms <= 0:
+		_ui_first_building_buy_ms = 0
+	else:
+		_ui_first_building_buy_ms = Time.get_ticks_msec() - _ui_session_start_ms
+	return _ui_first_building_buy_ms
 
 
 func can_buy_upgrade(index: int) -> bool:
@@ -768,6 +871,7 @@ func apply_save_data(data: Dictionary) -> void:
 	show_particles = _b(data, "show_particles", true)
 	notifications_enabled = _b(data, "notifications_enabled", false)
 	telemetry_consent = _b(data, "telemetry_consent", true)
+	buy_mult_mode = clampi(_i(data, "buy_mult_mode", 0), 0, 2)
 	remove_ads = _b(data, "remove_ads", false)
 	entitlements = _arr(data, "entitlements")
 	iap_income_mult = maxf(1.0, _f(data, "iap_income_mult", 1.0))
@@ -914,6 +1018,7 @@ func to_save_data() -> Dictionary:
 		"show_particles": show_particles,
 		"notifications_enabled": notifications_enabled,
 		"telemetry_consent": telemetry_consent,
+		"buy_mult_mode": buy_mult_mode,
 		"remove_ads": remove_ads,
 		"entitlements": entitlements.duplicate(),
 		"iap_income_mult": iap_income_mult,
@@ -1088,9 +1193,12 @@ func collect_golden_coin(auto: bool = false) -> void:
 
 
 func dismiss_offline_overlay() -> void:
-	show_offline_overlay = false
+	# Sequential queue: offline first, then daily (P14 overlay discipline).
+	if show_offline_overlay:
+		show_offline_overlay = false
+		_offline_ad_doubled = false
+		return
 	show_daily_overlay = false
-	_offline_ad_doubled = false
 
 
 func can_double_offline_via_ad() -> bool:

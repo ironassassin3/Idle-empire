@@ -1,9 +1,20 @@
 # UI Overhaul Architecture — Criminal Empire (Godot 1.0)
 
-**Status:** Design document (2026-06). Research-backed phase plan for the ship-target UI.  
+**Status:** Design document (2026-06). **P14 in progress** — first tranche landed 2026-06-19.  
 **Recommended phase ID:** **P14 — Touch-First Retention UI** (extends [`P13_REPORT.md`](P13_REPORT.md) Material Maker skin + [`MUSIC_ARCHITECTURE.md`](MUSIC_ARCHITECTURE.md) audio layers).  
 **Policy:** [`ART_POLICY.md`](ART_POLICY.md) — Material Maker procedural textures OK; no generative AI; motion/fills stay code-drawn.  
 **Ship surface:** `godot/scripts/ui/game_screen.gd` (5-tab bottom nav, portrait 720×1280, 9 logical tabs collapsed to 5+Turf subtabs).
+
+### P14 progress (session 2026-06-19)
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| **P14.0** Research lock & metrics | ✅ Done | Doc frozen; `docs/ui/capture_matrix/`; UI telemetry events wired |
+| **P14.1** Theme foundation (code-first) | ✅ Done (fallback) | `GameTheme` StyleBox helpers + MM texture hooks; `UI_RUSTIC_THEME` flag |
+| **P14.2** Main menu | ⬜ Next | Deferred — no MM textures yet |
+| **P14.3** Header / economy HUD / buy-mult | ✅ Done | Cash-dominant header, ×1/×10/Max chip, advice chip, rank truncate |
+| **P14.4** Bottom nav tab badges | ✅ Partial | Bldgs/Upgrs/Mgrs pill counts; Turf ★/• preserved; no MM tab strip |
+| **P14.5–P14.9** | ⬜ Pending | Rows, overlays polish, device pass, funnel validation |
 
 ---
 
