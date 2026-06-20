@@ -13,6 +13,7 @@ const _TutorialSystem = preload("res://scripts/systems/tutorial_system.gd")
 const _BuffSystem = preload("res://scripts/systems/buff_system.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 const StatsDashboard = preload("res://scripts/ui/stats_dashboard.gd")
+const MusicDefs = preload("res://scripts/audio/music_defs.gd")
 
 const BUILDING_ROW := preload("res://scenes/building_row.tscn")
 const UPGRADE_ROW := preload("res://scenes/upgrade_row.tscn")
@@ -134,8 +135,10 @@ var _notif_default_font_size: int = 0
 var _overlay_kind: String = ""
 var _overlay_shown_at: int = 0
 var _tab_badge_snapshot: Dictionary = {}
+var _music_ctx_timer := 0.0
 const STATS_REFRESH_INTERVAL := 0.2
 const _BASE_MARGIN := 12
+const _MUSIC_CTX_INTERVAL := 1.0
 
 
 ## Inset the root container by the device safe area (notch / home bar). Safe-area
@@ -163,6 +166,8 @@ func _apply_safe_area() -> void:
 func _ready() -> void:
 	GameState.set_simulation_active(true)
 	GameState.mark_ui_session_start()
+	if AudioManager.is_enabled():
+		AudioManager.set_music_mode(MusicDefs.MusicMode.PLAYING_AMBIENT)
 	_apply_safe_area()
 	_apply_header_theme()
 	get_viewport().size_changed.connect(_apply_safe_area)
@@ -440,6 +445,11 @@ func _process(delta: float) -> void:
 			_refresh_stats_tab()
 	_update_motion_cues()
 	_refresh_overlays()
+	_music_ctx_timer -= delta
+	if _music_ctx_timer <= 0.0:
+		_music_ctx_timer = _MUSIC_CTX_INTERVAL
+		if AudioManager.is_enabled():
+			AudioManager.update_music_context({"heat": GameState.heat, "tab": _tab})
 	if _click_scale < 1.0:
 		_click_scale = minf(1.0, _click_scale + _CLICK_SCALE_RATE * delta)
 		_hustle.scale = Vector2(_click_scale, _click_scale)

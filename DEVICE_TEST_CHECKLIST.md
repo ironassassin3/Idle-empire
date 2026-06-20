@@ -29,6 +29,7 @@ Catches most visual/nav/renderer items.
 
 ### Portrait layout + nav (closes P7)
 - [ ] Portrait is playable end-to-end — nothing clipped or off-screen at 720×1280.
+- [ ] **Film grain** (P14.8): faint ledger texture over gameplay; off when Particles OFF in Config.
 - [ ] Bottom bar: Buildings / Upgrades / Mgrs / Turf / Stats all switch correctly.
 - [ ] Turf button shows the subtab bar (Territory / Rivals / Crew / Ops); Crew/Ops show
       `n/5` · `n/2` lock progress until unlocked, then enable.
@@ -37,10 +38,13 @@ Catches most visual/nav/renderer items.
 - [ ] Resize the window narrow/short → content stays usable (scrolls, no overlap).
 - [ ] Turf "★"/"•" roll-up badge appears (Broker active / ops ready).
 
-### Audio (closes P6 — still open)
+### Audio (closes P6 + P14.8 M1)
 - [ ] Config → raise Master + SFX: hear distinct cues (click, purchase, manager, territory,
       rival, rank-up, prestige, error). Each milestone tier sounds different.
-- [ ] Raise Music: ambient drone loop audible; loops with no click/pop at the seam.
+- [ ] Raise Music: **menu** famiglia hook on main menu; **in-game** 8-bit waltz ambient (pad +
+      bass + lead); loops with no click/pop at the seam.
+- [ ] Heat ≥60%: tension grit/stab layer mixes under ambient (stub — no district motifs yet).
+- [ ] Music and SFX on separate buses (Godot Audio tab shows Music + SFX under Master).
 - [ ] Mute-all silences everything; sliders change loudness live.
 
 ### Daily / offline return (closes P9, desktop-checkable)

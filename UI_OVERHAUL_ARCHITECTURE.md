@@ -17,7 +17,8 @@
 | **P14.5** Row affordance | ✅ Done (code-first) | Wax seal + green/gold/grey borders; Pete pick border; buy_mult on Bldgs |
 | **P14.6** Stats / Config / prestige tree | ✅ Done (code-first) | Text scale on stats/tabs/config; IAP row cards; prestige perk labels |
 | **P14.7** Overlays, onboarding, motion | ✅ Done (code-first) | Ledger bracket frames; overlay queue; reduced-motion via Particles OFF |
-| **P14.8–P14.9** | ⬜ Pending | Grain/device pass, funnel validation |
+| **P14.8** Atmosphere + device prep | ✅ Done (code-first) | Film grain overlay; M1 music buses + famiglia loop; heat tension stub |
+| **P14.9** Telemetry validation | ⬜ Pending | Funnel validation; `P14_REPORT.md` started |
 
 ---
 
