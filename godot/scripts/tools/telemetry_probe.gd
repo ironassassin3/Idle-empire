@@ -16,6 +16,8 @@ var _screen: Node
 var _out_path := ""
 var _telemetry: Node
 var _game_state: Node
+var _row_probe_ok := false
+var _row_probe_data: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -26,6 +28,10 @@ func _initialize() -> void:
 	SoakAutoloads.install(self)
 	_telemetry = root.get_node("Telemetry") as Node
 	_game_state = root.get_node("GameState") as Node
+	# game_screen._populate_buildings() runs in _ready; GameState only defers
+	# reset_new_game(), so headless probes must init buildings synchronously first.
+	if _game_state.buildings.is_empty():
+		_game_state.reset_new_game()
 	_out_path = _arg_after("--output")
 	if _out_path.is_empty():
 		_out_path = "user://telemetry_probe.jsonl"
@@ -71,9 +77,11 @@ func _process(delta: float) -> bool:
 				var queue_ok: bool = daily_pending and not _game_state.show_daily_overlay
 				_telemetry.log_event("ui_overlay_queue_ok", {"ok": queue_ok})
 				_screen._open_tab(_screen.Tab.BLDGS)
-				var row_ok := _assert_building_rows_visible()
-				_telemetry.log_event("ui_building_rows_ok", {"ok": row_ok, "count": _count_building_rows()})
-				if _game_state.can_buy_building(0, 1):
+				var row_probe := _probe_building_rows()
+				_row_probe_ok = row_probe.get("ok", false)
+				_row_probe_data = row_probe
+				_telemetry.log_event("ui_building_rows_ok", row_probe)
+				if row_probe.get("ok", false) and _game_state.can_buy_building(0, 1):
 					_game_state.buy_building(0, 1)
 					var ms: int = _game_state.record_first_building_buy_ms()
 					if ms >= 0:
@@ -94,8 +102,10 @@ func _process(delta: float) -> bool:
 				var read_path := ProjectSettings.globalize_path(_telemetry.get_output_path())
 				var kinds := _read_ui_event_kinds(read_path)
 				var out := {
-					"ok": kinds.size() >= 5,
+					"ok": kinds.size() >= 5 and _row_probe_ok,
 					"ui_event_kinds": kinds.size(),
+					"building_rows_ok": _row_probe_ok,
+					"building_rows": _row_probe_data,
 					"events": kinds,
 					"output": read_path,
 				}
@@ -120,23 +130,58 @@ func _count_building_rows() -> int:
 	return count
 
 
-func _assert_building_rows_visible() -> bool:
-	if _count_building_rows() != 11:
-		return false
-	var list: Node = _screen.find_child("BldgsScroll", true, false).get_node("List")
+func _probe_building_rows() -> Dictionary:
+	var count := _count_building_rows()
+	var list: Node = _screen.find_child("BldgsScroll", true, false)
+	if list == null:
+		return {"ok": false, "count": count, "reason": "no_scroll"}
+	list = list.get_node_or_null("List")
+	if list == null:
+		return {"ok": false, "count": count, "reason": "no_list"}
+	var list_children := list.get_child_count()
+	if count != 11:
+		return {"ok": false, "count": count, "list_children": list_children, "reason": "row_count"}
+	var first_name := ""
+	var row_size := Vector2.ZERO
+	var hbox_size := Vector2.ZERO
+	var info_size := Vector2.ZERO
 	for c in list.get_children():
 		if c.get_script() == null:
 			continue
 		if not str(c.get_script().resource_path).ends_with("building_row.gd"):
 			continue
-		var hbox: HBoxContainer = c.get_child(0) as HBoxContainer
-		var name_lbl: Label = hbox.get_node("Info/NameLabel") as Label
+		var margin: MarginContainer = c.get_node_or_null("Margin") as MarginContainer
+		if margin == null:
+			return {"ok": false, "count": count, "reason": "missing_margin"}
+		var hbox: HBoxContainer = margin.get_child(0) as HBoxContainer
+		var info: VBoxContainer = hbox.get_node("Info") as VBoxContainer
+		var name_lbl: Label = info.get_node("NameLabel") as Label
 		var buy1: Button = hbox.get_node("Buy1") as Button
+		if first_name.is_empty():
+			first_name = name_lbl.text
+			row_size = c.size
+			hbox_size = hbox.size
+			info_size = info.size
 		if name_lbl.text.strip_edges().is_empty() or buy1.text.strip_edges().is_empty():
-			return false
-		if hbox.size.y <= 0.0 or name_lbl.size.y <= 0.0:
-			return false
-	return true
+			return {"ok": false, "count": count, "reason": "empty_text", "first_name": first_name}
+		if hbox.size.y <= 0.0 or name_lbl.size.y <= 0.0 or info.size.x <= 0.0 or buy1.size.x <= 0.0:
+			return {
+				"ok": false,
+				"count": count,
+				"reason": "zero_layout",
+				"first_name": first_name,
+				"row_size": str(row_size),
+				"hbox_size": str(hbox_size),
+				"info_size": str(info_size),
+			}
+	return {
+		"ok": true,
+		"count": count,
+		"first_name": first_name,
+		"row_size": str(row_size),
+		"hbox_size": str(hbox_size),
+		"info_size": str(info_size),
+	}
 
 
 func _read_ui_event_kinds(path: String) -> PackedStringArray:

@@ -8,28 +8,39 @@ var building_index: int = -1
 var _building: Building
 var _affordance: int = GameTheme.RowAffordance.LOCKED
 
-@onready var _name: Label = $HBox/Info/NameLabel
-@onready var _desc: Label = $HBox/Info/DescLabel
-@onready var _owned: Label = $HBox/Info/OwnedLabel
-@onready var _income: Label = $HBox/Info/IncomeLabel
-@onready var _buy1: Button = $HBox/Buy1
-@onready var _buy10: Button = $HBox/Buy10
-@onready var _buy_max: Button = $HBox/BuyMax
+@onready var _name: Label = $Margin/HBox/Info/NameLabel
+@onready var _desc: Label = $Margin/HBox/Info/DescLabel
+@onready var _owned: Label = $Margin/HBox/Info/OwnedLabel
+@onready var _income: Label = $Margin/HBox/Info/IncomeLabel
+@onready var _buy1: Button = $Margin/HBox/Buy1
+@onready var _buy10: Button = $Margin/HBox/Buy10
+@onready var _buy_max: Button = $Margin/HBox/BuyMax
 
 
 func setup(index: int) -> void:
 	building_index = index
 	_building = GameState.buildings[index]
-	_name.text = _building.display_name
 	_desc.text = _building.description
 	_refresh()
 
 
 func _ready() -> void:
+	for btn in [_buy1, _buy10, _buy_max]:
+		GameTheme.apply_row_buy_button(btn)
+	_apply_label_scale()
 	_buy1.pressed.connect(_on_buy_primary)
 	_buy10.pressed.connect(func(): buy_pressed.emit(building_index, 10))
 	_buy_max.pressed.connect(_on_buy_max)
 	GameState.stats_changed.connect(_refresh)
+	if building_index >= 0:
+		_refresh()
+
+
+func _apply_label_scale() -> void:
+	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
 func _draw() -> void:

@@ -60,8 +60,8 @@ const _SLICE_MARGIN := 24
 const _CARD_SLICE := 18
 # List rows (72–96px tall) cannot use panel card margins — 18+8 per side leaves ~20px
 # interior and clips labels/buttons. Tight slice keeps rustic frame without eating content.
-const _ROW_SLICE := 5
-const _ROW_CONTENT := 3.0
+const _ROW_SLICE := 4
+const _ROW_CONTENT := 0.0
 
 static var _rustic_textures: Dictionary = {}
 static var _rustic_style_cache: Dictionary = {}
@@ -521,7 +521,7 @@ static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 			sb.border_color = Color(TEXT_MUTED, 0.35)
 	sb.set_border_width_all(2)
 	sb.set_corner_radius_all(6)
-	sb.set_content_margin_all(8)
+	sb.set_content_margin_all(0.0)
 	return sb
 
 
@@ -550,6 +550,25 @@ static func apply_row_affordance(row: PanelContainer, affordance: int) -> void:
 	row.add_theme_stylebox_override("panel", row_card_style(affordance))
 	row.set_meta("_row_affordance", affordance)
 	row.queue_redraw()
+
+
+static func apply_row_buy_button(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.add_theme_font_size_override("font_size", scaled_font(12))
+	var normal := make_chip_flat(false)
+	var hover := make_chip_flat(false)
+	hover.bg_color = hover.bg_color.lightened(0.08)
+	var pressed := make_chip_flat(false)
+	pressed.bg_color = pressed.bg_color.darkened(0.06)
+	var disabled := make_chip_flat(false)
+	disabled.bg_color = disabled.bg_color.darkened(0.12)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", TEXT)
+	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
 
 
 static func draw_row_wax_seal(control: Control, affordance: int) -> void:
