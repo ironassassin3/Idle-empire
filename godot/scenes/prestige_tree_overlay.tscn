@@ -1,6 +1,7 @@
-[gd_scene format=3 uid="uid://cot8qs4puwyuu"]
+[gd_scene load_steps=3 format=3 uid="uid://cot8qs4puwyuu"]
 
 [ext_resource type="Script" path="res://scripts/ui/prestige_tree_overlay.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/overlay_frame.gd" id="2"]
 
 [node name="PrestigeTreeOverlay" type="CanvasLayer"]
 layer = 10
@@ -113,6 +114,7 @@ text = "DRAGON PATRON"
 
 [node name="BranchDialog" type="PanelContainer" parent="."]
 visible = false
+script = ExtResource("2")
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -167,6 +169,7 @@ text = "Cancel"
 
 [node name="PrestigeDialog" type="PanelContainer" parent="."]
 visible = false
+script = ExtResource("2")
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5

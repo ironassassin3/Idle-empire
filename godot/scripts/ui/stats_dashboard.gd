@@ -65,7 +65,7 @@ static func _section_header(parent: Control, title: String) -> void:
 	var lbl := Label.new()
 	lbl.text = title
 	lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	row.add_child(lbl)
 	var sep := ColorRect.new()
 	sep.color = Color(GameTheme.ACCENT, 0.35)
@@ -80,7 +80,7 @@ static func _add_muted_line(parent: Control, text: String) -> void:
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.add_theme_color_override("font_color", GameTheme.GREEN)
-	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	parent.add_child(lbl)
 
 
@@ -110,12 +110,12 @@ static func _make_stat_card(label: String, value: String, gold: bool) -> PanelCo
 	var lbl := Label.new()
 	lbl.text = label
 	lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	vbox.add_child(lbl)
 	var val := Label.new()
 	val.text = value
 	val.add_theme_color_override("font_color", GameTheme.GOLD if gold else GameTheme.TEXT)
-	val.add_theme_font_size_override("font_size", 14)
+	val.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	vbox.add_child(val)
 	return panel
 
@@ -125,7 +125,7 @@ static func _add_rank_section(parent: Control, state) -> void:
 	var rank_lbl := Label.new()
 	rank_lbl.text = state.rank_label()
 	rank_lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
-	rank_lbl.add_theme_font_size_override("font_size", 16)
+	rank_lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	parent.add_child(rank_lbl)
 
 	var perks: Dictionary = Prestige.get_cumulative_rank_perks(state.prestige_tokens)
@@ -197,7 +197,7 @@ static func _add_rob_section(parent: Control, rob: Dictionary) -> void:
 		]
 		sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		sum.add_theme_color_override("font_color", GameTheme.GOLD)
-		sum.add_theme_font_size_override("font_size", 11)
+		sum.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 		parent.add_child(sum)
 	for rec in rob.get("recommendations", []):
 		_add_muted_line(parent, "→ %s" % rec)
@@ -214,7 +214,7 @@ static func _add_heat_section(parent: Control, state) -> void:
 	var big := Label.new()
 	big.text = "%.0f%%" % heat
 	big.add_theme_color_override("font_color", heat_col)
-	big.add_theme_font_size_override("font_size", 22)
+	big.add_theme_font_size_override("font_size", GameTheme.scaled_font(22))
 	parent.add_child(big)
 	_add_bar(parent, heat / 100.0, heat_col)
 	if heat >= HeatSystem.RAID_THRESHOLD:
@@ -222,7 +222,7 @@ static func _add_heat_section(parent: Control, state) -> void:
 		warn.text = "Raid risk — police can seize cash above %d%% heat" % int(HeatSystem.RAID_THRESHOLD)
 		warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		warn.add_theme_color_override("font_color", GameTheme.RED)
-		warn.add_theme_font_size_override("font_size", 11)
+		warn.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 		parent.add_child(warn)
 	else:
 		_add_muted_line(parent, "Safe — raids begin at %d%%" % int(HeatSystem.RAID_THRESHOLD))
@@ -241,7 +241,7 @@ static func _add_city_section(parent: Control, state) -> void:
 	var big := Label.new()
 	big.text = "%d%%" % int(round(ctrl_pct * 100.0))
 	big.add_theme_color_override("font_color", ctrl_col)
-	big.add_theme_font_size_override("font_size", 22)
+	big.add_theme_font_size_override("font_size", GameTheme.scaled_font(22))
 	parent.add_child(big)
 	_add_muted_line(parent, "%d / %d districts under your control" % [terr, total_t])
 	_add_bar(parent, ctrl_pct, ctrl_col)
@@ -311,11 +311,11 @@ static func _add_labeled_bar(parent: Control, label: String, ratio: float, color
 	lbl.text = label
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	row.add_child(lbl)
 	var pct_lbl := Label.new()
 	pct_lbl.text = right
 	pct_lbl.add_theme_color_override("font_color", GameTheme.TEXT)
-	pct_lbl.add_theme_font_size_override("font_size", 11)
+	pct_lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	row.add_child(pct_lbl)
 	_add_bar(parent, ratio, color)

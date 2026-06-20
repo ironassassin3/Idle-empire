@@ -15,8 +15,9 @@
 | **P14.3** Header / economy HUD / buy-mult | ✅ Done | Cash-dominant header, ×1/×10/Max chip, advice chip, rank truncate |
 | **P14.4** Bottom nav tab badges | ✅ Partial | Bldgs/Upgrs/Mgrs pill counts; Turf ★/• preserved; no MM tab strip |
 | **P14.5** Row affordance | ✅ Done (code-first) | Wax seal + green/gold/grey borders; Pete pick border; buy_mult on Bldgs |
-| **P14.6** Stats / Config / prestige tree | ⬜ Partial | Text scale toggle (100%/125%); prestige perk labels always visible |
-| **P14.7–P14.9** | ⬜ Pending | Overlays polish, device pass, funnel validation |
+| **P14.6** Stats / Config / prestige tree | ✅ Done (code-first) | Text scale on stats/tabs/config; IAP row cards; prestige perk labels |
+| **P14.7** Overlays, onboarding, motion | ✅ Done (code-first) | Ledger bracket frames; overlay queue; reduced-motion via Particles OFF |
+| **P14.8–P14.9** | ⬜ Pending | Grain/device pass, funnel validation |
 
 ---
 
