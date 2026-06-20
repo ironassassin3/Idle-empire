@@ -322,6 +322,7 @@ Follow [`ROADMAP.md`](ROADMAP.md):
 3. **P9 closeout** — push notifications + FTUE telemetry (when scoped)
 4. **Balance** — prove in `sim_pacing.py`, port to Godot; no play-time gates
 5. **P10–P12** — monetization seams → store → soft launch
+6. **P14** — Touch-first UI overhaul per [`UI_OVERHAUL_ARCHITECTURE.md`](UI_OVERHAUL_ARCHITECTURE.md) (after P8 device pass)
 
 Do not add new major mechanics without telemetry evidence.
 

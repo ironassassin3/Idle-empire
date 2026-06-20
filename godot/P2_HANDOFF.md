@@ -134,6 +134,7 @@ Cached in `GameState.income_per_second()` — do not recompute more than once pe
 3. **Commit SHIP work** — `chore:` hygiene + `feat:` mock-first F2P autoloads (see `SHIP_ARCHITECTURE.md`)
 4. **§5 Android setup** — Install build template + AdMob/Billing/notification/Play Games plugins
 5. **Balance tweak (optional)** — If territory path feels too fast on device, tune in `sim_pacing.py` first
+6. **P14 UI overhaul** — Touch-first retention UX; [`UI_OVERHAUL_ARCHITECTURE.md`](../UI_OVERHAUL_ARCHITECTURE.md) + ROADMAP P14
 
 ## Rules
 
