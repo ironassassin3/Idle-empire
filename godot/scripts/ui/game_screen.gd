@@ -421,7 +421,7 @@ func _layout_city_overlays() -> void:
 	if sz.y < 40.0:
 		return
 	bar.position = Vector2(8.0, sz.y - 34.0)
-	bar.size = Vector2(maxf(80.0, sz.x - 16.0), 28.0)
+	bar.size = Vector2(minf(148.0, maxf(80.0, sz.x * 0.42)), 28.0)
 
 
 func _ensure_fallback_hustle() -> void:
