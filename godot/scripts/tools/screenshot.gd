@@ -12,6 +12,7 @@ extends SceneTree
 ##   --buildings N    Override total buildings owned (all on index 0)
 ##   --heat N         Set heat 0–100
 ##   --districts N    Unlock first N territories (district strip)
+##   --prestige-tokens N  Seed prestige tokens (e.g. 75 = Crime Lord rank glow)
 
 const GAME_SCREEN := "res://scenes/game_screen.tscn"
 const MAIN_MENU := "res://scenes/main_menu.tscn"
@@ -76,6 +77,11 @@ func _apply_city_matrix_seed(gs: Node) -> void:
 			var t = districts[i]
 			if t != null and t.has_method("set"):
 				t.unlocked = i < unlock_count
+		if gs.has_signal("stats_changed"):
+			gs.stats_changed.emit()
+	var prestige_arg := _arg_after("--prestige-tokens", "")
+	if not prestige_arg.is_empty():
+		gs.prestige_tokens = maxi(0, int(prestige_arg))
 		if gs.has_signal("stats_changed"):
 			gs.stats_changed.emit()
 
