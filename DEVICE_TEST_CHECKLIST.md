@@ -1,4 +1,4 @@
-# Device / Windowed Test Checklist (P7–P9 close-out)
+# Device / Windowed Test Checklist (P7–P9 close-out, P15 validation)
 
 Everything below was implemented + verified headless, but needs a **rendered** run
 (desktop windowed) or a **real phone** to confirm. Grouped by where it's checkable.
@@ -11,6 +11,24 @@ Tick items off; each notes which phase criterion it closes.
 The window now opens **portrait (720×1280)**. Resize the window to test responsiveness.
 
 **P8 reference device (physical):** Motorola Moto G (2026).
+
+---
+
+## P15 — City-first ink validation (closes P15 taste + device gates)
+
+### Desktop windowed (F5) — P15-specific
+- [ ] **City viewport** visible at top on game screen (skyline strip, not blank bar).
+- [ ] **Hustle band** tappable on city street row; click floats on glass overlay (no duplicate HUSTLE btn when city v2).
+- [ ] **Main menu ink:** `#0c0c14` background; preview card + buttons ink-styled; no ledger corner brackets.
+- [ ] **Offline overlay:** city still visible but dimmed behind scrim (not removed); ink modal panel.
+- [ ] **Prestige tree:** ink modal + branch chips; no ledger brackets on commit/prestige dialogs.
+- [ ] **Config / Stats tabs:** ink row cards and chip toggles (not warm parchment `BG_CARD`).
+- [ ] Run **Owner Taste Gate** 15s script in [`P15_REPORT.md`](P15_REPORT.md) — sign-off checkbox.
+
+### Physical device — P15 FPS + touch
+- [ ] **Moto G (2026):** holds **≥30 FPS** through city view + tab scroll + one overlay (offline or prestige tree).
+- [ ] Safe area: city header and bottom nav clear notch/home bar.
+- [ ] Hustle band + bottom tabs tappable one-handed (48px+ targets).
 
 ---
 
@@ -98,6 +116,7 @@ Requires export templates + a connected device or APK install.
 | Playable in portrait; safe-area; touch targets on device | P7 |
 | Audio playtest (all tiers + music loop) | P6 |
 | Daily/offline loop on device; push-notification consent | P9 |
+| City viewport, hustle band, ink menu, P15 FPS on Moto G | P15 |
 
 ## Not in scope here (tracked elsewhere)
 - FTUE telemetry instrumentation — deferred until mobile analytics is scoped (P9 follow-up).

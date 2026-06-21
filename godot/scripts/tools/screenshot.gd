@@ -13,6 +13,8 @@ extends SceneTree
 ##   --heat N         Set heat 0–100
 ##   --districts N    Unlock first N territories (district strip)
 ##   --prestige-tokens N  Seed prestige tokens (e.g. 75 = Crime Lord rank glow)
+##   --offline-overlay    Force offline return overlay (city dimmed behind scrim)
+##   --prestige-tree      Open prestige tree overlay for capture
 
 const GAME_SCREEN := "res://scenes/game_screen.tscn"
 const MAIN_MENU := "res://scenes/main_menu.tscn"
@@ -26,15 +28,19 @@ var _tab := 0
 var _out := "user://shot.png"
 var _screen: Node = null
 var _menu_mode := false
+var _offline_overlay_mode := false
+var _prestige_tree_mode := false
 
 
 func _initialize() -> void:
 	_settle = int(_arg_after("--frames", "45"))
 	_tab = int(_arg_after("--tab", "0"))
-	_out = _arg_after("--out", "user://shot.png")
+	_out = _resolve_out_path(_arg_after("--out", "user://shot.png"))
 	var w := int(_arg_after("--w", "720"))
 	var h := int(_arg_after("--h", "1280"))
 	_menu_mode = _has_flag("--menu")
+	_offline_overlay_mode = _has_flag("--offline-overlay")
+	_prestige_tree_mode = _has_flag("--prestige-tree")
 
 	SoakAutoloads.install(self)
 	var gs: Node = root.get_node_or_null("GameState")
@@ -44,6 +50,7 @@ func _initialize() -> void:
 		if cash > 0.0:
 			gs.balance = cash
 		_apply_city_matrix_seed(gs)
+		_apply_overlay_seed(gs)
 
 	root.set_content_scale_size(Vector2i(w, h))
 	DisplayServer.window_set_size(Vector2i(w, h))
@@ -82,6 +89,24 @@ func _apply_city_matrix_seed(gs: Node) -> void:
 	var prestige_arg := _arg_after("--prestige-tokens", "")
 	if not prestige_arg.is_empty():
 		gs.prestige_tokens = maxi(0, int(prestige_arg))
+	if gs.has_signal("stats_changed"):
+		gs.stats_changed.emit()
+
+
+func _apply_overlay_seed(gs: Node) -> void:
+	if _offline_overlay_mode:
+		gs.show_offline_overlay = true
+		gs.show_daily_overlay = false
+		gs.offline_gain = 12500.0
+		gs.offline_secs_away = 7200.0
+		gs.offline_capped = false
+		var rival_lines: Array[String] = [
+			"The Vipers expanded into Downtown",
+			"Blood Moon Syndicate took a hit",
+		]
+		gs.offline_rival_events = rival_lines
+	if _prestige_tree_mode:
+		gs.prestige_tokens = maxi(gs.prestige_tokens, 12)
 		if gs.has_signal("stats_changed"):
 			gs.stats_changed.emit()
 
@@ -104,8 +129,15 @@ func _seed_buildings(gs: Node, count: int) -> void:
 
 func _process(_delta: float) -> bool:
 	_frame += 1
-	if not _menu_mode and _frame == 5 and _screen != null and _screen.has_method("_set_tab"):
-		_screen.call("_set_tab", _tab)
+	if not _menu_mode and _frame == 5 and _screen != null:
+		if _screen.has_method("_set_tab"):
+			_screen.call("_set_tab", _tab)
+		if _prestige_tree_mode:
+			var tree := _screen.get_node_or_null("PrestigeTreeOverlay")
+			if tree != null and tree.has_method("open"):
+				tree.call("open")
+		elif _offline_overlay_mode and _screen.has_method("_refresh_overlays"):
+			_screen.call("_refresh_overlays")
 	if _frame < _settle:
 		return false
 	var img: Image = root.get_texture().get_image()
@@ -117,11 +149,22 @@ func _process(_delta: float) -> bool:
 	var payload := {"ok": true, "out": ProjectSettings.globalize_path(_out)}
 	if not _menu_mode:
 		payload["tab"] = _tab
+		if _offline_overlay_mode:
+			payload["offline_overlay"] = true
+		if _prestige_tree_mode:
+			payload["prestige_tree"] = true
 	else:
 		payload["menu"] = true
 	print(JSON.stringify(payload))
 	quit(0)
 	return true
+
+
+func _resolve_out_path(path: String) -> String:
+	var p := path.replace("\\", "/")
+	if p.begins_with("docs/"):
+		return "../" + p
+	return p
 
 
 func _has_flag(flag: String) -> bool:
