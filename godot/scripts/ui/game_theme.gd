@@ -73,6 +73,10 @@ static func is_rustic_active() -> bool:
 	return _rustic_active
 
 
+static func is_city_v2_active() -> bool:
+	return GameConfig.UI_CITY_V2 and GameConfig.UI_CITY_VIEW and not _rustic_active
+
+
 static func init_rustic() -> void:
 	if _rustic_init_done:
 		return
@@ -81,6 +85,8 @@ static func init_rustic() -> void:
 	_rustic_textures.clear()
 	_rustic_style_cache.clear()
 	if not GameConfig.UI_RUSTIC_THEME:
+		return
+	if is_city_v2_active():
 		return
 	var loaded: Dictionary = RusticTextureBaker.load_or_bake()
 	if loaded.is_empty():
@@ -113,6 +119,69 @@ static func apply_rustic_theme(tree: SceneTree = null) -> void:
 		theme.set_stylebox("panel", &"PanelContainer", panel)
 	if tree != null and tree.root != null:
 		tree.root.theme = theme
+
+
+static func apply_city_v2_theme(tree: SceneTree = null) -> void:
+	if not is_city_v2_active():
+		return
+	var theme_path := "res://theme/city_noir_theme.tres"
+	if not ResourceLoader.exists(theme_path):
+		return
+	var theme := (load(theme_path) as Theme).duplicate(true)
+	if theme == null:
+		return
+	if tree != null and tree.root != null:
+		tree.root.theme = theme
+
+
+static func ink_panel_style() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("0c0c14")
+	sb.border_color = Color(GOLD, 0.35)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(4)
+	sb.set_content_margin_all(4.0)
+	return sb
+
+
+static func ink_scroll_wrap_style() -> StyleBoxFlat:
+	var sb := ink_panel_style()
+	sb.content_margin_left = 2.0
+	sb.content_margin_right = 2.0
+	sb.content_margin_top = 2.0
+	sb.content_margin_bottom = 2.0
+	return sb
+
+
+static func ink_header_strip_style() -> StyleBoxFlat:
+	var sb := ink_panel_style()
+	sb.bg_color = Color("08070a")
+	sb.set_content_margin_all(6.0)
+	return sb
+
+
+static func ink_tab_bar_style() -> StyleBoxFlat:
+	var sb := ink_panel_style()
+	sb.bg_color = BG_PANEL
+	sb.set_border_width(Side.SIDE_TOP, 1)
+	sb.set_border_width(Side.SIDE_LEFT, 0)
+	sb.set_border_width(Side.SIDE_RIGHT, 0)
+	sb.set_border_width(Side.SIDE_BOTTOM, 0)
+	sb.set_content_margin_all(2.0)
+	return sb
+
+
+static func ink_section_header_style() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("121018")
+	sb.border_color = Color(GOLD, 0.55)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(2)
+	sb.content_margin_left = 8.0
+	sb.content_margin_right = 8.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 4.0
+	return sb
 
 
 static func _rustic_tex(key: String) -> Texture2D:
@@ -168,6 +237,8 @@ static func _row_card_modulate(affordance: int) -> Color:
 
 
 static func header_strip_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_header_strip_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_HEADER_STRIP, 6, 6.0)
 		if sb != null:
@@ -177,6 +248,8 @@ static func header_strip_style() -> StyleBox:
 
 
 static func list_section_header_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_section_header_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_HEADER_STRIP, 6, 8.0)
 		if sb != null:
@@ -242,6 +315,8 @@ static func apply_subtab_header_label(lbl: Label) -> void:
 
 
 static func tab_bar_bg_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_tab_bar_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_TAB_BAR_BG, 6, 4.0)
 		if sb != null:
@@ -326,6 +401,8 @@ static func tab_strip_style(active: bool) -> StyleBox:
 
 
 static func panel_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_panel_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_PANEL, _SLICE_MARGIN)
 		if sb != null:
@@ -504,6 +581,27 @@ static func apply_menu_button(btn: Button, primary: bool = false) -> void:
 	btn.add_theme_font_size_override("font_size", scaled_font(16 if primary else 15))
 
 
+static func make_ink_row_card_flat(affordance: int) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	match affordance:
+		RowAffordance.OWNED:
+			sb.bg_color = Color("101418")
+			sb.border_color = Color(GREEN, 0.45)
+		RowAffordance.PETE:
+			sb.bg_color = Color("181410")
+			sb.border_color = Color(GOLD_BRIGHT, 0.75)
+		RowAffordance.BUYABLE:
+			sb.bg_color = Color("0e1410")
+			sb.border_color = Color(GREEN, 0.55)
+		_:
+			sb.bg_color = Color("0a0a12")
+			sb.border_color = Color(GOLD, 0.22)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(4)
+	sb.set_content_margin_all(0.0)
+	return sb
+
+
 static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	match affordance:
@@ -526,6 +624,8 @@ static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 
 
 static func row_card_style(affordance: int) -> StyleBox:
+	if is_city_v2_active():
+		return make_ink_row_card_flat(affordance)
 	if _rustic_active:
 		var base := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _ROW_SLICE, _ROW_CONTENT)
 		if base != null:

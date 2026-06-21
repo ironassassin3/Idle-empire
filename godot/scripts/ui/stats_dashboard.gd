@@ -48,7 +48,7 @@ static func _card_stylebox() -> StyleBox:
 static func _section_header(parent: Control, title: String) -> void:
 	var strip := PanelContainer.new()
 	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	if GameTheme.is_rustic_active():
+	if GameTheme.is_rustic_active() or GameTheme.is_city_v2_active():
 		strip.add_theme_stylebox_override("panel", GameTheme.list_section_header_style())
 	var row := HBoxContainer.new()
 	strip.add_child(row)

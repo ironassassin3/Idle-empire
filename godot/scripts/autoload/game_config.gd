@@ -33,3 +33,5 @@ const SHOW_PARTICLES := true
 const UI_RUSTIC_THEME := false
 # P15 city-first layout — skyline viewport replaces left column stack.
 const UI_CITY_V2 := true
+# P15.7 rollback — false hides CityViewport and restores compact status strip (dev-only P14 fallback).
+const UI_CITY_VIEW := true

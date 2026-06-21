@@ -40,6 +40,11 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _prestige_btn: Button = $Root/VBox/StatusStrip/PrestigeRow/PrestigeBtn
 @onready var _prestige_info: Label = $Root/VBox/StatusStrip/PrestigeRow/PrestigeInfo
 @onready var _buff_label: Label = $Root/VBox/StatusStrip/StatusRow/BuffLabel
+@onready var _city_viewport: Control = $Root/VBox/CityViewport
+@onready var _status_strip: VBoxContainer = $Root/VBox/StatusStrip
+@onready var _status_row: HBoxContainer = $Root/VBox/StatusStrip/StatusRow
+@onready var _prestige_row: HBoxContainer = $Root/VBox/StatusStrip/PrestigeRow
+@onready var _heat_row: HBoxContainer = $Root/VBox/StatusStrip/HeatRow
 # Bottom nav bar (5 primary tabs) + Turf subtab bar + header gear.
 @onready var _bottom_bar: HBoxContainer = $Root/VBox/BottomBar
 @onready var _header: HBoxContainer = $Root/VBox/Header
@@ -145,6 +150,10 @@ const STATS_REFRESH_INTERVAL := 0.2
 const _BASE_MARGIN := 12
 const _MUSIC_CTX_INTERVAL := 1.0
 
+var _fallback_hustle: Button
+var _coin_on_city: bool = false
+var _dragon_chip: Button
+
 
 ## Inset the root container by the device safe area (notch / home bar). Safe-area
 ## coords are native screen px; scale to viewport px. No-op on desktop (safe area
@@ -174,9 +183,10 @@ func _ready() -> void:
 	if AudioManager.is_enabled():
 		AudioManager.set_music_mode(MusicDefs.MusicMode.PLAYING_AMBIENT)
 	_apply_safe_area()
+	_apply_ui_surfaces()
 	_apply_header_theme()
-	_apply_rustic_surfaces()
 	get_viewport().size_changed.connect(_apply_safe_area)
+	get_viewport().size_changed.connect(_layout_city_overlays)
 	_heat_bar.max_value = 100.0
 	_populate_buildings()
 	_populate_upgrades()
@@ -217,6 +227,7 @@ func _ready() -> void:
 	_coin_ad_btn.text = "Ad → coin"
 	_coin_btn.get_parent().add_child(_coin_ad_btn)
 	_coin_ad_btn.pressed.connect(_on_coin_watch_ad)
+	_apply_city_layout()
 	_elim_dismiss.pressed.connect(_dismiss_elim)
 	_notif_default_font_size = _notif.get_theme_font_size("font_size")
 	_build_config_tab()
@@ -244,6 +255,188 @@ func _apply_header_theme() -> void:
 			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
 		GameTheme.apply_tab_button(tab_btn, false)
 	_refresh_tab_strip()
+
+
+func _apply_ui_surfaces() -> void:
+	if GameTheme.is_rustic_active():
+		_apply_rustic_surfaces()
+	elif GameTheme.is_city_v2_active():
+		_apply_city_v2_surfaces()
+
+
+func _apply_city_v2_surfaces() -> void:
+	_wrap_strip_panel(_header, GameTheme.ink_header_strip_style())
+	_wrap_strip_panel(_bottom_bar, GameTheme.ink_tab_bar_style())
+	for scroll in [
+		_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
+		_crew_scroll, _ops_scroll, _stats_scroll, _mgrs_scroll, _config_scroll,
+	]:
+		_wrap_ink_content_panel(scroll)
+	_apply_ink_subtab_headers()
+
+
+func _wrap_ink_content_panel(scroll: ScrollContainer) -> void:
+	if scroll.get_meta("_city_v2_panel", false):
+		return
+	var parent := scroll.get_parent()
+	if parent == null:
+		return
+	var idx := scroll.get_index()
+	var panel := PanelContainer.new()
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", GameTheme.ink_scroll_wrap_style())
+	parent.remove_child(scroll)
+	panel.add_child(scroll)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(panel)
+	parent.move_child(panel, idx)
+	scroll.set_meta("_city_v2_panel", true)
+
+
+func _apply_ink_subtab_headers() -> void:
+	for lbl in [
+		_turf_bonus, _turf_milestones, _turf_control, _rivals_impact,
+		_rivals_activity, _crew_summary, _crew_lock, _ops_summary, _ops_lock,
+	]:
+		GameTheme.apply_subtab_header_label(lbl)
+		lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+
+
+func _apply_city_layout() -> void:
+	var city_on := GameConfig.UI_CITY_VIEW and GameConfig.UI_CITY_V2
+	_city_viewport.visible = city_on
+	if city_on:
+		_relocate_coin_to_city()
+		_apply_city_v2_status_strip()
+		if _fallback_hustle:
+			_fallback_hustle.visible = false
+	else:
+		_restore_coin_to_status()
+		_restore_status_strip()
+		_ensure_fallback_hustle()
+	call_deferred("_layout_city_overlays")
+
+
+func _apply_city_v2_status_strip() -> void:
+	if not GameTheme.is_city_v2_active():
+		return
+	_status_row.visible = false
+	_prestige_row.visible = false
+	_click_info.visible = false
+	_prestige_info.visible = false
+	_prestige_btn.custom_minimum_size = Vector2(0, 28)
+	_prestige_btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_prestige_btn.add_theme_stylebox_override("normal", GameTheme.make_chip_flat(false))
+	_prestige_btn.add_theme_stylebox_override("hover", GameTheme.make_chip_flat(true))
+	_prestige_btn.add_theme_stylebox_override("pressed", GameTheme.make_chip_flat(true))
+	_prestige_btn.add_theme_stylebox_override("disabled", GameTheme.make_chip_flat(false))
+	_heat_bar.custom_minimum_size = Vector2(0, 12)
+	_heat_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_status_strip.add_theme_constant_override("separation", 2)
+	if _prestige_btn.get_parent() != _heat_row:
+		_prestige_btn.reparent(_heat_row)
+	if _shield_label.get_parent() != _heat_row:
+		_shield_label.reparent(_heat_row)
+	if _buff_label.get_parent() != _heat_row:
+		_buff_label.reparent(_heat_row)
+		_buff_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+	if _dragon_chip == null:
+		_dragon_chip = Button.new()
+		_dragon_chip.custom_minimum_size = Vector2(0, 28)
+		_dragon_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+		_dragon_chip.add_theme_stylebox_override("normal", GameTheme.make_chip_flat(false))
+		_dragon_chip.add_theme_stylebox_override("hover", GameTheme.make_chip_flat(true))
+		_dragon_chip.add_theme_stylebox_override("pressed", GameTheme.make_chip_flat(true))
+		_dragon_chip.pressed.connect(_on_dragon_chip)
+		_heat_row.add_child(_dragon_chip)
+
+
+func _restore_status_strip() -> void:
+	_status_row.visible = true
+	_prestige_row.visible = true
+	_click_info.visible = true
+	_prestige_info.visible = true
+	if _prestige_btn.get_parent() != _prestige_row:
+		_prestige_btn.reparent(_prestige_row)
+		_prestige_row.move_child(_prestige_btn, 0)
+	if _shield_label.get_parent() != _status_row:
+		_shield_label.reparent(_status_row)
+		_status_row.move_child(_shield_label, 0)
+	if _buff_label.get_parent() != _status_row:
+		_buff_label.reparent(_status_row)
+	_prestige_btn.custom_minimum_size = Vector2(0, 36)
+	_prestige_btn.remove_theme_font_size_override("font_size")
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		_prestige_btn.remove_theme_stylebox_override(state)
+	_heat_bar.custom_minimum_size = Vector2(0, 16)
+	_heat_label.remove_theme_font_size_override("font_size")
+	_status_strip.remove_theme_constant_override("separation")
+	if _dragon_chip:
+		_dragon_chip.visible = false
+
+
+func _on_dragon_chip() -> void:
+	_dragon_patron.open()
+
+
+func _relocate_coin_to_city() -> void:
+	if _coin_on_city:
+		return
+	var bar := _city_view.get_node_or_null("CityBottomBar")
+	if bar == null:
+		bar = HBoxContainer.new()
+		bar.name = "CityBottomBar"
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_city_view.add_child(bar)
+	_coin_btn.reparent(bar)
+	_coin_ad_btn.reparent(bar)
+	_coin_btn.custom_minimum_size = Vector2(0, 28)
+	_coin_btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_coin_ad_btn.custom_minimum_size = Vector2(0, 28)
+	_coin_ad_btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_coin_on_city = true
+	if not _city_view.resized.is_connected(_layout_city_overlays):
+		_city_view.resized.connect(_layout_city_overlays)
+
+
+func _restore_coin_to_status() -> void:
+	if not _coin_on_city:
+		return
+	_coin_btn.reparent(_status_row)
+	_coin_ad_btn.reparent(_status_row)
+	_coin_btn.custom_minimum_size = Vector2(0, 32)
+	_coin_btn.remove_theme_font_size_override("font_size")
+	_coin_ad_btn.custom_minimum_size = Vector2(0, 32)
+	_coin_ad_btn.remove_theme_font_size_override("font_size")
+	_coin_on_city = false
+
+
+func _layout_city_overlays() -> void:
+	if not _coin_on_city or not _city_viewport.visible:
+		return
+	var bar := _city_view.get_node_or_null("CityBottomBar") as Control
+	if bar == null:
+		return
+	var sz := _city_view.size
+	if sz.y < 40.0:
+		return
+	bar.position = Vector2(8.0, sz.y - 34.0)
+	bar.size = Vector2(maxf(80.0, sz.x - 16.0), 28.0)
+
+
+func _ensure_fallback_hustle() -> void:
+	if GameConfig.UI_CITY_VIEW and GameConfig.UI_CITY_V2:
+		if _fallback_hustle:
+			_fallback_hustle.visible = false
+		return
+	if _fallback_hustle == null:
+		_fallback_hustle = Button.new()
+		_fallback_hustle.text = "HUSTLE"
+		_fallback_hustle.custom_minimum_size = Vector2(0, 36)
+		_fallback_hustle.pressed.connect(_on_hustle)
+		_status_row.add_child(_fallback_hustle)
+		_status_row.move_child(_fallback_hustle, 0)
+	_fallback_hustle.visible = true
 
 
 func _apply_rustic_surfaces() -> void:
@@ -531,7 +724,7 @@ func _refresh_turf_subbar() -> void:
 ## clipping the active tab to a ~51px sliver.
 func _scroll_vis(scroll: Control, vis: bool) -> void:
 	scroll.visible = vis
-	if scroll.get_meta("_rustic_panel", false):
+	if scroll.get_meta("_rustic_panel", false) or scroll.get_meta("_city_v2_panel", false):
 		var wrapper := scroll.get_parent()
 		if wrapper is PanelContainer:
 			(wrapper as PanelContainer).visible = vis
@@ -913,6 +1106,8 @@ func _refresh_all() -> void:
 	_heat_label.text = heat_txt
 	_heat_label.add_theme_color_override("font_color", heat_col)
 	_click_info.text = "Click: %s" % FormatUtil.format_money(GameState.click_value())
+	if not GameTheme.is_city_v2_active():
+		_click_info.visible = true
 	_prestige_btn.disabled = not GameState.can_prestige()
 	var req := Prestige.prestige_earnings_required(GameState.prestige_count, GameState.next_prestige_earnings)
 	var prestige_lines: PackedStringArray = PackedStringArray([
@@ -937,9 +1132,25 @@ func _refresh_all() -> void:
 
 func _refresh_dragon_hud() -> void:
 	var patron: String = _DragonSystem.active_dragon(GameState)
+	var compact := GameTheme.is_city_v2_active()
 	if patron.is_empty():
 		_dragon_hud.visible = false
+		if _dragon_chip:
+			_dragon_chip.visible = false
 		return
+	if compact:
+		_dragon_hud.visible = false
+		if _dragon_chip:
+			_dragon_chip.visible = true
+			var meta: Dictionary = _DragonSystem.DRAGON_META[patron]
+			var mood: String = _DragonSystem.get_mood(GameState)
+			_dragon_chip.text = GameTheme.truncate("%s · %s" % [
+				str(meta.get("title", patron)), _DragonSystem.MOOD_LABELS.get(mood, mood),
+			], 22)
+			_dragon_chip.add_theme_color_override("font_color", meta.get("color", GameTheme.GOLD))
+		return
+	if _dragon_chip:
+		_dragon_chip.visible = false
 	_dragon_hud.visible = true
 	var meta: Dictionary = _DragonSystem.DRAGON_META[patron]
 	var col: Color = meta.get("color", GameTheme.GOLD)
@@ -1433,7 +1644,7 @@ func _add_list_section_header(parent: Control, title: String) -> void:
 	var strip := PanelContainer.new()
 	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if GameTheme.is_rustic_active():
+	if GameTheme.is_rustic_active() or GameTheme.is_city_v2_active():
 		strip.add_theme_stylebox_override("panel", GameTheme.list_section_header_style())
 	var lbl := Label.new()
 	lbl.text = title
