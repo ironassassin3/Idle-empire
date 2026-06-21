@@ -141,6 +141,8 @@ var _stats_ui_timer: float = 0.0
 const _STATS_UI_INTERVAL := 0.1
 var _last_event_key: String = ""
 var _notif_default_font_size: int = 0
+var _notif_shell: PanelContainer
+var _tutorial_shell: PanelContainer
 var _overlay_kind: String = ""
 var _active_overlay_kind: String = ""
 var _overlay_shown_at: int = 0
@@ -252,6 +254,8 @@ func _apply_header_theme() -> void:
 	_buy_mult_chip.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_buy_mult_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP))
 	_advice_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP - 1))
+	if GameTheme.is_city_v2_active():
+		GameTheme.apply_ink_icon_button(_cfg_btn)
 	for tab_btn in [_tab_bldgs, _tab_upgrs, _tab_mgrs, _tab_turf, _tab_stats,
 			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
 		GameTheme.apply_tab_button(tab_btn, false)
@@ -274,6 +278,9 @@ func _apply_city_v2_surfaces() -> void:
 	]:
 		_wrap_ink_content_panel(scroll)
 	_apply_ink_subtab_headers()
+	_wrap_notif_toast()
+	_wrap_tutorial_banner()
+	_bottom_bar.add_theme_constant_override("separation", 2)
 
 
 func _wrap_ink_content_panel(scroll: ScrollContainer) -> void:
@@ -301,6 +308,63 @@ func _apply_ink_subtab_headers() -> void:
 	]:
 		GameTheme.apply_subtab_header_label(lbl)
 		lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+
+
+func _wrap_notif_toast() -> void:
+	if _notif.get_meta("_ink_toast", false):
+		return
+	var parent := _notif.get_parent()
+	if parent == null:
+		return
+	var idx := _notif.get_index()
+	var panel := PanelContainer.new()
+	panel.visible = false
+	panel.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
+	parent.remove_child(_notif)
+	panel.add_child(_notif)
+	_notif.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_notif.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	parent.add_child(panel)
+	parent.move_child(panel, idx)
+	panel.set_meta("_ink_toast", true)
+	_notif.set_meta("_ink_toast", true)
+	_notif_shell = panel
+
+
+func _wrap_tutorial_banner() -> void:
+	if _tutorial_banner.get_meta("_ink_banner", false):
+		return
+	var parent := _tutorial_banner.get_parent()
+	if parent == null:
+		return
+	var panel := PanelContainer.new()
+	panel.visible = _tutorial_banner.visible
+	panel.anchor_left = _tutorial_banner.anchor_left
+	panel.anchor_top = _tutorial_banner.anchor_top
+	panel.anchor_right = _tutorial_banner.anchor_right
+	panel.anchor_bottom = _tutorial_banner.anchor_bottom
+	panel.offset_left = _tutorial_banner.offset_left
+	panel.offset_top = _tutorial_banner.offset_top
+	panel.offset_right = _tutorial_banner.offset_right
+	panel.offset_bottom = _tutorial_banner.offset_bottom
+	panel.grow_horizontal = _tutorial_banner.grow_horizontal
+	panel.grow_vertical = _tutorial_banner.grow_vertical
+	panel.add_theme_stylebox_override("panel", GameTheme.ink_tutorial_banner_style())
+	parent.remove_child(_tutorial_banner)
+	panel.add_child(_tutorial_banner)
+	parent.add_child(panel)
+	_tutorial_banner.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_tutorial_banner.offset_left = 10.0
+	_tutorial_banner.offset_top = 6.0
+	_tutorial_banner.offset_right = -10.0
+	_tutorial_banner.offset_bottom = -6.0
+	_tutorial_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tutorial_banner.add_theme_color_override("font_color", GameTheme.TEXT)
+	_tutorial_banner.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_tutorial_banner.add_theme_constant_override("outline_size", 0)
+	panel.set_meta("_ink_banner", true)
+	_tutorial_banner.set_meta("_ink_banner", true)
+	_tutorial_shell = panel
 
 
 func _apply_city_layout() -> void:
@@ -331,8 +395,15 @@ func _apply_city_v2_status_strip() -> void:
 	_prestige_btn.add_theme_stylebox_override("hover", GameTheme.make_chip_flat(true))
 	_prestige_btn.add_theme_stylebox_override("pressed", GameTheme.make_chip_flat(true))
 	_prestige_btn.add_theme_stylebox_override("disabled", GameTheme.make_chip_flat(false))
+	_prestige_btn.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_prestige_btn.add_theme_color_override("font_disabled_color", GameTheme.TEXT_MUTED)
 	_heat_bar.custom_minimum_size = Vector2(0, 12)
 	_heat_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_heat_label.add_theme_color_override("font_color", GameTheme.TEXT)
+	_shield_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_shield_label.add_theme_color_override("font_color", GameTheme.BLUE_BRIGHT)
+	_buff_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_buff_label.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_status_strip.add_theme_constant_override("separation", 2)
 	var bar_bg := StyleBoxFlat.new()
 	bar_bg.bg_color = Color("1a1520")
@@ -831,8 +902,7 @@ func _process(delta: float) -> void:
 	if _notif_timer > 0.0:
 		_notif_timer -= delta
 		if _notif_timer <= 0.0:
-			_notif.text = ""
-			_notif.add_theme_font_size_override("font_size", _notif_default_font_size)
+			_clear_notif()
 	if _tab == Tab.STATS:
 		_stats_refresh_timer -= delta
 		if _stats_refresh_timer <= 0.0:
@@ -868,13 +938,19 @@ func _refresh_overlays() -> void:
 	_overlay_dim.visible = blocking
 	if not _TutorialSystem.is_complete(GameState) and not blocking:
 		_tutorial_banner.visible = true
+		if _tutorial_shell:
+			_tutorial_shell.visible = true
 		var tut: String = _TutorialSystem.current_text(GameState)
 		_tutorial_banner.text = tut + "\n(Skip tutorial in Config)"
 	else:
 		_tutorial_banner.visible = false
+		if _tutorial_shell:
+			_tutorial_shell.visible = false
 	if not GameState.event_outcome.is_empty():
 		_notif.text = GameState.event_outcome
 		_notif.add_theme_color_override("font_color", GameTheme.GOLD)
+		if _notif_shell:
+			_notif_shell.visible = true
 
 
 ## Single-flight overlay queue — offline → daily → elim → milestone → event (never parallel).
@@ -1141,6 +1217,9 @@ func _refresh_all() -> void:
 	if not GameTheme.is_city_v2_active():
 		_click_info.visible = true
 	_prestige_btn.disabled = not GameState.can_prestige()
+	if GameTheme.is_city_v2_active():
+		var pcol := GameTheme.GOLD_BRIGHT if GameState.can_prestige() else GameTheme.TEXT_MUTED
+		_prestige_btn.add_theme_color_override("font_color", pcol)
 	var req := Prestige.prestige_earnings_required(GameState.prestige_count, GameState.next_prestige_earnings)
 	var prestige_lines: PackedStringArray = PackedStringArray([
 		"Prestige: %s / %s lifetime" % [
@@ -1534,6 +1613,8 @@ func _on_menu() -> void:
 func _on_notification(message: String, color: Color) -> void:
 	_notif.text = message
 	_notif.add_theme_color_override("font_color", color)
+	if _notif_shell:
+		_notif_shell.visible = true
 	var is_goal: bool = _is_goal_notification(message, color)
 	var is_autobuy: bool = AudioManager.is_autobuy_message(message)
 	if is_goal or is_autobuy:
@@ -1547,6 +1628,13 @@ func _on_notification(message: String, color: Color) -> void:
 	var cue := AudioManager.cue_for_notification(message, color)
 	if not cue.is_empty() and cue != "rankup":
 		AudioManager.play(cue)
+
+
+func _clear_notif() -> void:
+	_notif.text = ""
+	_notif.add_theme_font_size_override("font_size", _notif_default_font_size)
+	if _notif_shell:
+		_notif_shell.visible = false
 
 
 func _is_goal_notification(message: String, color: Color) -> bool:
