@@ -1,6 +1,7 @@
 save.json
 save.json.bak
 analytics.jsonl
+telemetry_probe.jsonl
 crash.log
 __pycache__/
 *.pyc
