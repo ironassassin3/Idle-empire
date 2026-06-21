@@ -36,6 +36,7 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _coin_btn: Button = $Root/VBox/StatusStrip/StatusRow/CoinBtn
 @onready var _shield_label: Label = $Root/VBox/StatusStrip/StatusRow/ShieldLabel
 @onready var _city_view: Control = $Root/VBox/CityViewport/CityView
+@onready var _hustle_band: Control = $Root/VBox/HustleBand
 @onready var _click_info: Label = $Root/VBox/StatusStrip/StatusRow/ClickInfo
 @onready var _prestige_btn: Button = $Root/VBox/StatusStrip/PrestigeRow/PrestigeBtn
 @onready var _prestige_info: Label = $Root/VBox/StatusStrip/PrestigeRow/PrestigeInfo
@@ -151,7 +152,7 @@ const _BASE_MARGIN := 12
 const _MUSIC_CTX_INTERVAL := 1.0
 
 var _fallback_hustle: Button
-var _coin_on_city: bool = false
+var _coin_on_band: bool = false
 var _dragon_chip: Button
 var _last_city_tier: int = -1
 
@@ -187,7 +188,6 @@ func _ready() -> void:
 	_apply_ui_surfaces()
 	_apply_header_theme()
 	get_viewport().size_changed.connect(_apply_safe_area)
-	get_viewport().size_changed.connect(_layout_city_overlays)
 	_heat_bar.max_value = 100.0
 	_populate_buildings()
 	_populate_upgrades()
@@ -199,7 +199,7 @@ func _ready() -> void:
 	_set_tab(Tab.BLDGS)
 	GameState.stats_changed.connect(func(): _stats_dirty = true)
 	GameState.notification.connect(_on_notification)
-	_city_view.hustle_pressed.connect(_on_hustle)
+	_hustle_band.hustle_pressed.connect(_on_hustle)
 	_coin_btn.pressed.connect(_on_coin)
 	_prestige_btn.pressed.connect(_on_prestige)
 	_buy_mult_chip.pressed.connect(_on_buy_mult_chip)
@@ -306,8 +306,9 @@ func _apply_ink_subtab_headers() -> void:
 func _apply_city_layout() -> void:
 	var city_on := GameConfig.UI_CITY_VIEW and GameConfig.UI_CITY_V2
 	_city_viewport.visible = city_on
+	_hustle_band.visible = city_on
 	if city_on:
-		_relocate_coin_to_city()
+		_relocate_coin_to_band()
 		_apply_city_v2_status_strip()
 		if _fallback_hustle:
 			_fallback_hustle.visible = false
@@ -315,7 +316,6 @@ func _apply_city_layout() -> void:
 		_restore_coin_to_status()
 		_restore_status_strip()
 		_ensure_fallback_hustle()
-	call_deferred("_layout_city_overlays")
 
 
 func _apply_city_v2_status_strip() -> void:
@@ -390,28 +390,23 @@ func _on_dragon_chip() -> void:
 	_dragon_patron.open()
 
 
-func _relocate_coin_to_city() -> void:
-	if _coin_on_city:
+func _relocate_coin_to_band() -> void:
+	if _coin_on_band:
 		return
-	var bar := _city_view.get_node_or_null("CityBottomBar")
-	if bar == null:
-		bar = HBoxContainer.new()
-		bar.name = "CityBottomBar"
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_city_view.add_child(bar)
-	_coin_btn.reparent(bar)
-	_coin_ad_btn.reparent(bar)
-	_coin_btn.custom_minimum_size = Vector2(0, 28)
+	var col := _hustle_band.call("get_coin_column") as Control
+	if col == null:
+		return
+	_coin_btn.reparent(col)
+	_coin_ad_btn.reparent(col)
+	_coin_btn.custom_minimum_size = Vector2(0, 32)
 	_coin_btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
-	_coin_ad_btn.custom_minimum_size = Vector2(0, 28)
+	_coin_ad_btn.custom_minimum_size = Vector2(0, 32)
 	_coin_ad_btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
-	_coin_on_city = true
-	if not _city_view.resized.is_connected(_layout_city_overlays):
-		_city_view.resized.connect(_layout_city_overlays)
+	_coin_on_band = true
 
 
 func _restore_coin_to_status() -> void:
-	if not _coin_on_city:
+	if not _coin_on_band:
 		return
 	_coin_btn.reparent(_status_row)
 	_coin_ad_btn.reparent(_status_row)
@@ -419,20 +414,7 @@ func _restore_coin_to_status() -> void:
 	_coin_btn.remove_theme_font_size_override("font_size")
 	_coin_ad_btn.custom_minimum_size = Vector2(0, 32)
 	_coin_ad_btn.remove_theme_font_size_override("font_size")
-	_coin_on_city = false
-
-
-func _layout_city_overlays() -> void:
-	if not _coin_on_city or not _city_viewport.visible:
-		return
-	var bar := _city_view.get_node_or_null("CityBottomBar") as Control
-	if bar == null:
-		return
-	var sz := _city_view.size
-	if sz.y < 40.0:
-		return
-	bar.position = Vector2(8.0, sz.y - 30.0)
-	bar.size = Vector2(minf(120.0, maxf(72.0, sz.x * 0.34)), 24.0)
+	_coin_on_band = false
 
 
 func _ensure_fallback_hustle() -> void:
@@ -711,22 +693,28 @@ func _track_city_tier(total: int) -> void:
 
 
 func _refresh_city_view(overlay_blocking: bool) -> void:
-	if _city_view == null or not _city_view.has_method("refresh"):
-		return
 	var total := GameState.total_buildings_owned()
 	_track_city_tier(total)
+	if _hustle_band != null and _hustle_band.has_method("set_overlay_occluded"):
+		_hustle_band.call("set_overlay_occluded", overlay_blocking)
+		_hustle_band.call("set_click_scale", _click_scale)
+		_hustle_band.call(
+			"refresh",
+			GameState.click_value(),
+			GameState.income_per_second(),
+			_BuffSystem.has_buff(GameState, "hustle"),
+			GameConfig.CLICK_HUSTLE_MULT,
+			_click_scale,
+		)
+	if _city_view == null or not _city_view.has_method("refresh"):
+		return
 	_city_view.call("set_overlay_occluded", overlay_blocking)
-	_city_view.call("set_click_scale", _click_scale)
 	_city_view.call(
 		"refresh",
 		total,
 		GameState.heat,
 		_districts_owned(),
 		GameState.prestige_tokens,
-		GameState.click_value(),
-		GameState.income_per_second(),
-		_BuffSystem.has_buff(GameState, "hustle"),
-		GameConfig.CLICK_HUSTLE_MULT,
 		_city_top_building_keys(),
 		_city_district_slots(),
 	)
@@ -1394,7 +1382,7 @@ func _refresh_upgrade_list() -> void:
 
 func _on_hustle() -> void:
 	Telemetry.log_event("ui_hustle_tap", {
-		"source": "city" if GameTheme.is_city_v2_active() else "fallback",
+		"source": "band" if GameTheme.is_city_v2_active() else "fallback",
 		"tutorial_step": GameState.tutorial_step,
 	})
 	if GameState.tutorial_step == 0:
@@ -1417,7 +1405,7 @@ func _ensure_float_layer() -> void:
 ## Floating "+$X" / "CRIT +$X" that drifts up and fades — port of the pygame
 ## click float particles. Cosmetic only; skipped on headless.
 func _spawn_click_float(amount: float, crit: bool) -> void:
-	if DisplayServer.get_name() == "headless" or _city_view == null:
+	if DisplayServer.get_name() == "headless":
 		return
 	_ensure_float_layer()
 	if _float_layer.get_child_count() >= _MAX_FLOATS:
@@ -1429,7 +1417,11 @@ func _spawn_click_float(amount: float, crit: bool) -> void:
 	lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT if crit else GameTheme.GREEN)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_float_layer.add_child(lbl)
-	var origin: Vector2 = _city_view.call("get_hustle_center_global")
+	var origin: Vector2
+	if GameTheme.is_city_v2_active() and _hustle_band != null:
+		origin = _hustle_band.call("get_hustle_center_global")
+	else:
+		origin = get_viewport().get_visible_rect().get_center()
 	origin.x += randf_range(-24.0, 24.0)
 	origin.y += randf_range(-6.0, 6.0)
 	lbl.global_position = origin

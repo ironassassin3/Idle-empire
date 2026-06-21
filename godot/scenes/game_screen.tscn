@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/ui/overlay_frame.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/ui/film_grain_overlay.gd" id="6"]
 [ext_resource type="PackedScene" uid="uid://cityview001" path="res://scenes/ui/city_view.tscn" id="7"]
+[ext_resource type="PackedScene" uid="uid://hustleband001" path="res://scenes/ui/hustle_band.tscn" id="8"]
 
 [node name="GameScreen" type="CanvasLayer"]
 layer = 1
@@ -103,10 +104,10 @@ layout_mode = 2
 text = "⚙"
 
 [node name="CityViewport" type="Control" parent="Root/VBox"]
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.3
+size_flags_stretch_ratio = 0.34
 
 [node name="CityView" parent="Root/VBox/CityViewport" instance=ExtResource("7")]
 layout_mode = 1
@@ -115,6 +116,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="HustleBand" parent="Root/VBox" instance=ExtResource("8")]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
 
 [node name="StatusStrip" type="VBoxContainer" parent="Root/VBox"]
 layout_mode = 2

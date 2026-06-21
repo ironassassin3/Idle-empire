@@ -2,26 +2,14 @@ extends Control
 class_name CityView
 ## P15.3b — Godot-native city viewport (inspired by pygame tiers, not pixel-parity). ART_POLICY: no textures.
 
-signal hustle_pressed
-
 const PrestigeScript = preload("res://scripts/systems/prestige.gd")
 
 const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
-const MIN_HUSTLE_SIZE := 48.0
-const HUSTLE_GROUND_Y := VIRTUAL_SIZE.y - 28.0
-const HUSTLE_STREET_X_FRAC := 0.72
-const HUSTLE_STREET_PAD_Y := 6.0
-const HUSTLE_SIZE_SCALE := 0.72
-const HUSTLE_BASE_W := 96.0
-const HUSTLE_BASE_H := 44.0
 
 const INK := Color(0.031, 0.039, 0.098)
 const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
 const INK_GOLD_BRIGHT := Color(0.925, 0.792, 0.49)
-const INK_GOLD_DEEP := Color(0.541, 0.439, 0.235, 0.314)
-const INK_GLASS := Color(0.102, 0.118, 0.157)
-const INK_BONE := Color(0.91, 0.878, 0.831)
 const INK_CRIMSON := Color(0.608, 0.157, 0.157)
 const SKY_BACK := Color8(14, 18, 38)
 const SKY_MID := Color8(26, 32, 58)
@@ -37,7 +25,6 @@ const NEON_COOL := Color8(70, 180, 255)
 const NEON_RED := Color8(220, 60, 70)
 
 @onready var _empire_label: Label = $EmpireLabel
-@onready var _hustle_overlay: Button = $HustleOverlay
 
 var _t: float = 0.0
 var _anim_accum: float = 0.0
@@ -48,12 +35,6 @@ var _total_buildings: int = 0
 var _heat: float = 0.0
 var _districts_owned: int = 0
 var _rank_idx: int = 0
-var _click_value: float = 0.0
-var _income_per_second: float = 0.0
-var _hustle_active: bool = false
-var _hustle_mult: float = 1.0
-var _click_scale: float = 1.0
-var _hustle_hover: bool = false
 var _top_building_keys: Array = []
 var _district_slots: Array = []
 
@@ -66,14 +47,7 @@ var _last_building_sig: String = ""
 
 func _ready() -> void:
 	clip_contents = true
-	_hustle_overlay.flat = true
-	_hustle_overlay.text = ""
-	_hustle_overlay.pressed.connect(func(): hustle_pressed.emit())
-	_hustle_overlay.mouse_entered.connect(func(): _set_hustle_hover(true))
-	_hustle_overlay.mouse_exited.connect(func(): _set_hustle_hover(false))
 	_empire_label.visible = false
-	resized.connect(_layout_hustle)
-	call_deferred("_layout_hustle")
 	if not _is_headless():
 		queue_redraw()
 
@@ -82,39 +56,10 @@ func _is_headless() -> bool:
 	return DisplayServer.get_name() == "headless"
 
 
-func _set_hustle_hover(on: bool) -> void:
-	if _hustle_hover == on:
-		return
-	_hustle_hover = on
-	_mark_dirty()
-
-
-func set_click_scale(scale: float) -> void:
-	_click_scale = scale
-	_layout_hustle()
-
-
 func set_overlay_occluded(occluded: bool) -> void:
 	if _overlay_occluded == occluded:
 		return
 	_overlay_occluded = occluded
-	if occluded:
-		_hustle_overlay.visible = false
-	else:
-		_hustle_overlay.visible = true
-		_mark_dirty()
-
-
-func get_hustle_rect_global() -> Rect2:
-	return _hustle_overlay.get_global_rect()
-
-
-func get_hustle_rect() -> Rect2:
-	return get_hustle_rect_global()
-
-
-func get_hustle_center_global() -> Vector2:
-	return _hustle_overlay.get_global_rect().get_center()
 
 
 func refresh(
@@ -122,10 +67,6 @@ func refresh(
 	heat: float,
 	districts_owned: int,
 	prestige_tokens: int,
-	click_value: float,
-	income_per_second: float,
-	hustle_active: bool,
-	hustle_mult: float,
 	top_building_keys: Array = [],
 	district_slots: Array = []
 ) -> void:
@@ -149,10 +90,6 @@ func refresh(
 	_heat = heat
 	_districts_owned = districts_owned
 	_rank_idx = rank_idx
-	_click_value = click_value
-	_income_per_second = income_per_second
-	_hustle_active = hustle_active
-	_hustle_mult = hustle_mult
 	_top_building_keys = top_building_keys
 	_district_slots = district_slots
 
@@ -180,23 +117,6 @@ func _process(delta: float) -> void:
 	if animating or _dirty:
 		queue_redraw()
 		_dirty = false
-
-
-func _layout_hustle() -> void:
-	if size.x <= 1.0 or size.y <= 1.0:
-		return
-	var scale := size / VIRTUAL_SIZE
-	var bw := maxf(MIN_HUSTLE_SIZE, HUSTLE_BASE_W * scale.x * _click_scale * HUSTLE_SIZE_SCALE)
-	var bh := maxf(MIN_HUSTLE_SIZE, HUSTLE_BASE_H * scale.y * _click_scale * HUSTLE_SIZE_SCALE)
-	# Wet-street band: top edge on sidewalk below facades; X off center facade.
-	var ground_y_px := size.y * (HUSTLE_GROUND_Y / VIRTUAL_SIZE.y)
-	var street_pad_y := HUSTLE_STREET_PAD_Y * scale.y
-	var cx := size.x * HUSTLE_STREET_X_FRAC
-	var cy := ground_y_px + street_pad_y + bh * 0.5
-	cy = minf(cy, size.y - bh * 0.5 - 2.0)
-	_hustle_overlay.position = Vector2(cx - bw * 0.5, cy - bh * 0.5)
-	_hustle_overlay.size = Vector2(bw, bh)
-	_mark_dirty()
 
 
 func _tier(total: int) -> int:
@@ -230,7 +150,6 @@ func _draw() -> void:
 	if not GameTheme.ui_reduced_motion():
 		_draw_scanlines()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_hustle_glass()
 
 
 func _draw_frame() -> void:
@@ -531,72 +450,6 @@ func _draw_scanlines() -> void:
 	while y < sh:
 		draw_line(Vector2(0, y), Vector2(sw, y), Color(0, 0, 0, 0.04), 1.0)
 		y += 4.0
-
-
-func _draw_hustle_glass() -> void:
-	if _overlay_occluded:
-		return
-	var rect := _hustle_overlay.get_rect()
-	if rect.size.x < 1.0:
-		return
-	var cx := rect.position.x + rect.size.x * 0.5
-	var cy := rect.position.y + rect.size.y * 0.5
-	var bw := rect.size.x
-	var bh := rect.size.y
-	var br := maxf(12.0, bw / 5.0)
-
-	# Street-local pulse — capped so rings never climb into skyline band.
-	if not GameTheme.ui_reduced_motion():
-		var ground_y_px := size.y * (HUSTLE_GROUND_Y / VIRTUAL_SIZE.y)
-		var street_headroom := maxf(8.0, cy - ground_y_px)
-		var max_ring_r := minf(bw * 0.34, street_headroom + bh * 0.12)
-		for ring in 2:
-			var phase := _t * 1.8 - ring * 0.55
-			var radius := minf(max_ring_r * (0.55 + ring * 0.35) + 3.0 * sin(phase), max_ring_r)
-			var alpha := 0.04 + 0.06 * (0.5 + 0.5 * sin(phase))
-			if _income_per_second > 0.0:
-				alpha *= 1.25
-			draw_arc(Vector2(cx, cy), radius, 0.0, TAU, 24,
-					Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, alpha), 1.0)
-		var refl_y := cy + bh * 0.45
-		draw_line(Vector2(cx - bw * 0.28, refl_y), Vector2(cx + bw * 0.28, refl_y),
-				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.14), 1.5)
-
-	var fill_a := 0.647 if _hustle_hover else 0.314
-	var glass := StyleBoxFlat.new()
-	glass.bg_color = Color(INK_GLASS.r, INK_GLASS.g, INK_GLASS.b, fill_a)
-	glass.set_corner_radius_all(int(br))
-	glass.draw(get_canvas_item(), rect)
-	var border_col := INK_GOLD_BRIGHT if _hustle_hover else INK_GOLD
-	var border_a := 0.863 if _hustle_hover else 0.588
-	var border := StyleBoxFlat.new()
-	border.bg_color = Color.TRANSPARENT
-	border.border_color = Color(border_col.r, border_col.g, border_col.b, border_a)
-	border.set_border_width_all(2)
-	border.set_corner_radius_all(int(br))
-	border.draw(get_canvas_item(), rect)
-
-	var inset := maxf(8.0, bw / 8.0)
-	var inner := Rect2(rect.position + Vector2(inset, inset), rect.size - Vector2(inset, inset) * 2.0)
-	var inner_box := StyleBoxFlat.new()
-	inner_box.bg_color = Color.TRANSPARENT
-	inner_box.border_color = Color(INK_GOLD_DEEP.r, INK_GOLD_DEEP.g, INK_GOLD_DEEP.b, 0.314)
-	inner_box.set_border_width_all(1)
-	inner_box.set_corner_radius_all(maxi(0, int(br) - 4))
-	inner_box.draw(get_canvas_item(), inner)
-
-	var hustle_lbl := "HUSTLE"
-	if _hustle_active:
-		hustle_lbl = "HUSTLE ×%.2f" % _hustle_mult
-	var font := ThemeDB.fallback_font
-	var font_size := GameTheme.scaled_font(14 if _hustle_active else 13)
-	var lbl_size := font.get_string_size(hustle_lbl, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	draw_string(font, Vector2(cx - lbl_size.x * 0.5, cy - 8.0), hustle_lbl,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, INK_BONE if not _hustle_hover else INK_GOLD_BRIGHT)
-	var hint := "+%s" % FormatUtil.format_money(_click_value)
-	var hint_size := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size - 1)
-	draw_string(font, Vector2(cx - hint_size.x * 0.5, cy + 14.0), hint,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size - 1, INK_GOLD_BRIGHT)
 
 
 func _hash01(seed: int, t: float) -> float:
