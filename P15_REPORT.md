@@ -1,6 +1,6 @@
 # P15 Report — City-First UI Rebuild v2
 
-**Scope this session:** P15.10 — main menu ink pass (ledger → ink modal, safe margins)  
+**Scope this session:** P15.11 — tab body ink consistency (Config/Stats cards, config chips)  
 **Direction:** Concept A — Skyline progression strip ([`UI_REBUILD_V2_ARCHITECTURE.md`](UI_REBUILD_V2_ARCHITECTURE.md))
 
 ## Done (P15.1–P15.7)
@@ -47,7 +47,20 @@
 | Safe area | Portrait margins via `DisplayServer.get_display_safe_area()` in `main_menu.gd` |
 | Screenshot | `screenshot.gd --menu` preset for capture matrix |
 
-## Remaining (P15.10+)
+## P15.11 — tab body ink consistency
+
+| Item | Status |
+|------|--------|
+| Config row cards | `ink_config_row_style()` — `#0a0a12` fill + gold hairline (replaces warm `BG_CARD`) |
+| Config cycle toggles | `apply_ink_chip_button` — header-matching ink chips (not menu ledger buttons) |
+| Config action buttons | Cloud sign-in, restore, menu, reset, delete — full-width ink chips |
+| Stats stat cards | `ink_stat_card_style()` — ink flat cards with padded interior |
+| Stats progress bars | `ink_progress_track_style()` track when city v2 |
+| Stats muted lines | `TEXT_MUTED` in city v2 (was green secondary) |
+| Stats achievements row | Ach button + close — ink chips; list bone text |
+| Turf/Rivals/Crew/Ops | Rows already ink via P15.6; subtab headers gold in v2 |
+
+## Remaining (P15.11+)
 
 - [ ] Capture matrix PNGs filled (`docs/ui/capture_matrix/`)
 - [x] Telemetry: `ui_city_tier_change`, `ui_hustle_tap`
@@ -77,8 +90,8 @@
 
 | Check | Result |
 |-------|--------|
-| `python sim_smoke.py` | PASS (P15.10) |
-| `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity (P15.10) |
+| `python sim_smoke.py` | PASS (P15.11) |
+| `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity (P15.11) |
 
 ## Screenshot presets (P15.8+)
 
@@ -87,4 +100,6 @@ godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier0.p
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier4.png --city-tier 4 --heat 75
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out districts5.png --city-tier 2 --districts 5
 godot --path godot -s res://scripts/tools/screenshot.gd -- --menu --out main_menu_ink.png
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 6 --out stats_ink.png
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 8 --out config_ink.png
 ```
