@@ -30,4 +30,6 @@ const OFFLINE_EFFICIENCY := 0.6
 const SHOW_PARTICLES := true
 
 # P14 rustic noir — procedural bake at startup; set false to force flat StyleBoxFlat UI.
-const UI_RUSTIC_THEME := true
+const UI_RUSTIC_THEME := false
+# P15 city-first layout — skyline viewport replaces left column stack.
+const UI_CITY_V2 := true
