@@ -1,0 +1,35 @@
+[gd_scene load_steps=2 format=3 uid="uid://hustleband001"]
+
+[ext_resource type="Script" path="res://scripts/ui/hustle_band.gd" id="1"]
+
+[node name="HustleBand" type="Control"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 3
+anchors_preset = 0
+size_flags_horizontal = 3
+script = ExtResource("1")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="CoinCol" type="HBoxContainer" parent="Row"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HustleBtn" type="Button" parent="Row"]
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+flat = true
+mouse_filter = 0
+
+[node name="Spacer" type="Control" parent="Row"]
+layout_mode = 2
+mouse_filter = 2

@@ -20,13 +20,3 @@ offset_right = 140.0
 offset_bottom = 24.0
 mouse_filter = 2
 text = "YOUR EMPIRE"
-
-[node name="HustleOverlay" type="Button" parent="."]
-layout_mode = 0
-offset_left = 142.0
-offset_top = 220.0
-offset_right = 262.0
-offset_bottom = 276.0
-focus_mode = 0
-flat = true
-mouse_filter = 0
