@@ -11,11 +11,11 @@ E:/Downloads/Godot_v4.6.3-stable_win64.exe --path godot -s res://scripts/tools/s
   --tab 0 --out docs/ui/capture_matrix/tier0_bldgs.png --city-tier 0 --w 720 --h 1280
 ```
 
-Harness flags: `--menu`, `--tab N` (0 Bldgs … 8 Config), `--out PATH`, `--w` / `--h`, `--frames`, `--cash`, `--city-tier N`, `--buildings N`, `--heat N`, `--districts N`, `--prestige-tokens N`.
+Harness flags: `--menu`, `--tab N` (0 Bldgs … 8 Config), `--out PATH`, `--w` / `--h`, `--frames`, `--cash`, `--city-tier N`, `--buildings N`, `--heat N`, `--districts N`, `--prestige-tokens N`, `--offline-overlay`, `--prestige-tree`.
 
 ## P15 capture matrix (2026-06-20)
 
-Automated via `screenshot.gd` at 720×1280. **Partial** — offline overlay and prestige-tree full-screen still require manual capture.
+Automated via `screenshot.gd` at 720×1280. **Complete** — 29 PNGs including offline overlay and prestige tree.
 
 | File | Description |
 |------|-------------|
@@ -46,13 +46,8 @@ Automated via `screenshot.gd` at 720×1280. **Partial** — offline overlay and 
 | `stats_ink.png` | Stats tab ink cards + progress bars |
 | `tab_mgrs.png` | Mgrs tab, tier 2 |
 | `config_ink.png` | Config tab ink row cards + chips |
-
-### Manual captures still needed
-
-| Scenario | Assert | Notes |
-|----------|--------|-------|
-| Offline overlay | City dimmed, not removed | Trigger via save/load or idle return |
-| Prestige tree full-screen | City hidden OK | Open tree from header chip |
+| `offline_overlay.png` | Offline return overlay — city dimmed (`--offline-overlay --city-tier 2`) |
+| `prestige_tree.png` | Prestige tree ink modal (`--prestige-tree --city-tier 2`) |
 
 ## P14 reference (historical)
 
@@ -68,6 +63,15 @@ Automated via `screenshot.gd` at 720×1280. **Partial** — offline overlay and 
 - `game_screen` — header economy HUD, buy-mult chip, tab badges
 - Each bottom tab (Bldgs, Upgrs, Mgrs, Turf subtabs, Stats, Config)
 - Overlay queue: offline → daily → milestone → event (sequential, not stacked)
+
+## Regenerate overlay shots (PowerShell)
+
+```powershell
+$godot = "E:/Downloads/Godot_v4.6.3-stable_win64.exe"
+$dir = "docs/ui/capture_matrix"
+& $godot --path godot -s res://scripts/tools/screenshot.gd -- --offline-overlay --city-tier 2 --out $dir/offline_overlay.png --w 720 --h 1280
+& $godot --path godot -s res://scripts/tools/screenshot.gd -- --prestige-tree --city-tier 2 --out $dir/prestige_tree.png --w 720 --h 1280
+```
 
 ## Regenerate all P15 shots (PowerShell)
 

@@ -6,6 +6,7 @@ const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 @onready var _dim: ColorRect = $Dim
 @onready var _panel: PanelContainer = $Panel
+@onready var _title: Label = $Panel/Margin/VBox/TitleLabel
 @onready var _influence: Label = $Panel/Margin/VBox/InfluenceLabel
 @onready var _prompt: Label = $Panel/Margin/VBox/PromptLabel
 @onready var _branch_row: HBoxContainer = $Panel/Margin/VBox/BranchRow
@@ -44,6 +45,7 @@ func _process(delta: float) -> void:
 func _ready() -> void:
 	layer = 10
 	visible = false
+	_apply_ink_theme()
 	_apply_dialog_theme()
 	_build_branch_buttons()
 	_back_btn.pressed.connect(close)
@@ -54,6 +56,26 @@ func _ready() -> void:
 	_prestige_yes.pressed.connect(_confirm_prestige)
 	_prestige_no.pressed.connect(_cancel_prestige_dialog)
 	GameState.stats_changed.connect(_refresh)
+
+
+func _apply_ink_theme() -> void:
+	if not GameTheme.is_city_v2_active():
+		return
+	_panel.add_theme_stylebox_override("panel", GameTheme.overlay_ledger_style())
+	_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
+	_influence.add_theme_color_override("font_color", GameTheme.TEXT)
+	_influence.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_prompt.add_theme_color_override("font_color", GameTheme.GOLD)
+	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_blurb.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_blurb.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_lock_label.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_lock_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_perk_scroll.add_theme_stylebox_override("panel", GameTheme.ink_scroll_wrap_style())
+	GameTheme.apply_ink_chip_button(_back_btn, false, 14, GameTheme.TEXT)
+	GameTheme.apply_overlay_cta(_prestige_btn, true)
+	GameTheme.apply_ink_chip_button(_dragon_patron_btn, false, 13, GameTheme.GOLD)
 
 
 func _apply_dialog_theme() -> void:
@@ -159,6 +181,11 @@ func _refresh_branch_buttons(committed: String) -> void:
 		else:
 			btn.text = "%s\n%s" % [meta.get("name", br), meta.get("short", "")]
 		btn.disabled = not committed.is_empty()
+		if GameTheme.is_city_v2_active():
+			var font_col := GameTheme.GOLD_BRIGHT if is_committed else GameTheme.TEXT
+			if is_locked:
+				font_col = GameTheme.TEXT_MUTED
+			GameTheme.apply_ink_chip_button(btn, is_committed, 12, font_col)
 
 
 func _refresh_perks(branch: String) -> void:
@@ -214,6 +241,12 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 	else:
 		btn.text = str(gate.get("reason", "Locked"))
 		btn.disabled = true
+	if GameTheme.is_city_v2_active():
+		var primary: bool = gate.get("ok", false) and not owned
+		var col := GameTheme.GREEN if primary else (GameTheme.TEXT_MUTED if btn.disabled else GameTheme.TEXT)
+		GameTheme.apply_ink_chip_button(btn, primary, 13, col)
+	elif not owned:
+		GameTheme.apply_overlay_cta(btn, gate.get("ok", false))
 	vbox.add_child(btn)
 	var detail: String = PrestigeTree.perk_detail(key)
 	if not detail.is_empty():
