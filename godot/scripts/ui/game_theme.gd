@@ -334,7 +334,36 @@ static func config_section_header_style() -> StyleBox:
 	return list_section_header_style()
 
 
+static func ink_config_row_style() -> StyleBoxFlat:
+	var sb := make_ink_row_card_flat(RowAffordance.LOCKED)
+	sb.content_margin_left = 10.0
+	sb.content_margin_right = 10.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 6.0
+	return sb
+
+
+static func ink_stat_card_style() -> StyleBoxFlat:
+	var sb := make_ink_row_card_flat(RowAffordance.LOCKED)
+	sb.content_margin_left = 8.0
+	sb.content_margin_right = 8.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 6.0
+	return sb
+
+
+static func ink_progress_track_style() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("0a0a12")
+	sb.border_color = Color(GOLD, 0.2)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(4)
+	return sb
+
+
 static func config_row_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_config_row_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_CARD, 10, 8.0)
 		if sb != null:
@@ -354,6 +383,8 @@ static func config_row_style() -> StyleBox:
 
 
 static func stat_card_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_stat_card_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _CARD_SLICE, 10.0)
 		if sb != null:
@@ -508,16 +539,31 @@ static func apply_economy_hud(balance: Label, ips: Label, rank: Label) -> void:
 static func apply_ink_icon_button(btn: Button) -> void:
 	if btn == null:
 		return
-	var normal := make_ink_chip_flat(false)
+	apply_ink_chip_button(btn, false, scaled_font(16), GOLD_BRIGHT)
+
+
+static func apply_ink_chip_button(
+	btn: Button,
+	active: bool = false,
+	font_size: int = FONT_CHIP,
+	font_color: Color = GOLD_BRIGHT,
+) -> void:
+	if btn == null:
+		return
+	var normal := make_ink_chip_flat(active)
 	var hover := make_ink_chip_flat(true)
 	var pressed := make_ink_chip_flat(true)
 	pressed.bg_color = pressed.bg_color.darkened(0.08)
+	var disabled := make_ink_chip_flat(false)
+	disabled.bg_color = disabled.bg_color.darkened(0.1)
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", make_ink_chip_flat(false))
-	btn.add_theme_color_override("font_color", GOLD_BRIGHT)
-	btn.add_theme_font_size_override("font_size", scaled_font(16))
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", font_color)
+	btn.add_theme_color_override("font_hover_color", GOLD_BRIGHT)
+	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
+	btn.add_theme_font_size_override("font_size", scaled_font(font_size))
 
 
 static func tab_label_with_badge(base: String, count: int) -> String:

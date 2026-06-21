@@ -260,6 +260,8 @@ func _apply_header_theme() -> void:
 			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
 		GameTheme.apply_tab_button(tab_btn, false)
 	_refresh_tab_strip()
+	if GameTheme.is_city_v2_active():
+		_apply_tab_body_ink()
 
 
 func _apply_ui_surfaces() -> void:
@@ -280,7 +282,21 @@ func _apply_city_v2_surfaces() -> void:
 	_apply_ink_subtab_headers()
 	_wrap_notif_toast()
 	_wrap_tutorial_banner()
+	_apply_tab_body_ink()
 	_bottom_bar.add_theme_constant_override("separation", 2)
+
+
+func _apply_tab_body_ink() -> void:
+	if not GameTheme.is_city_v2_active():
+		return
+	GameTheme.apply_ink_chip_button(_stats_ach_btn, false, GameTheme.FONT_CHIP, GameTheme.GOLD_BRIGHT)
+	_stats_ach_btn.custom_minimum_size.y = maxf(float(_stats_ach_btn.custom_minimum_size.y), 40.0)
+	GameTheme.apply_ink_chip_button(_stats_ach_close, false)
+	var ach_header: Label = _stats_ach_panel.get_node("AchHeader") as Label
+	if ach_header != null:
+		GameTheme.apply_list_section_title(ach_header)
+	_stats_ach_list.add_theme_color_override("font_color", GameTheme.TEXT)
+	_stats_ach_list.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
 func _wrap_ink_content_panel(scroll: ScrollContainer) -> void:
@@ -1739,6 +1755,7 @@ func _build_config_tab() -> void:
 	else:
 		var cloud_btn := Button.new()
 		cloud_btn.text = "Sign in (cloud backup)"
+		_apply_config_action_button(cloud_btn)
 		cloud_btn.pressed.connect(func(): CloudSave.sign_in())
 		_config_body.add_child(cloud_btn)
 	_add_config_header("STORE")
@@ -1747,25 +1764,39 @@ func _build_config_tab() -> void:
 	_add_iap_row("2× income (permanent)", Monetization.PRODUCT_INCOME_X2, "Doubles passive income")
 	var restore := Button.new()
 	restore.text = "Restore purchases"
+	_apply_config_action_button(restore)
 	restore.pressed.connect(func(): Monetization.restore())
 	_config_body.add_child(restore)
 	_add_config_header("DATA")
 	var menu := Button.new()
 	menu.text = "Save & Main Menu"
+	_apply_config_action_button(menu)
 	menu.pressed.connect(_on_menu)
 	_config_body.add_child(menu)
 	var reset_tut := Button.new()
 	reset_tut.text = "Reset Tutorial"
+	_apply_config_action_button(reset_tut)
 	reset_tut.pressed.connect(func(): GameState.reset_tutorial(); _build_config_tab())
 	_config_body.add_child(reset_tut)
 	var del := Button.new()
 	del.text = "Delete Save"
+	_apply_config_action_button(del)
 	del.pressed.connect(func(): SaveManager.delete_save(); get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
 	_config_body.add_child(del)
 	var note := Label.new()
 	note.text = "Auto-save every %ds" % int(GameConfig.AUTOSAVE_INTERVAL)
 	note.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	_config_body.add_child(note)
+
+
+func _apply_config_action_button(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if GameTheme.is_city_v2_active():
+		GameTheme.apply_ink_chip_button(btn, false, 14, GameTheme.TEXT)
+	else:
+		GameTheme.apply_menu_button(btn, false)
 
 
 func _add_list_section_header(parent: Control, title: String) -> void:
@@ -1802,11 +1833,17 @@ func _add_cycle_row(label: String, options: Array, index: int, cb: Callable) -> 
 	lbl.text = label
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	if GameTheme.is_city_v2_active():
+		lbl.add_theme_color_override("font_color", GameTheme.TEXT)
 	row.add_child(lbl)
 	var btn := Button.new()
 	var holder: Dictionary = {"i": clampi(index, 0, options.size() - 1)}
 	btn.text = str(options[holder.i])
-	GameTheme.apply_menu_button(btn, false)
+	btn.custom_minimum_size.x = 88.0
+	if GameTheme.is_city_v2_active():
+		GameTheme.apply_ink_chip_button(btn, false)
+	else:
+		GameTheme.apply_menu_button(btn, false)
 	btn.pressed.connect(func():
 		holder.i = (int(holder.i) + 1) % options.size()
 		btn.text = str(options[holder.i])

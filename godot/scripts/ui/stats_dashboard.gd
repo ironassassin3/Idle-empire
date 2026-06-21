@@ -63,7 +63,10 @@ static func _add_muted_line(parent: Control, text: String) -> void:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.add_theme_color_override("font_color", GameTheme.GREEN)
+	if GameTheme.is_city_v2_active():
+		lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	else:
+		lbl.add_theme_color_override("font_color", GameTheme.GREEN)
 	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	parent.add_child(lbl)
 
@@ -98,7 +101,7 @@ static func _make_stat_card(label: String, value: String, gold: bool) -> PanelCo
 	vbox.add_child(lbl)
 	var val := Label.new()
 	val.text = value
-	val.add_theme_color_override("font_color", GameTheme.GOLD if gold else GameTheme.TEXT)
+	val.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT if gold else GameTheme.TEXT)
 	val.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	vbox.add_child(val)
 	return panel
@@ -280,9 +283,10 @@ static func _add_bar(parent: Control, ratio: float, color: Color) -> void:
 	fill_style.bg_color = color
 	fill_style.set_corner_radius_all(4)
 	bar.add_theme_stylebox_override("fill", fill_style)
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.1, 0.11, 0.18)
-	bg_style.set_corner_radius_all(4)
+	var bg_style := GameTheme.ink_progress_track_style() if GameTheme.is_city_v2_active() else StyleBoxFlat.new()
+	if not GameTheme.is_city_v2_active():
+		bg_style.bg_color = Color(0.1, 0.11, 0.18)
+		bg_style.set_corner_radius_all(4)
 	bar.add_theme_stylebox_override("background", bg_style)
 	parent.add_child(bar)
 
