@@ -1,6 +1,6 @@
 # UI Rebuild v2 Architecture — Criminal Empire (Godot 1.0)
 
-**Status:** Design document only (2026-06-20). **No implementation in this phase.**  
+**Status:** Direction **LOCKED — Concept A (Skyline progression strip)** selected by owner 2026-06-20. **P15.1–P15.3 implemented** (city_view module, layout restructure, GameState binding). P15.4+ pending.  
 **Supersedes:** P14 rustic/ledger visual direction for *future* UI work. P14 UX patterns (HUD, badges, overlays, telemetry) remain in force.  
 **Prior art:** [`UI_OVERHAUL_ARCHITECTURE.md`](UI_OVERHAUL_ARCHITECTURE.md) (P14), [`PHASE124_REPORT.md`](PHASE124_REPORT.md) (pygame city-first), [`P14_REPORT.md`](P14_REPORT.md) (lessons).  
 **Policy:** [`ART_POLICY.md`](ART_POLICY.md) — code-drawn city + optional Material Maker ambient tiles only; no generative AI.
@@ -123,7 +123,9 @@ Scene **hidden** in portrait; click zone remains top block ([`PHASE124_REPORT.md
 
 ---
 
-## 5. Three concept directions (owner picks later)
+## 5. Three concept directions (owner picked **A**)
+
+> **Decision (2026-06-20): Concept A — Skyline progression strip.** B and C retained below as fallbacks only; if the P15.0 taste gate fails, revisit B (district map) per §13, do **not** revert P14 UX patterns. A is detailed first; B/C kept for the audit trail.
 
 ### A) Skyline progression strip
 
@@ -314,19 +316,23 @@ Concept B alone over-indexes turf UI (already a full tab). Concept C under-deliv
 
 **Umbrella: P15 — City-First UI Rebuild v2**
 
+Every UI-visible phase verifies with the existing **[`screenshot.gd`](godot/scripts/tools/screenshot.gd)** harness (built 2026-06-20; boots `game_screen` windowed, seeds a fresh game, captures any tab to PNG in ~3s — Godot 4 cannot read back a viewport under `--headless`). No phase is "done" without a before/after capture diff at 720×1280.
+
 | Phase | Goal | Scope (in) | Deliverables | Exit criteria | Deps |
 |-------|------|------------|--------------|---------------|------|
-| **P15.0** | Architecture lock & taste gate | This doc; owner picks A/B/C; 3 mock screenshots (code-drawn spike, no ship) | Signed direction; `docs/ui/p15_mocks/` | Owner 15s-test pass on mock | P14 complete |
-| **P15.1** | `city_view` module spike | `city_view.gd` + unit draw; tier thresholds from pygame | Standalone `Control` renders 5 tiers headless | Screenshot matches pygame tier 1 vs 5 | P15.0 |
-| **P15.2** | Layout restructure | `game_screen.tscn`: Header → CityViewport → StatusStrip → Body → BottomBar; remove tall left column | Scene tree diff; safe-area pass | City ≥28% on 720×1280; notch clears header | P15.1 |
-| **P15.3** | Data binding | `GameState` → skyline tier, heat layers, rank glow, district dots | `city_view.refresh(state, dt)` API | Buying building changes tier ≤1 frame; heat 60+ flash | P15.2 |
-| **P15.4** | Theme v2 | Default `noir_theme.tres`; `UI_RUSTIC_THEME=false`; retire rustic wrap paths | `GameTheme` v2 tokens; flag rollback | Soak PASS; owner rejects rustic in side-by-side | P15.2 |
-| **P15.5** | Hustle + coin on city | Move `_coin_btn` / `_hustle` into city overlay; glass styling | Tap targets ≥48px on street | Hustle SFX unchanged; coin ad row optional below strip | P15.3 |
-| **P15.6** | Tab content de-ledger | Row cards: ink frames not paper; building names stay front-business | Row scene theme pass | Affordability scan at glance (green/gold edge) | P15.4 |
-| **P15.7** | Migration / rollback | `GameConfig.UI_CITY_VIEW` + `UI_RUSTIC_THEME` independent flags | Config toggle (dev); README | One-flag revert to P14 layout for soak | P15.2–P15.6 |
-| **P15.8** | Validation | Capture matrix; telemetry ext; device pass | `P15_REPORT.md`; matrix filled | Moto G FPS ≥30; owner taste gate; 5+ UI events still fire | P15.7 |
+| **P15.0** | Architecture lock & taste gate | This doc; **owner picked A ✅ (2026-06-20)**; 3 code-drawn mock captures (spike branch, no ship) | Signed direction (done); `docs/ui/p15_mocks/` tier-1 + tier-5 + heat-75 PNGs | Owner 15s-test pass on mock | P14 complete |
+| **P15.1** | `city_view` module spike | `scenes/ui/city_view.tscn` + `city_view.gd`; port `draw_scene` tiers (`src/ui.py` L1363–1526), thresholds **5 / 15 / 35 / 80** | Standalone `Control` renders 5 tiers; driven by an injected int, not yet `GameState` | `screenshot.gd` spike preset renders tier 0 vs 80 matching pygame silhouette | P15.0 | **Done** |
+| **P15.2** | Layout restructure | `game_screen.tscn`: `VBox` → Header → **CityViewport** → StatusStrip → Body/Right → BottomBar; delete `Body/Left` column | Scene tree diff; `_apply_safe_area` covers new region | City ≥28% on 720×1280; notch clears header; **Right still single-wrapper-visible** (see §14 collapse gotcha) | P15.1 | **Done** |
+| **P15.3** | Data binding | `GameState` → tier / heat / rank glow / district dots via `refresh()` | `city_view.refresh(state, dt)`; throttled ≤30 Hz | Buying a building changes tier ≤1 frame; `heat ≥ 60` flash; Crime Lord+ glow | P15.2 | **Done** |
+| **P15.4** | Theme v2 | Default `noir_theme.tres`; `UI_RUSTIC_THEME=false`; retire `_apply_rustic_surfaces` / `_wrap_content_panel` / `_scroll_vis` **together** (§14) | `GameTheme` v2 tokens; flag rollback path | Soak PASS; owner rejects rustic in side-by-side; **no row-clip regression** | P15.2 |
+| **P15.5** | Hustle + coin on city | Relocate `_hustle` / `_coin_btn` (`Body/Left`) into city overlay; glass styling; `get_hustle_rect()` for tutorial highlight | Tap targets ≥48px on street | Hustle SFX/crit/buff unchanged; tutorial step-1 highlight still lands on hustle | P15.3 |
+| **P15.6** | Tab content de-ledger | Row cards: ink `StyleBoxFlat` not paper texture; building names stay front-business; keep affordance tint | Row scene theme pass | Affordability scan at glance (green/gold edge); capture all 9 tabs render | P15.4 |
+| **P15.7** | Migration / rollback | `GameConfig.UI_CITY_VIEW` + `UI_RUSTIC_THEME` as **independent** flags | Dev config toggle; README | One-flag revert to P14 layout passes soak | P15.2–P15.6 |
+| **P15.8** | Validation | Capture matrix (§13); telemetry ext (§13); device pass | `P15_REPORT.md`; matrix filled; `screenshot.gd --city-tier` presets | Moto G FPS ≥30; owner taste gate; P14 funnel still green | P15.7 |
 
 **Estimated:** 9 sub-phases (P15.0–P15.8). **Out of scope:** new mechanics, MM batch export (optional P15.4+), 3D city, generative art.
+
+**Critical path & parallelism:** P15.1 (city module) and P15.4 (theme v2) touch disjoint files and can proceed in parallel after P15.0; both gate P15.6. P15.2 (scene restructure) is the serial bottleneck — it must land before P15.3/P15.5 (both need the CityViewport node) and is the phase most exposed to the §14 collapse gotcha. Sequence: **P15.0 → P15.1 ∥ P15.4 → P15.2 → P15.3 → P15.5 → P15.6 → P15.7 → P15.8.**
 
 ---
 
@@ -362,16 +368,31 @@ Root/VBox/
 
 ### Data binding
 
-| State field | City effect |
-|-------------|-------------|
-| `buildings[i].owned` → sum | Skyline tier |
-| `GameState.heat` | Haze, smoke, police flash |
-| `prestige_tokens` → rank | Horizon glow |
-| `territories` owned count | Window dots (cap 12) |
-| `GameState._time` or local `_t` | Traffic, flicker, pulse |
-| Rival contested districts | Optional dot color override |
+| City effect | Source (verified against live `GameState`) |
+|-------------|---------------------------------------------|
+| Skyline tier | `GameState.total_buildings_owned()` — exists at [`game_state.gd:732`](godot/scripts/autoload/game_state.gd#L732); do **not** re-sum `buildings[i].owned` in the view |
+| Haze / smoke / police flash | `GameState.heat` (`float`, 0–100) [`game_state.gd:41`](godot/scripts/autoload/game_state.gd#L41) |
+| Horizon glow | `GameState.get_rank()` [`game_state.gd:729`](godot/scripts/autoload/game_state.gd#L729) → compare via `Prestige._rank_index(...) >= _rank_index("Crime Lord")` (mirror pygame `_draw_scene_atmosphere`) |
+| Window dots (cap 12) | count of `GameState.territories` with `unlocked == true` |
+| Traffic / flicker / pulse | local `_t` accumulator in `city_view`, advanced in `_process(delta)` — **not** a `GameState` time field |
+| Optional dot color override | rival-contested districts (Turf subtab context only) |
 
-**No new save fields.** Read-only bind to existing `GameState`.
+**No new save fields.** Read-only bind to existing `GameState`. `city_view` never mutates state; `game_screen._process` pushes data in via `refresh(...)`.
+
+### Godot draw-API realities (port gotchas from pygame `_draw()`)
+
+pygame primitives do not map 1:1 to `CanvasItem._draw`. Plan for these in P15.1:
+
+| pygame | Godot `_draw` equivalent |
+|--------|--------------------------|
+| `pygame.draw.rect(..., border_radius=r)` | `draw_rect()` has **no** corner radius; use a `StyleBoxFlat.draw()` for the frame, plain `draw_rect` for skyline blocks (they're square anyway) |
+| `pygame.draw.ellipse` (lamppost pool, smoke wisps) | no `draw_ellipse`; approximate with `draw_circle` or `draw_colored_polygon` — keep wisps cheap (≤3 circles) |
+| Per-surface `SRCALPHA` blits | use `Color(r,g,b,a)` directly; **no `Image.create`/`Surface` allocation in `_draw`** (perf budget §10) |
+| Hardcoded 404×320 scene rect | `draw_set_transform(Vector2.ZERO, 0, size / Vector2(404, 320))` so pygame coordinates port verbatim into a virtual canvas that scales to the actual viewport. Non-uniform stretch is acceptable for a horizontal strip (skyline is rect-dominant) |
+| `pygame.font.SysFont("serif", ...)` "YOUR EMPIRE" label | a child `Label` with the noir display font, not a `_draw` string, so it respects theme + `scaled_font` |
+| Color8 vs float | pygame uses 0–255; Godot `Color8(r,g,b,a)` takes 0–255 and converts — port the noir constants once as `const Color8(...)` |
+
+**Redraw throttle:** animation (traffic, window flicker, hustle pulse) needs continuous redraw, but the budget caps city at ≤30 Hz. Accumulate `delta` and `queue_redraw()` only when `_t` crosses a 1/30s step; skip entirely when a full-screen overlay occludes the city (P15.3 reads the overlay-queue state already tracked by `game_screen`).
 
 ### Performance budget
 
@@ -471,6 +492,48 @@ Existing P14 funnel must remain green after P15.8.
 
 ---
 
+## 14. Codebase reality check (added 2026-06-20)
+
+Hard facts gathered while fixing the rustic row-clipping bug this session. These convert the plan from "design intent" to "execution-ready" and pre-empt the traps already hit once.
+
+### 14.1 The rustic-collapse gotcha (must not reappear in P15.2/P15.4)
+
+P14's rustic path wraps each of the 9 tab `ScrollContainer`s under `Body/Right` in a runtime `PanelContainer` (`_wrap_content_panel`, [`game_screen.gd`](godot/scripts/ui/game_screen.gd) ~L285) for the leather frame. The wrapper is `SIZE_EXPAND_FILL`. Visibility was toggled on the **inner scroll**, not the wrapper, so all 9 wrappers stayed visible and a `VBoxContainer` split its height 9 ways → the active tab collapsed to a **~51px sliver** and clipped every row. Fixed by `_scroll_vis()` (drives wrapper + scroll together).
+
+**Implication for the rebuild:**
+
+- P15.2 removes `Body/Left` and reshapes `Body`, but `Body/Right` keeps the 9-scroll pattern. Any container holding multiple `EXPAND_FILL` children **must** keep the single-visible-child invariant. Re-verify with `screenshot.gd` after the restructure, not by eye.
+- P15.4 sets `UI_RUSTIC_THEME=false` and retires `_apply_rustic_surfaces` / `_wrap_content_panel`. `_scroll_vis()` is a **no-op when unwrapped** (it only touches the wrapper if `_rustic_panel` meta is set), so it can stay; retire the wrap and the meta together to avoid a half-state. Do not delete `_scroll_vis` and leave `_wrap_content_panel`, or the bug returns.
+
+### 14.2 `Body/Left` column disposition (P15.2 / P15.5)
+
+Every node currently in `Root/VBox/Body/Left` and where it goes. Source: [`game_screen.gd`](godot/scripts/ui/game_screen.gd) L36–43 + scene.
+
+| Node | Today | v2 destination |
+|------|-------|----------------|
+| `HustleBtn` (`_hustle`) | left-stack button | **Glass tap on city street** (P15.5); keep SFX/crit/buff + `get_hustle_rect` for tutorial |
+| `CoinBtn` (`_coin_btn`) | left-stack | City overlay or ad-row below strip (P15.5) |
+| `HeatLabel` + `HeatBar` | left-stack | **Status micro-strip** (heat is also a city atmosphere driver — keep the bar for exact %) |
+| `ShieldLabel` (`_shield_label`) | left-stack | Status micro-strip |
+| `PrestigeBtn` + `PrestigeInfo` | left-stack | Status strip prestige-ready chip (button opens existing prestige tree overlay) |
+| `BuffLabel` (`_buff_label`) | left-stack | Status strip (Hustle-burst buff indicator) |
+| `ClickInfo` (`_click_info`) | left-stack | Beside hustle on city, or status strip |
+| `DragonHud` (`_dragon_hud`) | left-stack panel | **Collapsed chip beside city** (§6/§7) — must not reclaim a 40% column |
+
+No node is deleted; all relocate. This is layout surgery, not feature removal — keeps every P14 signal (§11).
+
+### 14.3 Tooling already in place
+
+- **`screenshot.gd`** ([`godot/scripts/tools/screenshot.gd`](godot/scripts/tools/screenshot.gd)) exists and is the per-phase verification gate. P15.1 adds tier presets; P15.8 adds `--city-tier` + heat/district presets for the capture matrix (§13). Invocation: `<godot> --path godot -s res://scripts/tools/screenshot.gd -- --tab N --out shot.png --cash 5000` (seed cash so affordance/tier states populate; fresh `reset_new_game` starts at 0 buildings = tier-0 empty lot).
+- **Soak harnesses** (`headless_soak.gd`, `sim_godot_soak.py`, `memory_soak.gd`) remain the regression gate per §11; run after P15.2 and P15.4.
+- Godot binary this project builds against: `Godot_v4.6.3-stable_win64`.
+
+### 14.4 Open questions for P15.0 mock (resolve before P15.2 code)
+
+1. **City height on short aspect (19.5:9):** §10 says city yields to min 180px before header compresses — confirm the dragon chip + status strip still fit at 720×1480 logical.
+2. **Dragon chip placement:** beside city (horizontal) vs. floating corner — affects CityViewport width budget.
+3. **Hustle tap vs. scroll:** city strip sits above the tab scroll; ensure the hustle glass `MOUSE_FILTER` doesn't eat tab-scroll drags that start in the strip.
+
 ## Appendix — file map (implementation reference)
 
 | Purpose | Path |
@@ -481,6 +544,9 @@ Existing P14 funnel must remain green after P15.8.
 | Districts data | [`godot/scripts/systems/territory_system.gd`](godot/scripts/systems/territory_system.gd) (20 districts) |
 | Phase 124 spec | [`PHASE124_REPORT.md`](PHASE124_REPORT.md) |
 | P14 exit state | [`P14_REPORT.md`](P14_REPORT.md) |
+| Screenshot/verify harness | [`godot/scripts/tools/screenshot.gd`](godot/scripts/tools/screenshot.gd) |
+| Rustic wrap to retire (P15.4) | [`game_screen.gd`](godot/scripts/ui/game_screen.gd) `_apply_rustic_surfaces` / `_wrap_content_panel` / `_scroll_vis` (§14.1) |
+| Left column to dissolve (P15.2/.5) | [`game_screen.gd`](godot/scripts/ui/game_screen.gd) `Root/VBox/Body/Left` (§14.2) |
 
 ---
 
@@ -489,3 +555,4 @@ Existing P14 funnel must remain green after P15.8.
 | Date | Decision |
 |------|----------|
 | 2026-06-20 | Doc created; **implementation deferred**; recommended A (skyline strip) pending owner pick |
+| 2026-06-20 | **Owner selected Concept A.** Plan locked to skyline strip + district-glow secondary (§6). P15.1–P15.3 ship code landed: `city_view` module, game_screen layout restructure, GameState binding. |

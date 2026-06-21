@@ -31,16 +31,15 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _rank_chip: PanelContainer = $Root/VBox/Header/RankChip
 @onready var _advice_chip: Button = $Root/VBox/Header/AdviceChip
 @onready var _buy_mult_chip: Button = $Root/VBox/Header/BuyMultChip
-@onready var _heat_bar: ProgressBar = $Root/VBox/Body/Left/HeatBar
-@onready var _left_col: VBoxContainer = $Root/VBox/Body/Left
-@onready var _heat_label: Label = $Root/VBox/Body/Left/HeatLabel
-@onready var _coin_btn: Button = $Root/VBox/Body/Left/CoinBtn
-@onready var _shield_label: Label = $Root/VBox/Body/Left/ShieldLabel
-@onready var _hustle: Button = $Root/VBox/Body/Left/HustleBtn
-@onready var _click_info: Label = $Root/VBox/Body/Left/ClickInfo
-@onready var _prestige_btn: Button = $Root/VBox/Body/Left/PrestigeBtn
-@onready var _prestige_info: Label = $Root/VBox/Body/Left/PrestigeInfo
-@onready var _buff_label: Label = $Root/VBox/Body/Left/BuffLabel
+@onready var _heat_bar: ProgressBar = $Root/VBox/StatusStrip/HeatRow/HeatBar
+@onready var _heat_label: Label = $Root/VBox/StatusStrip/HeatRow/HeatLabel
+@onready var _coin_btn: Button = $Root/VBox/StatusStrip/StatusRow/CoinBtn
+@onready var _shield_label: Label = $Root/VBox/StatusStrip/StatusRow/ShieldLabel
+@onready var _city_view: Control = $Root/VBox/CityViewport/CityView
+@onready var _click_info: Label = $Root/VBox/StatusStrip/StatusRow/ClickInfo
+@onready var _prestige_btn: Button = $Root/VBox/StatusStrip/PrestigeRow/PrestigeBtn
+@onready var _prestige_info: Label = $Root/VBox/StatusStrip/PrestigeRow/PrestigeInfo
+@onready var _buff_label: Label = $Root/VBox/StatusStrip/StatusRow/BuffLabel
 # Bottom nav bar (5 primary tabs) + Turf subtab bar + header gear.
 @onready var _bottom_bar: HBoxContainer = $Root/VBox/BottomBar
 @onready var _header: HBoxContainer = $Root/VBox/Header
@@ -90,13 +89,13 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _notif: Label = $Root/VBox/Notif
 @onready var _prestige_tree: CanvasLayer = $PrestigeTreeOverlay
 @onready var _dragon_patron: CanvasLayer = $DragonPatronOverlay
-@onready var _dragon_hud: PanelContainer = $Root/VBox/Body/Left/DragonHud
-@onready var _dragon_name: Label = $Root/VBox/Body/Left/DragonHud/VBox/Header/Name
-@onready var _dragon_mood: Label = $Root/VBox/Body/Left/DragonHud/VBox/Header/Mood
-@onready var _dragon_stage: Label = $Root/VBox/Body/Left/DragonHud/VBox/Stage
-@onready var _dragon_xp_bar: ProgressBar = $Root/VBox/Body/Left/DragonHud/VBox/XpBar
-@onready var _dragon_request: Label = $Root/VBox/Body/Left/DragonHud/VBox/Request
-@onready var _dragon_abilities: HBoxContainer = $Root/VBox/Body/Left/DragonHud/VBox/AbilityRow
+@onready var _dragon_hud: PanelContainer = $Root/VBox/StatusStrip/DragonHud
+@onready var _dragon_name: Label = $Root/VBox/StatusStrip/DragonHud/VBox/Header/Name
+@onready var _dragon_mood: Label = $Root/VBox/StatusStrip/DragonHud/VBox/Header/Mood
+@onready var _dragon_stage: Label = $Root/VBox/StatusStrip/DragonHud/VBox/Stage
+@onready var _dragon_xp_bar: ProgressBar = $Root/VBox/StatusStrip/DragonHud/VBox/XpBar
+@onready var _dragon_request: Label = $Root/VBox/StatusStrip/DragonHud/VBox/Request
+@onready var _dragon_abilities: HBoxContainer = $Root/VBox/StatusStrip/DragonHud/VBox/AbilityRow
 @onready var _overlay_dim: ColorRect = $OverlayLayer/Dim
 @onready var _milestone_panel: PanelContainer = $OverlayLayer/MilestonePanel
 @onready var _milestone_title: Label = $OverlayLayer/MilestonePanel/VBox/Title
@@ -189,7 +188,7 @@ func _ready() -> void:
 	_set_tab(Tab.BLDGS)
 	GameState.stats_changed.connect(func(): _stats_dirty = true)
 	GameState.notification.connect(_on_notification)
-	_hustle.pressed.connect(_on_hustle)
+	_city_view.hustle_pressed.connect(_on_hustle)
 	_coin_btn.pressed.connect(_on_coin)
 	_prestige_btn.pressed.connect(_on_prestige)
 	_buy_mult_chip.pressed.connect(_on_buy_mult_chip)
@@ -220,7 +219,6 @@ func _ready() -> void:
 	_coin_ad_btn.pressed.connect(_on_coin_watch_ad)
 	_elim_dismiss.pressed.connect(_dismiss_elim)
 	_notif_default_font_size = _notif.get_theme_font_size("font_size")
-	call_deferred("_init_hustle_pivot")
 	_build_config_tab()
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
@@ -253,7 +251,6 @@ func _apply_rustic_surfaces() -> void:
 		return
 	_wrap_strip_panel(_header, GameTheme.header_strip_style())
 	_wrap_strip_panel(_bottom_bar, GameTheme.tab_bar_bg_style())
-	_wrap_body_panel(_left_col, GameTheme.panel_style())
 	for scroll in [
 		_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
 		_crew_scroll, _ops_scroll, _stats_scroll, _mgrs_scroll, _config_scroll,
@@ -443,8 +440,30 @@ func _populate_operations() -> void:
 		row.action_pressed.connect(_on_operation_action)
 
 
-func _init_hustle_pivot() -> void:
-	_hustle.pivot_offset = _hustle.size * 0.5
+func _districts_owned() -> int:
+	var n := 0
+	for t in GameState.territories:
+		if typeof(t) == TYPE_DICTIONARY and bool(t.get("unlocked", false)):
+			n += 1
+	return n
+
+
+func _refresh_city_view(overlay_blocking: bool) -> void:
+	if _city_view == null or not _city_view.has_method("refresh"):
+		return
+	_city_view.call("set_overlay_occluded", overlay_blocking)
+	_city_view.call("set_click_scale", _click_scale)
+	_city_view.call(
+		"refresh",
+		GameState.total_buildings_owned(),
+		GameState.heat,
+		_districts_owned(),
+		GameState.prestige_tokens,
+		GameState.click_value(),
+		GameState.income_per_second(),
+		_BuffSystem.has_buff(GameState, "hustle"),
+		GameConfig.CLICK_HUSTLE_MULT,
+	)
 
 
 const _TURF_TABS: Array = [Tab.TURF, Tab.RIVALS, Tab.CREW, Tab.OPS]
@@ -473,18 +492,30 @@ func _refresh_turf_subbar() -> void:
 	_sub_ops.disabled = (_tab == Tab.OPS) or not ops_unlocked
 
 
+## Toggle a tab's scroll visibility. Under the rustic theme each scroll is wrapped
+## in an EXPAND_FILL PanelContainer (_wrap_content_panel); the wrapper must follow
+## the scroll's visibility or all 9 wrappers stay visible and split Right's height,
+## clipping the active tab to a ~51px sliver.
+func _scroll_vis(scroll: Control, vis: bool) -> void:
+	scroll.visible = vis
+	if scroll.get_meta("_rustic_panel", false):
+		var wrapper := scroll.get_parent()
+		if wrapper is PanelContainer:
+			(wrapper as PanelContainer).visible = vis
+
+
 func _set_tab(tab: Tab) -> void:
 	_tab = tab
 	var is_turf: bool = tab in _TURF_TABS
-	_bldgs_scroll.visible = tab == Tab.BLDGS
-	_upgrs_scroll.visible = tab == Tab.UPGRS
-	_turf_scroll.visible = tab == Tab.TURF
-	_rivals_scroll.visible = tab == Tab.RIVALS
-	_crew_scroll.visible = tab == Tab.CREW
-	_ops_scroll.visible = tab == Tab.OPS
-	_stats_scroll.visible = tab == Tab.STATS
-	_mgrs_scroll.visible = tab == Tab.MGRS
-	_config_scroll.visible = tab == Tab.CONFIG
+	_scroll_vis(_bldgs_scroll, tab == Tab.BLDGS)
+	_scroll_vis(_upgrs_scroll, tab == Tab.UPGRS)
+	_scroll_vis(_turf_scroll, tab == Tab.TURF)
+	_scroll_vis(_rivals_scroll, tab == Tab.RIVALS)
+	_scroll_vis(_crew_scroll, tab == Tab.CREW)
+	_scroll_vis(_ops_scroll, tab == Tab.OPS)
+	_scroll_vis(_stats_scroll, tab == Tab.STATS)
+	_scroll_vis(_mgrs_scroll, tab == Tab.MGRS)
+	_scroll_vis(_config_scroll, tab == Tab.CONFIG)
 	_turf_subbar.visible = is_turf
 	_tab_bldgs.disabled = tab == Tab.BLDGS
 	_tab_upgrs.disabled = tab == Tab.UPGRS
@@ -555,6 +586,8 @@ func _process(delta: float) -> void:
 			_refresh_stats_tab()
 	_update_motion_cues()
 	_refresh_overlays()
+	var blocking: bool = bool(_pick_blocking_overlay().get("blocking", false))
+	_refresh_city_view(blocking)
 	_music_ctx_timer -= delta
 	if _music_ctx_timer <= 0.0:
 		_music_ctx_timer = _MUSIC_CTX_INTERVAL
@@ -562,7 +595,6 @@ func _process(delta: float) -> void:
 			AudioManager.update_music_context({"heat": GameState.heat, "tab": _tab})
 	if _click_scale < 1.0:
 		_click_scale = minf(1.0, _click_scale + _CLICK_SCALE_RATE * delta)
-		_hustle.scale = Vector2(_click_scale, _click_scale)
 
 
 func _refresh_overlays() -> void:
@@ -797,13 +829,6 @@ func _update_motion_cues() -> void:
 	else:
 		_shield_label.visible = false
 		_heat_bar.modulate = Color.WHITE
-	if _BuffSystem.has_buff(GameState, "hustle"):
-		var hustle_pulse: float = 0.7 + 0.3 * sin(_ui_time * 5.0)
-		_hustle.modulate = Color(1.0, 0.92, 0.55, hustle_pulse)
-		_hustle.text = "HUSTLE ×%.2f" % GameConfig.CLICK_HUSTLE_MULT
-	else:
-		_hustle.modulate = Color.WHITE
-		_hustle.text = "HUSTLE"
 	var buff_lines: PackedStringArray = PackedStringArray()
 	if _BuffSystem.has_buff(GameState, "frenzy"):
 		var rem: float = _buff_remaining("frenzy")
@@ -1100,7 +1125,7 @@ func _ensure_float_layer() -> void:
 ## Floating "+$X" / "CRIT +$X" that drifts up and fades — port of the pygame
 ## click float particles. Cosmetic only; skipped on headless.
 func _spawn_click_float(amount: float, crit: bool) -> void:
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or _city_view == null:
 		return
 	_ensure_float_layer()
 	if _float_layer.get_child_count() >= _MAX_FLOATS:
@@ -1112,7 +1137,7 @@ func _spawn_click_float(amount: float, crit: bool) -> void:
 	lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT if crit else GameTheme.GREEN)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_float_layer.add_child(lbl)
-	var origin: Vector2 = _hustle.global_position + _hustle.size * 0.5
+	var origin: Vector2 = _city_view.call("get_hustle_center_global")
 	origin.x += randf_range(-24.0, 24.0)
 	origin.y += randf_range(-6.0, 6.0)
 	lbl.global_position = origin
