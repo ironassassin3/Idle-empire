@@ -62,7 +62,7 @@
 
 ## Remaining (P15.11+)
 
-- [ ] Capture matrix PNGs filled (`docs/ui/capture_matrix/`)
+- [x] Capture matrix PNGs — **partial** (27 automated in `docs/ui/capture_matrix/`; offline overlay + prestige tree manual)
 - [x] Telemetry: `ui_city_tier_change`, `ui_hustle_tap`
 - [ ] Device pass (Moto G FPS ≥30)
 - [ ] Owner taste gate (15s recording, P14 vs P15 side-by-side)
@@ -90,16 +90,27 @@
 
 | Check | Result |
 |-------|--------|
-| `python sim_smoke.py` | PASS (P15.11) |
+| `python sim_smoke.py` | PASS (capture matrix session) |
 | `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity (P15.11) |
+
+## Capture matrix (P15.8)
+
+| Status | Detail |
+|--------|--------|
+| **Partial** | 27 PNGs at 720×1280 in [`docs/ui/capture_matrix/`](docs/ui/capture_matrix/README.md) |
+| Automated | Menu ink, tiers 0–4, building counts 1/10/40/100, heat 0/50/75, districts 0/5/20, affordance, Crime Lord glow, all 9 tabs |
+| Manual | Offline overlay (city dimmed), prestige tree full-screen |
+
+Harness: windowed Godot 4.6.3 — `screenshot.gd` with `--city-tier`, `--heat`, `--districts`, `--prestige-tokens`, `--menu`.
 
 ## Screenshot presets (P15.8+)
 
 ```bash
-godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier0.png --city-tier 0
-godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier4.png --city-tier 4 --heat 75
-godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out districts5.png --city-tier 2 --districts 5
-godot --path godot -s res://scripts/tools/screenshot.gd -- --menu --out main_menu_ink.png
-godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 6 --out stats_ink.png
-godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 8 --out config_ink.png
+godot --path godot -s res://scripts/tools/screenshot.gd -- --menu --out docs/ui/capture_matrix/menu_ink.png --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out docs/ui/capture_matrix/tier0_bldgs.png --city-tier 0 --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out docs/ui/capture_matrix/tier2_heat75.png --city-tier 2 --heat 75 --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out docs/ui/capture_matrix/tier2_districts5.png --city-tier 2 --districts 5 --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out docs/ui/capture_matrix/crime_lord_tier2.png --city-tier 2 --prestige-tokens 75 --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 6 --out docs/ui/capture_matrix/stats_ink.png --city-tier 2 --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 8 --out docs/ui/capture_matrix/config_ink.png --city-tier 2 --w 720 --h 1280
 ```
