@@ -11,6 +11,7 @@ extends SceneTree
 ##   --city-tier N    Skyline tier preset 0–4 (buildings 0/5/15/35/80)
 ##   --buildings N    Override total buildings owned (all on index 0)
 ##   --heat N         Set heat 0–100
+##   --districts N    Unlock first N territories (district strip)
 
 const GAME_SCREEN := "res://scenes/game_screen.tscn"
 const SoakAutoloads = preload("res://scripts/tools/soak_autoloads.gd")
@@ -63,6 +64,16 @@ func _apply_city_matrix_seed(gs: Node) -> void:
 	var heat_arg := _arg_after("--heat", "")
 	if not heat_arg.is_empty():
 		gs.heat = clampf(float(heat_arg), 0.0, 100.0)
+	var districts_arg := _arg_after("--districts", "")
+	if not districts_arg.is_empty() and gs.get("territories") != null:
+		var districts: Array = gs.territories
+		var unlock_count := clampi(int(districts_arg), 0, districts.size())
+		for i in districts.size():
+			var t = districts[i]
+			if t != null and t.has_method("set"):
+				t.unlocked = i < unlock_count
+		if gs.has_signal("stats_changed"):
+			gs.stats_changed.emit()
 
 
 func _seed_buildings(gs: Node, count: int) -> void:

@@ -1,6 +1,6 @@
 # P15 Report — City-First UI Rebuild v2
 
-**Scope this session:** P15.4 → P15.7 (+ P15.8 partial docs)  
+**Scope this session:** P15.8 partial — skyline contrast, telemetry, screenshot districts preset  
 **Direction:** Concept A — Skyline progression strip ([`UI_REBUILD_V2_ARCHITECTURE.md`](UI_REBUILD_V2_ARCHITECTURE.md))
 
 ## Done (P15.1–P15.7)
@@ -15,6 +15,16 @@
 | P15.5 | Status strip + coin on city | Coin/ad row on city bottom bar; compact heat + prestige + dragon chips; `get_hustle_rect()`. |
 | P15.6 | Tab row ink cards | `make_ink_row_card_flat` — dark fill + thin gold/green border; zero content margin on row root. |
 | P15.7 | Rollback flags | `UI_CITY_VIEW` hides CityViewport + fallback HUSTLE btn; independent from `UI_RUSTIC_THEME`. |
+
+## P15.8 (this session)
+
+| Item | Status |
+|------|--------|
+| Skyline contrast / tier-0 read | Brighter sky/silhouette palette; horizon glow; lamppost + figure on tier 0; neon/rim lift |
+| Telemetry `ui_city_tier_change` | Fires on tier boundary cross in `_track_city_tier` |
+| Telemetry `ui_hustle_tap` | Fires from `_on_hustle` with `source` + `tutorial_step` |
+| Status strip heat bar | Ink track + dynamic green/red fill in city v2 |
+| Screenshot `--districts N` | Seeds territory strip for capture matrix |
 
 ## Key visual changes (P15.4–P15.6)
 
@@ -43,7 +53,7 @@
 ## Remaining (P15.8)
 
 - [ ] Capture matrix PNGs filled (`docs/ui/capture_matrix/`)
-- [ ] Telemetry: `ui_city_tier_change`, `ui_hustle_tap` migration
+- [x] Telemetry: `ui_city_tier_change`, `ui_hustle_tap`
 - [ ] Device pass (Moto G FPS ≥30)
 - [ ] Owner taste gate (15s recording, P14 vs P15 side-by-side)
 - [ ] P14 funnel regression check
@@ -53,4 +63,5 @@
 ```bash
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier0.png --city-tier 0
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier4.png --city-tier 4 --heat 75
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out districts5.png --city-tier 2 --districts 5
 ```

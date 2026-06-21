@@ -10,8 +10,11 @@ const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
 const MIN_HUSTLE_SIZE := 48.0
 const HUSTLE_GROUND_Y := VIRTUAL_SIZE.y - 28.0
-const HUSTLE_SIZE_SCALE := 0.85
-const HUSTLE_COIN_RESERVE := 38.0
+const HUSTLE_STREET_X_FRAC := 0.72
+const HUSTLE_STREET_PAD_Y := 6.0
+const HUSTLE_SIZE_SCALE := 0.72
+const HUSTLE_BASE_W := 96.0
+const HUSTLE_BASE_H := 44.0
 
 const INK := Color(0.031, 0.039, 0.098)
 const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
@@ -20,12 +23,15 @@ const INK_GOLD_DEEP := Color(0.541, 0.439, 0.235, 0.314)
 const INK_GLASS := Color(0.102, 0.118, 0.157)
 const INK_BONE := Color(0.91, 0.878, 0.831)
 const INK_CRIMSON := Color(0.608, 0.157, 0.157)
-const SKY_BACK := Color8(6, 8, 22)
-const SKY_MID := Color8(12, 16, 38)
-const SKY_HAZE := Color8(28, 32, 52)
-const STREET := Color8(18, 20, 30)
-const STREET_LINE := Color8(42, 44, 62)
-const SILHOUETTE := Color8(14, 16, 28)
+const SKY_BACK := Color8(14, 18, 38)
+const SKY_MID := Color8(26, 32, 58)
+const SKY_HAZE := Color8(46, 50, 78)
+const SKY_GLOW := Color8(72, 82, 118)
+const STREET := Color8(26, 28, 42)
+const STREET_LINE := Color8(58, 62, 84)
+const SILHOUETTE := Color8(52, 58, 88)
+const SILHOUETTE_RIM := Color8(78, 86, 118)
+const SILHOUETTE_BACK := Color8(36, 42, 68)
 const NEON_WARM := Color8(255, 180, 70)
 const NEON_COOL := Color8(70, 180, 255)
 const NEON_RED := Color8(220, 60, 70)
@@ -180,14 +186,14 @@ func _layout_hustle() -> void:
 	if size.x <= 1.0 or size.y <= 1.0:
 		return
 	var scale := size / VIRTUAL_SIZE
-	var cx := size.x * 0.5
-	var bw := maxf(MIN_HUSTLE_SIZE, 120.0 * scale.x * _click_scale * HUSTLE_SIZE_SCALE)
-	var bh := maxf(MIN_HUSTLE_SIZE, 56.0 * scale.y * _click_scale * HUSTLE_SIZE_SCALE)
-	# Sidewalk placement: center on street plane (ground_y+), not mid-skyline.
+	var bw := maxf(MIN_HUSTLE_SIZE, HUSTLE_BASE_W * scale.x * _click_scale * HUSTLE_SIZE_SCALE)
+	var bh := maxf(MIN_HUSTLE_SIZE, HUSTLE_BASE_H * scale.y * _click_scale * HUSTLE_SIZE_SCALE)
+	# Wet-street band: top edge on sidewalk below facades; X off center facade.
 	var ground_y_px := size.y * (HUSTLE_GROUND_Y / VIRTUAL_SIZE.y)
-	var street_cy := ground_y_px + bh * 0.22
-	var max_cy := size.y - HUSTLE_COIN_RESERVE - bh * 0.5
-	var cy := minf(street_cy, max_cy)
+	var street_pad_y := HUSTLE_STREET_PAD_Y * scale.y
+	var cx := size.x * HUSTLE_STREET_X_FRAC
+	var cy := ground_y_px + street_pad_y + bh * 0.5
+	cy = minf(cy, size.y - bh * 0.5 - 2.0)
 	_hustle_overlay.position = Vector2(cx - bw * 0.5, cy - bh * 0.5)
 	_hustle_overlay.size = Vector2(bw, bh)
 	_mark_dirty()
@@ -215,6 +221,9 @@ func _draw() -> void:
 	_draw_frame()
 	_draw_back_parallax(_t, tier)
 	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _t, ground_y)
+	_draw_horizon_glow(ground_y)
+	if tier == 0:
+		_draw_tier0_street_detail(ground_y, _t)
 	_draw_front_street(ground_y, _t)
 	_draw_district_strip(ground_y, _district_slots)
 	_draw_atmosphere(_heat, _rank_idx, _t, tier)
@@ -273,15 +282,16 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		var bw := 18.0 + float(i % 4) * 14.0
 		var bh := back_h * (0.55 + float(i % 3) * 0.15)
 		var bx := fmod(float(i * 53) + back_drift, sw + bw) - bw * 0.5
-		draw_rect(Rect2(bx, back_y + back_h - bh, bw, bh), Color(SILHOUETTE, 0.55))
+		draw_rect(Rect2(bx, back_y + back_h - bh, bw, bh), Color(SILHOUETTE_BACK, 0.88))
 
 
 func _draw_mid_skyline(total: int, tier: int, keys: Array, t: float, ground_y: float) -> void:
 	var sw := VIRTUAL_SIZE.x
 	var drift := t * 6.0 if not GameTheme.ui_reduced_motion() else 0.0
-	var count := mini(maxi(keys.size(), 1 if tier > 0 else 0), 3)
+	# Always show at least one facade so tier 0 is not an empty void.
+	var count := mini(maxi(keys.size(), 1), 3)
 	var slot_w := sw / maxf(1.0, float(count))
-	var neon_keys: Array = keys if not keys.is_empty() else (["dealer"] if tier > 0 else [])
+	var neon_keys: Array = keys if not keys.is_empty() else ["dealer"]
 	for i in count:
 		var key: String = neon_keys[i] if i < neon_keys.size() else "dealer"
 		var cx := slot_w * (float(i) + 0.5) + sin(t * 0.4 + i) * 1.5
@@ -403,8 +413,10 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 			var wyp := by + 14.0 + wy * 16.0
 			if wyp + 8.0 > ground_y - 6.0:
 				continue
-			draw_rect(Rect2(wxp, wyp, 7.0, 9.0), Color(neon, 0.75))
-	draw_rect(Rect2(bx, ground_y - bh - 5.0, bw, 4.0), Color(neon, 0.55 + 0.25 * sin(t * 2.0 + seed)))
+			draw_rect(Rect2(wxp, wyp, 7.0, 9.0), Color(neon, 0.92))
+	# Rim light — separates facades from haze band at small portrait sizes.
+	draw_line(Vector2(bx, by), Vector2(bx, ground_y - bh), Color(SILHOUETTE_RIM, 0.35), 1.0)
+	draw_rect(Rect2(bx, ground_y - bh - 5.0, bw, 4.0), Color(neon, 0.65 + 0.3 * sin(t * 2.0 + seed)))
 
 
 func _draw_crown_watermark(cx: float, cy: float, t: float, scale: float = 1.0) -> void:
@@ -420,6 +432,28 @@ func _draw_crown_watermark(cx: float, cy: float, t: float, scale: float = 1.0) -
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(cx, cy + 10.0 * s), Vector2(cx + 6.0 * s, cy - 4.0 * s), Vector2(cx + 12.0 * s, cy + 10.0 * s),
 	]), col)
+
+
+func _draw_horizon_glow(ground_y: float) -> void:
+	var sw := VIRTUAL_SIZE.x
+	var band_h := 14.0
+	draw_rect(Rect2(0, ground_y - band_h, sw, band_h), Color(SKY_GLOW, 0.22))
+	draw_line(Vector2(0, ground_y - 1.0), Vector2(sw, ground_y - 1.0), Color(SKY_GLOW, 0.45), 1.0)
+
+
+func _draw_tier0_street_detail(ground_y: float, t: float) -> void:
+	var sw := VIRTUAL_SIZE.x
+	var post_x := sw * 0.18
+	# Lamppost + warm pool so tier-0 empty lot reads on dark phones.
+	draw_line(Vector2(post_x, ground_y - 52.0), Vector2(post_x, ground_y), Color8(58, 62, 82), 2.0)
+	draw_circle(Vector2(post_x, ground_y - 54.0), 4.0, Color8(255, 210, 120))
+	var pool_a := 0.18 + 0.06 * sin(t * 1.6) if not GameTheme.ui_reduced_motion() else 0.2
+	draw_circle(Vector2(post_x, ground_y + 6.0), 22.0, Color(1.0, 0.82, 0.45, pool_a))
+	draw_rect(Rect2(post_x - 18.0, ground_y + 2.0, 36.0, 3.0), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.12))
+	# Lone figure silhouette.
+	var fig_x := sw * 0.62 + sin(t * 0.35) * 2.0 if not GameTheme.ui_reduced_motion() else sw * 0.62
+	draw_rect(Rect2(fig_x - 3.0, ground_y - 18.0, 6.0, 14.0), Color(SILHOUETTE, 0.9))
+	draw_circle(Vector2(fig_x, ground_y - 21.0), 3.0, Color(SILHOUETTE, 0.9))
 
 
 func _draw_front_street(ground_y: float, t: float) -> void:
@@ -511,21 +545,22 @@ func _draw_hustle_glass() -> void:
 	var bh := rect.size.y
 	var br := maxf(12.0, bw / 5.0)
 
-	# Radial pulse rings + street reflection under disc.
+	# Street-local pulse — capped so rings never climb into skyline band.
 	if not GameTheme.ui_reduced_motion():
-		for ring in 3:
-			var phase := _t * 1.8 - ring * 0.45
-			var radius := bw * (0.52 + ring * 0.14) + 6.0 * sin(phase)
-			var alpha := 0.08 + 0.12 * (0.5 + 0.5 * sin(phase))
+		var ground_y_px := size.y * (HUSTLE_GROUND_Y / VIRTUAL_SIZE.y)
+		var street_headroom := maxf(8.0, cy - ground_y_px)
+		var max_ring_r := minf(bw * 0.34, street_headroom + bh * 0.12)
+		for ring in 2:
+			var phase := _t * 1.8 - ring * 0.55
+			var radius := minf(max_ring_r * (0.55 + ring * 0.35) + 3.0 * sin(phase), max_ring_r)
+			var alpha := 0.04 + 0.06 * (0.5 + 0.5 * sin(phase))
 			if _income_per_second > 0.0:
-				alpha *= 1.4
-			draw_arc(Vector2(cx, cy), radius, 0.0, TAU, 32,
-					Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, alpha), 1.5)
-		var refl_y := cy + bh * 0.55
-		draw_line(Vector2(cx - bw * 0.35, refl_y), Vector2(cx + bw * 0.35, refl_y),
-				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.25), 2.0)
-		draw_line(Vector2(cx - bw * 0.15, refl_y + 3.0), Vector2(cx + bw * 0.15, refl_y + 3.0),
-				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.12), 1.0)
+				alpha *= 1.25
+			draw_arc(Vector2(cx, cy), radius, 0.0, TAU, 24,
+					Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, alpha), 1.0)
+		var refl_y := cy + bh * 0.45
+		draw_line(Vector2(cx - bw * 0.28, refl_y), Vector2(cx + bw * 0.28, refl_y),
+				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.14), 1.5)
 
 	var fill_a := 0.647 if _hustle_hover else 0.314
 	var glass := StyleBoxFlat.new()
