@@ -14,6 +14,7 @@ extends SceneTree
 ##   --districts N    Unlock first N territories (district strip)
 
 const GAME_SCREEN := "res://scenes/game_screen.tscn"
+const MAIN_MENU := "res://scenes/main_menu.tscn"
 const SoakAutoloads = preload("res://scripts/tools/soak_autoloads.gd")
 
 const _TIER_BUILDINGS := [0, 5, 15, 35, 80]
@@ -23,6 +24,7 @@ var _settle := 45
 var _tab := 0
 var _out := "user://shot.png"
 var _screen: Node = null
+var _menu_mode := false
 
 
 func _initialize() -> void:
@@ -31,10 +33,11 @@ func _initialize() -> void:
 	_out = _arg_after("--out", "user://shot.png")
 	var w := int(_arg_after("--w", "720"))
 	var h := int(_arg_after("--h", "1280"))
+	_menu_mode = _has_flag("--menu")
 
 	SoakAutoloads.install(self)
 	var gs: Node = root.get_node_or_null("GameState")
-	if gs != null and gs.has_method("reset_new_game"):
+	if gs != null and gs.has_method("reset_new_game") and not _menu_mode:
 		gs.reset_new_game()
 		var cash := float(_arg_after("--cash", "0"))
 		if cash > 0.0:
@@ -44,9 +47,10 @@ func _initialize() -> void:
 	root.set_content_scale_size(Vector2i(w, h))
 	DisplayServer.window_set_size(Vector2i(w, h))
 
-	var packed: PackedScene = load(GAME_SCREEN) as PackedScene
+	var scene_path := MAIN_MENU if _menu_mode else GAME_SCREEN
+	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
-		push_error("Failed to load %s" % GAME_SCREEN)
+		push_error("Failed to load %s" % scene_path)
 		quit(1)
 		return
 	_screen = packed.instantiate()
@@ -94,7 +98,7 @@ func _seed_buildings(gs: Node, count: int) -> void:
 
 func _process(_delta: float) -> bool:
 	_frame += 1
-	if _frame == 5 and _screen != null and _screen.has_method("_set_tab"):
+	if not _menu_mode and _frame == 5 and _screen != null and _screen.has_method("_set_tab"):
 		_screen.call("_set_tab", _tab)
 	if _frame < _settle:
 		return false
@@ -104,9 +108,21 @@ func _process(_delta: float) -> bool:
 		printerr("screenshot: save_png failed (%d) for %s" % [err, _out])
 		quit(1)
 		return true
-	print(JSON.stringify({"ok": true, "out": ProjectSettings.globalize_path(_out), "tab": _tab}))
+	var payload := {"ok": true, "out": ProjectSettings.globalize_path(_out)}
+	if not _menu_mode:
+		payload["tab"] = _tab
+	else:
+		payload["menu"] = true
+	print(JSON.stringify(payload))
 	quit(0)
 	return true
+
+
+func _has_flag(flag: String) -> bool:
+	for pack in [OS.get_cmdline_user_args(), OS.get_cmdline_args()]:
+		if pack.has(flag):
+			return true
+	return false
 
 
 func _arg_after(flag: String, fallback: String) -> String:
