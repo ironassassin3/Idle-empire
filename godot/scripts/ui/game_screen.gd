@@ -153,6 +153,7 @@ const _MUSIC_CTX_INTERVAL := 1.0
 var _fallback_hustle: Button
 var _coin_on_city: bool = false
 var _dragon_chip: Button
+var _last_city_tier: int = -1
 
 
 ## Inset the root container by the device safe area (notch / home bar). Safe-area
@@ -333,6 +334,14 @@ func _apply_city_v2_status_strip() -> void:
 	_heat_bar.custom_minimum_size = Vector2(0, 12)
 	_heat_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
 	_status_strip.add_theme_constant_override("separation", 2)
+	var bar_bg := StyleBoxFlat.new()
+	bar_bg.bg_color = Color("1a1520")
+	bar_bg.set_corner_radius_all(3)
+	_heat_bar.add_theme_stylebox_override("background", bar_bg)
+	var bar_fill := StyleBoxFlat.new()
+	bar_fill.bg_color = GameTheme.GREEN
+	bar_fill.set_corner_radius_all(3)
+	_heat_bar.add_theme_stylebox_override("fill", bar_fill)
 	if _prestige_btn.get_parent() != _heat_row:
 		_prestige_btn.reparent(_heat_row)
 	if _shield_label.get_parent() != _heat_row:
@@ -371,6 +380,8 @@ func _restore_status_strip() -> void:
 	_heat_bar.custom_minimum_size = Vector2(0, 16)
 	_heat_label.remove_theme_font_size_override("font_size")
 	_status_strip.remove_theme_constant_override("separation")
+	for part in ["background", "fill"]:
+		_heat_bar.remove_theme_stylebox_override(part)
 	if _dragon_chip:
 		_dragon_chip.visible = false
 
@@ -420,8 +431,8 @@ func _layout_city_overlays() -> void:
 	var sz := _city_view.size
 	if sz.y < 40.0:
 		return
-	bar.position = Vector2(8.0, sz.y - 34.0)
-	bar.size = Vector2(minf(148.0, maxf(80.0, sz.x * 0.42)), 28.0)
+	bar.position = Vector2(8.0, sz.y - 30.0)
+	bar.size = Vector2(minf(120.0, maxf(72.0, sz.x * 0.34)), 24.0)
 
 
 func _ensure_fallback_hustle() -> void:
@@ -672,14 +683,43 @@ func _city_district_slots() -> Array:
 	return out
 
 
+func _city_tier_from_buildings(total: int) -> int:
+	if total < 5:
+		return 0
+	if total < 15:
+		return 1
+	if total < 35:
+		return 2
+	if total < 80:
+		return 3
+	return 4
+
+
+func _track_city_tier(total: int) -> void:
+	if not GameConfig.UI_CITY_VIEW or not GameConfig.UI_CITY_V2:
+		return
+	var tier := _city_tier_from_buildings(total)
+	if tier == _last_city_tier:
+		return
+	if _last_city_tier >= 0:
+		Telemetry.log_event("ui_city_tier_change", {
+			"tier": tier,
+			"from": _last_city_tier,
+			"buildings": total,
+		})
+	_last_city_tier = tier
+
+
 func _refresh_city_view(overlay_blocking: bool) -> void:
 	if _city_view == null or not _city_view.has_method("refresh"):
 		return
+	var total := GameState.total_buildings_owned()
+	_track_city_tier(total)
 	_city_view.call("set_overlay_occluded", overlay_blocking)
 	_city_view.call("set_click_scale", _click_scale)
 	_city_view.call(
 		"refresh",
-		GameState.total_buildings_owned(),
+		total,
 		GameState.heat,
 		_districts_owned(),
 		GameState.prestige_tokens,
@@ -1100,6 +1140,10 @@ func _refresh_all() -> void:
 		_advice_chip.text = GameTheme.truncate("▸ %s" % hint, 16)
 	_heat_bar.value = GameState.heat
 	var heat_col := GameTheme.GREEN if GameState.heat < 60.0 else GameTheme.RED
+	if GameTheme.is_city_v2_active():
+		var fill := _heat_bar.get_theme_stylebox("fill") as StyleBoxFlat
+		if fill != null:
+			fill.bg_color = heat_col
 	var heat_txt := "Heat %.0f%%" % GameState.heat
 	if _ManagerSystem.manager_active(GameState, "The Promoter"):
 		heat_txt += "  ·  autopilot ≤%.0f%%" % _ManagerSystem.promoter_heat_target(GameState)
@@ -1349,6 +1393,10 @@ func _refresh_upgrade_list() -> void:
 
 
 func _on_hustle() -> void:
+	Telemetry.log_event("ui_hustle_tap", {
+		"source": "city" if GameTheme.is_city_v2_active() else "fallback",
+		"tutorial_step": GameState.tutorial_step,
+	})
 	if GameState.tutorial_step == 0:
 		_TutorialSystem.advance_tutorial(GameState)
 	var gained: float = GameState.do_click()
