@@ -1,6 +1,6 @@
 # UI Rebuild v2 Architecture — Criminal Empire (Godot 1.0)
 
-**Status:** Direction **LOCKED — Concept A (Skyline progression strip)** selected by owner 2026-06-20. **P15.1–P15.3 implemented** (city_view module, layout restructure, GameState binding). P15.4+ pending.  
+**Status:** Direction **LOCKED — Concept A (Skyline progression strip)** selected by owner 2026-06-20. **P15.1–P15.3b implemented** (city_view module, layout restructure, GameState binding, Godot-native v2 renderer). P15.4+ pending.  
 **Supersedes:** P14 rustic/ledger visual direction for *future* UI work. P14 UX patterns (HUD, badges, overlays, telemetry) remain in force.  
 **Prior art:** [`UI_OVERHAUL_ARCHITECTURE.md`](UI_OVERHAUL_ARCHITECTURE.md) (P14), [`PHASE124_REPORT.md`](PHASE124_REPORT.md) (pygame city-first), [`P14_REPORT.md`](P14_REPORT.md) (lessons).  
 **Policy:** [`ART_POLICY.md`](ART_POLICY.md) — code-drawn city + optional Material Maker ambient tiles only; no generative AI.
@@ -234,7 +234,33 @@ Scene **hidden** in portrait; click zone remains top block ([`PHASE124_REPORT.md
 | **Hustle / coin** | Glass overlay **on** city (Phase 124), not left-column stack |
 | **Dragon patron** | Collapsed chip **beside** city strip, not competing for 40% left column |
 
-Concept B alone over-indexes turf UI (already a full tab). Concept C under-delivers late-game tower fantasy. **A + district dots** matches pygame proven layout and P14 mobile portrait constraint.
+Concept B alone over-indexes turf UI (already a full tab). Concept C under-delivers late-game tower fantasy. **A + district strip** matches pygame proven *progression contract* and P14 mobile portrait constraint — but **not** pygame pixel parity (see §6.1).
+
+---
+
+## 6.1 Differentiation from pygame lab
+
+Owner feedback (P15 taste gate): Godot city looked like a literal `draw_scene` port. **Concept A stays; pygame is inspiration only.**
+
+| Rule | Pygame lab (`src/ui.py` `draw_scene`) | Godot 1.0 (`city_view.gd` v2) |
+|------|--------------------------------------|-------------------------------|
+| **Parity target** | Reference thresholds + atmosphere *ideas* | **Inspired by**, not screenshot-matched |
+| **Aspect / layout** | ~404×320 landscape left column (~44% height) | **Portrait-first** wider strip; 3-layer parallax (back haze/moon → mid silhouettes → front street) |
+| **Silhouette read** | Generic storefronts, lamppost, figures, cars | **Building-type facades** — top 3 owned `icon_key` signatures (dealer/racket/casino/etc.) as neon-lit shapes |
+| **Tier driver** | `total_buildings` only → fixed geometry per band | Same count thresholds (5/15/35/80) but **different density/height** per band: tier 2+ vertical neon signs, tier 3+ bridge connector, tier 4+ helicopter blink, max tier syndicate crown watermark |
+| **Turf signal** | Scattered gold window dots (≥5 districts) | Horizontal **district strip** under skyline — 5–12 mini blocks, territory color + lit windows when owned, 3-letter label |
+| **Heat** | Flat crimson wash + drifting smoke ellipses + full-rect blue flash | **Full-width crimson top gradient** + **rotating blue siren wedge** at 60%+ (no smoke-ellipse clone) |
+| **Hustle** | Glass disc + single gold ellipse pulse | Glass disc + **radial pulse rings** + **street reflection line** under tap zone |
+| **Animation** | `sin(seed)` window flicker, traffic sprites | Parallax drift at layer speeds; window flicker via **hash**, not pygame sin pattern |
+| **Framing** | Gold corner ticks + "YOUR EMPIRE" label in scene | **Art-deco corner chevrons**; optional scanlines; **no duplicate "YOUR EMPIRE"** (header already shows rank) |
+| **Identity anchor** | Phase 124 noir strip | Phase 121 **art-deco empire fantasy** ([`PHASE121_REPORT.md`](PHASE121_REPORT.md) §2 landing-page lineage) |
+
+**Hard rules for future P15+ UI work:**
+
+1. Do **not** re-port pygame helper geometry (`_lamppost`, `_storefront`, `_figure`, `_car`) verbatim into Godot.
+2. Bind skyline identity to **owned building types**, not building count alone.
+3. Mobile portrait: optimize for **silhouette + neon read at small size**, not pygame coordinate parity.
+4. Performance unchanged: ≤30 Hz redraw, zero `Image.create` in `_draw`, headless skip.
 
 ---
 
@@ -299,7 +325,7 @@ Concept B alone over-indexes turf UI (already a full tab). Concept C under-deliv
 
 | Layer | Method |
 |-------|--------|
-| City sky/street | Code `_draw()` — pygame parity ([`src/ui.py`](src/ui.py) `draw_scene`) |
+| City sky/street | Code `_draw()` — Godot v2 renderer ([`city_view.gd`](godot/scripts/ui/city_view.gd)); pygame tiers are inspiration only (§6.1) |
 | UI panels | `StyleBoxFlat` ink/smoke + 1px gold hairline |
 | Ambient grain | Existing film grain overlay (P14.8) — **lighter** over city |
 | Optional MM | **One** brick/asphalt tile for street band only — not full ledger paper ([`ART_POLICY.md`](ART_POLICY.md) §4) |
@@ -349,7 +375,7 @@ res://scenes/ui/city_view.tscn
 
 **Responsibilities:**
 
-- `_draw()` skyline tiers (port from pygame `draw_scene` logic)
+- `_draw()` skyline v2 renderer (§6.1 — inspired by pygame tiers, not pixel parity)
 - `_draw_atmosphere()` heat/rank/district layers
 - `refresh(state, time)` — called from `game_screen._process` at 30fps max (not every sim tick)
 - `get_hustle_rect()` — for tutorial highlights
@@ -371,6 +397,8 @@ Root/VBox/
 | City effect | Source (verified against live `GameState`) |
 |-------------|---------------------------------------------|
 | Skyline tier | `GameState.total_buildings_owned()` — exists at [`game_state.gd:732`](godot/scripts/autoload/game_state.gd#L732); do **not** re-sum `buildings[i].owned` in the view |
+| Building facades | Top 3 owned `Building.icon_key` by count from `GameState.buildings` |
+| District strip | First 12 entries of `GameState.territories` — `unlocked`, `color`, short name label |
 | Haze / smoke / police flash | `GameState.heat` (`float`, 0–100) [`game_state.gd:41`](godot/scripts/autoload/game_state.gd#L41) |
 | Horizon glow | `GameState.get_rank()` [`game_state.gd:729`](godot/scripts/autoload/game_state.gd#L729) → compare via `Prestige._rank_index(...) >= _rank_index("Crime Lord")` (mirror pygame `_draw_scene_atmosphere`) |
 | Window dots (cap 12) | count of `GameState.territories` with `unlocked == true` |
@@ -556,3 +584,4 @@ No node is deleted; all relocate. This is layout surgery, not feature removal �
 |------|----------|
 | 2026-06-20 | Doc created; **implementation deferred**; recommended A (skyline strip) pending owner pick |
 | 2026-06-20 | **Owner selected Concept A.** Plan locked to skyline strip + district-glow secondary (§6). P15.1–P15.3 ship code landed: `city_view` module, game_screen layout restructure, GameState binding. |
+| 2026-06-20 | **P15.3b differentiation pass.** Owner: "same as pygame." §6.1 rules added; `city_view.gd` rewritten as Godot-native v2 (parallax, building-type silhouettes, district strip, siren heat, chevron frame). |
