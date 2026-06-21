@@ -1,6 +1,6 @@
 extends Control
 class_name CityView
-## P15.1 — code-drawn skyline strip (pygame draw_scene parity). ART_POLICY: no textures.
+## P15.3b — Godot-native city viewport (inspired by pygame tiers, not pixel-parity). ART_POLICY: no textures.
 
 signal hustle_pressed
 
@@ -10,17 +10,22 @@ const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
 const MIN_HUSTLE_SIZE := 48.0
 
-# Noir palette — mirrors src/theme.py Phase 127 / pygame draw_scene.
 const INK := Color(0.031, 0.039, 0.098)
 const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
 const INK_GOLD_BRIGHT := Color(0.925, 0.792, 0.49)
 const INK_GOLD_DEEP := Color(0.541, 0.439, 0.235, 0.314)
 const INK_GLASS := Color(0.102, 0.118, 0.157)
 const INK_BONE := Color(0.91, 0.878, 0.831)
-const INK_BONE_DIM := Color(0.541, 0.502, 0.451)
 const INK_CRIMSON := Color(0.608, 0.157, 0.157)
-const ACCENT_DIM := Color(0.29, 0.416, 0.541)
-const BG_DARK := Color(0.078, 0.086, 0.125)
+const SKY_BACK := Color8(6, 8, 22)
+const SKY_MID := Color8(12, 16, 38)
+const SKY_HAZE := Color8(28, 32, 52)
+const STREET := Color8(18, 20, 30)
+const STREET_LINE := Color8(42, 44, 62)
+const SILHOUETTE := Color8(14, 16, 28)
+const NEON_WARM := Color8(255, 180, 70)
+const NEON_COOL := Color8(70, 180, 255)
+const NEON_RED := Color8(220, 60, 70)
 
 @onready var _empire_label: Label = $EmpireLabel
 @onready var _hustle_overlay: Button = $HustleOverlay
@@ -40,11 +45,14 @@ var _hustle_active: bool = false
 var _hustle_mult: float = 1.0
 var _click_scale: float = 1.0
 var _hustle_hover: bool = false
+var _top_building_keys: Array = []
+var _district_slots: Array = []
 
 var _last_buildings: int = -1
 var _last_heat: float = -1.0
 var _last_districts: int = -1
 var _last_rank_idx: int = -1
+var _last_building_sig: String = ""
 
 
 func _ready() -> void:
@@ -54,9 +62,7 @@ func _ready() -> void:
 	_hustle_overlay.pressed.connect(func(): hustle_pressed.emit())
 	_hustle_overlay.mouse_entered.connect(func(): _set_hustle_hover(true))
 	_hustle_overlay.mouse_exited.connect(func(): _set_hustle_hover(false))
-	_empire_label.text = "YOUR EMPIRE"
-	_empire_label.add_theme_color_override("font_color", Color(INK_GOLD_BRIGHT, 0.55))
-	_empire_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_empire_label.visible = false
 	resized.connect(_layout_hustle)
 	call_deferred("_layout_hustle")
 	if not _is_headless():
@@ -106,20 +112,25 @@ func refresh(
 	click_value: float,
 	income_per_second: float,
 	hustle_active: bool,
-	hustle_mult: float
+	hustle_mult: float,
+	top_building_keys: Array = [],
+	district_slots: Array = []
 ) -> void:
 	var rank_name := PrestigeScript.get_rank(prestige_tokens)
 	var rank_idx := PrestigeScript.rank_index(rank_name)
+	var sig := _building_sig(top_building_keys)
 	var state_changed := (
 		total_buildings != _last_buildings
 		or absf(heat - _last_heat) > 0.5
 		or districts_owned != _last_districts
 		or rank_idx != _last_rank_idx
+		or sig != _last_building_sig
 	)
 	_last_buildings = total_buildings
 	_last_heat = heat
 	_last_districts = districts_owned
 	_last_rank_idx = rank_idx
+	_last_building_sig = sig
 
 	_total_buildings = total_buildings
 	_heat = heat
@@ -129,9 +140,15 @@ func refresh(
 	_income_per_second = income_per_second
 	_hustle_active = hustle_active
 	_hustle_mult = hustle_mult
+	_top_building_keys = top_building_keys
+	_district_slots = district_slots
 
 	if state_changed:
 		_mark_dirty()
+
+
+func _building_sig(keys: Array) -> String:
+	return "|".join(keys)
 
 
 func _mark_dirty() -> void:
@@ -165,14 +182,33 @@ func _layout_hustle() -> void:
 	_mark_dirty()
 
 
+func _tier(total: int) -> int:
+	if total < 5:
+		return 0
+	if total < 15:
+		return 1
+	if total < 35:
+		return 2
+	if total < 80:
+		return 3
+	return 4
+
+
 func _draw() -> void:
 	if _is_headless():
 		return
 	var scale := size / VIRTUAL_SIZE
 	draw_set_transform(Vector2.ZERO, 0.0, scale)
+	var tier := _tier(_total_buildings)
+	var ground_y := VIRTUAL_SIZE.y - 28.0
 	_draw_frame()
-	_draw_skyline(_total_buildings, _t)
-	_draw_atmosphere(_heat, _districts_owned, _rank_idx, _t)
+	_draw_back_parallax(_t, tier)
+	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _t, ground_y)
+	_draw_front_street(ground_y, _t)
+	_draw_district_strip(ground_y, _district_slots)
+	_draw_atmosphere(_heat, _rank_idx, _t, tier)
+	if not GameTheme.ui_reduced_motion():
+		_draw_scanlines()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_hustle_glass()
 
@@ -181,145 +217,275 @@ func _draw_frame() -> void:
 	var sr := Rect2(Vector2.ZERO, VIRTUAL_SIZE)
 	draw_rect(sr, INK)
 	draw_rect(sr, INK_GOLD, false, 1.0)
-	# Gold corner accents (draw_left_empire_frame parity).
+	# Art-deco corner chevrons (Godot identity — not pygame bracket ticks).
 	for corner in [sr.position, Vector2(sr.end.x, sr.position.y),
 			Vector2(sr.position.x, sr.end.y), sr.end]:
-		draw_line(corner + Vector2(-4, 0), corner + Vector2(4, 0), INK_GOLD_BRIGHT, 1.0)
-		draw_line(corner + Vector2(0, -4), corner + Vector2(0, 4), INK_GOLD_BRIGHT, 1.0)
+		var inward := Vector2(-1, -1)
+		if corner.x >= sr.end.x:
+			inward.x = 1
+		if corner.y >= sr.end.y:
+			inward.y = 1
+		var c: Vector2 = corner + inward * 6.0
+		draw_line(c, c + Vector2(inward.x * 10.0, 0), INK_GOLD_BRIGHT, 1.0)
+		draw_line(c, c + Vector2(0, inward.y * 10.0), INK_GOLD_BRIGHT, 1.0)
+		draw_line(c + Vector2(inward.x * 3.0, inward.y * 3.0),
+				c + Vector2(inward.x * 8.0, inward.y * 3.0), INK_GOLD, 1.0)
+		draw_line(c + Vector2(inward.x * 3.0, inward.y * 3.0),
+				c + Vector2(inward.x * 3.0, inward.y * 8.0), INK_GOLD, 1.0)
 
 
-func _draw_skyline(total_buildings: int, t: float) -> void:
-	var sx := 0.0
-	var sy := 0.0
+func _draw_back_parallax(t: float, tier: int) -> void:
 	var sw := VIRTUAL_SIZE.x
 	var sh := VIRTUAL_SIZE.y
-	var ground_y := sy + sh - 20.0
-	var sky_h := ground_y - sy
-	var band0_h := sky_h * 0.40
-	var band1_h := sky_h * 0.20
-	var band2_h := sky_h - band0_h - band1_h
-	draw_rect(Rect2(sx, sy, sw, band0_h), Color8(8, 10, 25))
-	draw_rect(Rect2(sx, sy + band0_h, sw, band1_h), Color8(15, 18, 40))
-	draw_rect(Rect2(sx, sy + band0_h + band1_h, sw, band2_h), Color8(20, 22, 30))
-	draw_rect(Rect2(sx, ground_y, sw, 20.0), Color8(22, 24, 34))
-	draw_line(Vector2(sx, ground_y + 4.0), Vector2(sx + sw, ground_y + 4.0), Color8(35, 37, 52), 1.0)
-
-	if total_buildings < 5:
-		var stars0: Array[Vector2] = [
-			Vector2(20, 8), Vector2(55, 5), Vector2(90, 14),
-			Vector2(135, 7), Vector2(190, 12), Vector2(250, 6),
-		]
-		for i in stars0.size():
-			_draw_star(stars0[i].x, stars0[i].y, i, t)
-		draw_rect(Rect2(sx + sw - 55.0, sy, 55.0, ground_y - sy), Color8(10, 10, 18))
-		_lamppost(sx + 50.0, ground_y)
-		_figure(sx + 90.0, ground_y, Color8(100, 95, 115))
-	elif total_buildings < 15:
-		var stars1: Array[Vector2] = [Vector2(15, 6), Vector2(60, 9), Vector2(190, 5), Vector2(230, 12)]
-		for i in stars1.size():
-			_draw_star(stars1[i].x, stars1[i].y, i, t)
-		_storefront(sx + 35.0, 80.0, 50.0, ground_y, Color8(35, 38, 55), true, ACCENT_DIM)
-		draw_rect(Rect2(sx + 46.0, ground_y - 62.0, 58.0, 10.0), BG_DARK)
-		_lamppost(sx + 18.0, ground_y)
-		_figure(sx + 145.0, ground_y, Color8(110, 105, 125))
-		_figure(sx + 163.0, ground_y, Color8(90, 90, 110))
-	elif total_buildings < 35:
-		var stars2: Array[Vector2] = [Vector2(10, 5), Vector2(180, 8), Vector2(240, 6)]
-		for i in stars2.size():
-			_draw_star(stars2[i].x, stars2[i].y, i, t)
-		_storefront(sx + 4.0, 70.0, 60.0, ground_y, Color8(36, 40, 58), true, Color8(180, 55, 55))
-		_storefront(sx + 82.0, 80.0, 70.0, ground_y, Color8(30, 34, 52), true, GameTheme.BLUE_BRIGHT)
-		_storefront(sx + 172.0, 64.0, 55.0, ground_y, Color8(38, 42, 60), true, Color8(55, 170, 75))
-		_lamppost(sx + sw - 22.0, ground_y)
-		var car_x := sx + fmod(t * 25.0, sw + 60.0) - 30.0
-		_car(car_x, ground_y - 22.0)
-		_figure(sx + 255.0, ground_y, Color8(110, 105, 125))
-	elif total_buildings < 80:
-		var bldefs := [
-			[sx + 2.0, 50.0, 80.0, Color8(34, 38, 56)],
-			[sx + 56.0, 60.0, 100.0, Color8(28, 32, 50)],
-			[sx + 122.0, 48.0, 80.0, Color8(36, 40, 58)],
-			[sx + 176.0, 58.0, 95.0, Color8(32, 36, 54)],
-			[sx + 240.0, 44.0, 72.0, Color8(38, 42, 60)],
-		]
-		for def in bldefs:
-			var bx2: float = def[0]
-			var bw: float = def[1]
-			var bh: float = def[2]
-			var col: Color = def[3]
-			_storefront(bx2, bw, bh, ground_y, col)
-			draw_rect(Rect2(bx2 + bw * 0.5 - 1.0, ground_y - bh - 10.0, 2.0, 10.0), Color8(55, 58, 75))
-			for wy in 2:
-				for wx in 2:
-					var seed := int(bx2) / 10 + wx * 3 + wy * 7
-					var lit := sin(t * (1.2 + seed % 3 * 0.4) + float(seed)) > -0.3
-					var wc := Color8(245, 210, 90) if lit else Color8(20, 22, 32)
-					draw_rect(Rect2(bx2 + 6.0 + wx * 18.0, ground_y - bh + 26.0 + wy * 22.0, 10.0, 10.0), wc)
-		var nv := int(180.0 + 70.0 * sin(t * 2.2))
-		draw_rect(Rect2(sx + 58.0, ground_y - 73.0, 30.0, 6.0), Color8(nv, 35, 35))
-		draw_rect(Rect2(sx + 124.0, ground_y - 62.0, 22.0, 5.0), GameTheme.BLUE_BRIGHT)
-		_lamppost(sx + 110.0, ground_y)
-		var fig_x := sx + 10.0 + fmod(t * 22.0, sw - 25.0)
-		_figure(fig_x, ground_y, Color8(110, 105, 125))
-	else:
-		var stars3: Array[Vector2] = [
-			Vector2(18, 5), Vector2(52, 8), Vector2(98, 4), Vector2(148, 10),
-			Vector2(198, 6), Vector2(242, 9), Vector2(278, 4),
-		]
-		for i in stars3.size():
-			_draw_star(stars3[i].x, stars3[i].y, i, t)
-		draw_circle(Vector2(sx + sw - 22.0, sy + 18.0), 10.0, Color8(210, 215, 200))
-		draw_circle(Vector2(sx + sw - 18.0, sy + 15.0), 8.0, Color8(8, 10, 25))
-		var towers: Array = [
-			[sx, 38.0, 130.0], [sx + 42.0, 55.0, 150.0], [sx + 104.0, 44.0, 145.0],
-			[sx + 156.0, 62.0, 155.0], [sx + 226.0, 36.0, 120.0], [sx + 268.0, 20.0, 100.0],
-		]
-		for tower in towers:
-			var tx: float = tower[0]
-			var tw: float = tower[1]
-			var th: float = tower[2]
-			draw_rect(Rect2(tx, ground_y - th, tw, th), Color8(24, 28, 44))
-			draw_rect(Rect2(tx + tw * 0.5 - 1.0, ground_y - th - 8.0, 2.0, 8.0), Color8(46, 50, 70))
-			var wy := 0.0
-			while wy < th - 6.0:
-				var wx := 4.0
-				while wx < tw - 4.0:
-					var seed := int(tx) / 5 + int(wx) + int(wy)
-					var flicker := sin(t * (1.4 + seed % 3 * 0.5) + float(seed)) > -0.25
-					var wc := Color8(245, 215, 90) if flicker else Color8(18, 20, 32)
-					draw_rect(Rect2(tx + wx, ground_y - th + wy + 7.0, 6.0, 6.0), wc)
-					wx += 10.0
-				wy += 13.0
-		_lamppost(sx + 88.0, ground_y)
-		_lamppost(sx + 200.0, ground_y)
-		var car_x2 := sx + fmod(t * 28.0, sw + 50.0) - 50.0
-		_car(car_x2, ground_y - 22.0, Color8(28, 90, 170))
-		if sw > 200.0:
-			var car2 := sx + fmod(t * 20.0 + sw * 0.4, sw + 40.0) - 20.0
-			_car(car2, ground_y - 22.0, Color8(140, 30, 35))
+	var drift := t * 4.0 if not GameTheme.ui_reduced_motion() else 0.0
+	# Layer 0 — deep haze gradient bands (wider portrait read).
+	draw_rect(Rect2(0, 0, sw, sh * 0.45), SKY_BACK)
+	draw_rect(Rect2(0, sh * 0.35, sw, sh * 0.25), SKY_MID)
+	draw_rect(Rect2(0, sh * 0.55, sw, sh * 0.25), SKY_HAZE)
+	# Moon + haze disc (tier 4+).
+	if tier >= 4:
+		var moon_x := sw - 36.0 + sin(t * 0.15) * 2.0
+		draw_circle(Vector2(moon_x, 22.0), 11.0, Color8(200, 205, 195))
+		draw_circle(Vector2(moon_x + 4.0, 19.0), 9.0, SKY_BACK)
+	# Sparse stars — hash twinkle, not pygame sin grid.
+	var star_count := 8 if tier < 2 else 5
+	for i in star_count:
+		var sx := fmod(float(i * 47 + 13) + drift * 0.2, sw - 8.0) + 4.0
+		var sy := 8.0 + float(i * 11 % 40)
+		var tw := 0.35 + 0.65 * _hash01(i * 17, t * 0.5)
+		draw_rect(Rect2(sx, sy, 2.0, 2.0), Color(0.82, 0.84, 1.0, tw * 0.7))
+	# Distant mid-parallax silhouettes (always present, density grows with tier).
+	var back_h := 40.0 + tier * 18.0
+	var back_y := sh * 0.58 - back_h
+	var back_drift := fmod(drift * 0.35, sw)
+	for i in 6 + tier * 2:
+		var bw := 18.0 + float(i % 4) * 14.0
+		var bh := back_h * (0.55 + float(i % 3) * 0.15)
+		var bx := fmod(float(i * 53) + back_drift, sw + bw) - bw * 0.5
+		draw_rect(Rect2(bx, back_y + back_h - bh, bw, bh), Color(SILHOUETTE, 0.55))
 
 
-func _draw_atmosphere(heat: float, districts_owned: int, rank_idx: int, t: float) -> void:
+func _draw_mid_skyline(total: int, tier: int, keys: Array, t: float, ground_y: float) -> void:
+	var sw := VIRTUAL_SIZE.x
+	var drift := t * 6.0 if not GameTheme.ui_reduced_motion() else 0.0
+	var count := mini(maxi(keys.size(), 1 if tier > 0 else 0), 3)
+	var slot_w := sw / maxf(1.0, float(count))
+	var neon_keys: Array = keys if not keys.is_empty() else (["dealer"] if tier > 0 else [])
+	for i in count:
+		var key: String = neon_keys[i] if i < neon_keys.size() else "dealer"
+		var cx := slot_w * (float(i) + 0.5) + sin(t * 0.4 + i) * 1.5
+		var base_h := 36.0 + tier * 22.0 + float(i % 2) * 12.0
+		if total >= 80:
+			base_h += 40.0
+		elif total >= 35:
+			base_h += 24.0
+		_draw_building_signature(key, cx, ground_y, base_h, tier, i, t)
+	# Tier 2+ — vertical neon signs between facades.
+	if tier >= 2:
+		for i in count - 1:
+			var sx := slot_w * (float(i) + 1.0) + fmod(drift * 0.1, 4.0)
+			var sign_h := 28.0 + tier * 8.0
+			var pulse := 0.6 + 0.4 * sin(t * 2.5 + i * 1.3)
+			var col := NEON_WARM if i % 2 == 0 else NEON_COOL
+			draw_rect(Rect2(sx - 2.0, ground_y - sign_h - 8.0, 4.0, sign_h),
+					Color(col, pulse * 0.85))
+			draw_rect(Rect2(sx - 5.0, ground_y - sign_h - 12.0, 10.0, 4.0), Color(col, pulse * 0.5))
+	# Tier 3+ — bridge connector.
+	if tier >= 3 and count >= 2:
+		var bx0 := slot_w * 0.5
+		var bx1 := slot_w * 1.5
+		var by := ground_y - 48.0 - tier * 6.0
+		draw_line(Vector2(bx0 + 20.0, by), Vector2(bx1 - 20.0, by), Color8(55, 58, 78), 2.0)
+		for px in 5:
+			var fx := lerpf(bx0 + 20.0, bx1 - 20.0, float(px) / 4.0)
+			draw_line(Vector2(fx, by), Vector2(fx, by + 6.0), Color8(70, 74, 95), 1.0)
+	# Tier 4 — helicopter blink.
+	if tier >= 4:
+		var hx := fmod(t * 18.0 + sw * 0.2, sw + 40.0) - 20.0
+		var hy := 28.0 + sin(t * 1.1) * 3.0
+		draw_rect(Rect2(hx, hy, 14.0, 5.0), Color8(40, 44, 58))
+		draw_line(Vector2(hx + 7.0, hy), Vector2(hx + 7.0, hy - 4.0), Color8(60, 64, 80), 1.0)
+		if _hash01(99, t * 2.0) > 0.45:
+			draw_circle(Vector2(hx + 2.0, hy + 2.0), 2.0, Color8(255, 60, 50))
+	# Syndicate crown watermark at max tier.
+	if tier >= 4 and total >= 80:
+		_draw_crown_watermark(sw * 0.5, ground_y - 120.0, t)
+
+
+func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float,
+		tier: int, seed: int, t: float) -> void:
+	var bw := 52.0 + float(seed % 3) * 10.0
+	var bx := cx - bw * 0.5
+	var by := ground_y - bh
+	var body := SILHOUETTE
+	var neon := NEON_WARM
+	match key:
+		"dealer":
+			bw = 44.0
+			draw_rect(Rect2(bx, by + bh * 0.15, bw, bh * 0.85), body)
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(bx, by + bh * 0.15), Vector2(bx + bw * 0.5, by),
+				Vector2(bx + bw, by + bh * 0.15),
+			]), Color(body, 0.95))
+			neon = NEON_WARM
+		"racket":
+			draw_rect(Rect2(bx, by, bw, bh), body)
+			draw_rect(Rect2(bx + 4.0, by - 6.0, bw - 8.0, 6.0), Color8(50, 54, 72))
+			neon = NEON_RED
+		"chop":
+			draw_rect(Rect2(bx, by + bh * 0.2, bw, bh * 0.8), body)
+			for stripe in 3:
+				var sy := by + bh * 0.25 + stripe * 14.0
+				draw_line(Vector2(bx + 4.0, sy), Vector2(bx + bw - 4.0, sy + 8.0), Color8(45, 48, 65), 2.0)
+			neon = Color8(255, 140, 50)
+		"betting":
+			draw_rect(Rect2(bx + 6.0, by + 8.0, bw - 12.0, bh - 8.0), body)
+			draw_rect(Rect2(bx, by, bw, 10.0), Color8(48, 52, 70))
+			neon = NEON_COOL
+		"pawn":
+			draw_rect(Rect2(bx + 8.0, by, bw - 16.0, bh), body)
+			for pi in 3:
+				draw_circle(Vector2(bx + bw * (0.25 + pi * 0.25), by + 18.0), 4.0, Color8(35, 38, 55))
+			neon = NEON_WARM
+		"loan":
+			bw = 38.0
+			bx = cx - bw * 0.5
+			draw_rect(Rect2(bx, by, bw, bh), body)
+			draw_rect(Rect2(bx + bw * 0.5 - 2.0, by + 10.0, 4.0, bh - 20.0), Color8(200, 180, 60, 120))
+			neon = Color8(200, 190, 80)
+		"casino":
+			draw_rect(Rect2(bx, by + 16.0, bw, bh - 16.0), body)
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(bx, by + 16.0), Vector2(bx + bw * 0.5, by - 4.0), Vector2(bx + bw, by + 16.0),
+			]), Color8(38, 42, 60))
+			neon = Color8(255, 80, 180)
+		"club":
+			draw_rect(Rect2(bx + 4.0, by + 12.0, bw - 8.0, bh - 12.0), body)
+			draw_arc(Vector2(cx, by + 12.0), bw * 0.45, PI, TAU, 12, Color8(42, 46, 64), 3.0)
+			neon = Color8(180, 80, 255)
+		"dock":
+			draw_rect(Rect2(bx, by + bh * 0.35, bw, bh * 0.65), body)
+			draw_line(Vector2(bx + bw * 0.7, by), Vector2(bx + bw * 0.7, by + bh * 0.35), Color8(55, 60, 78), 2.0)
+			draw_line(Vector2(bx + bw * 0.7, by + 4.0), Vector2(bx + bw * 0.45, by + 14.0), Color8(55, 60, 78), 2.0)
+			neon = NEON_COOL
+		"arms":
+			draw_rect(Rect2(bx + 10.0, by + 20.0, bw - 20.0, bh - 20.0), body)
+			draw_line(Vector2(cx, by), Vector2(cx, by + 16.0), Color8(60, 64, 82), 2.0)
+			draw_circle(Vector2(cx, by), 3.0, Color8(70, 74, 92))
+			neon = NEON_RED
+		"hq":
+			draw_rect(Rect2(bx + 6.0, by + 24.0, bw - 12.0, bh - 24.0), body)
+			draw_rect(Rect2(bx + bw * 0.5 - 4.0, by, 8.0, 28.0), Color8(46, 50, 68))
+			_draw_crown_watermark(cx, by - 6.0, t, 0.5)
+			neon = INK_GOLD_BRIGHT
+		_:
+			draw_rect(Rect2(bx, by, bw, bh), body)
+	# Neon facade trim + hash flicker windows.
+	var win_rows := 1 + tier
+	var win_cols := 2 + tier / 2
+	for wy in win_rows:
+		for wx in win_cols:
+			var wseed := seed * 31 + wx * 7 + wy * 13
+			if not _hash_flicker(wseed, t):
+				continue
+			var wxp := bx + 8.0 + wx * ((bw - 16.0) / maxf(1.0, float(win_cols - 1)))
+			var wyp := by + 14.0 + wy * 16.0
+			if wyp + 8.0 > ground_y - 6.0:
+				continue
+			draw_rect(Rect2(wxp, wyp, 7.0, 9.0), Color(neon, 0.75))
+	draw_rect(Rect2(bx, ground_y - bh - 5.0, bw, 4.0), Color(neon, 0.55 + 0.25 * sin(t * 2.0 + seed)))
+
+
+func _draw_crown_watermark(cx: float, cy: float, t: float, scale: float = 1.0) -> void:
+	var s := scale
+	var col := Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.12 + 0.04 * sin(t * 0.8))
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 18.0 * s, cy + 10.0 * s), Vector2(cx, cy - 14.0 * s), Vector2(cx + 18.0 * s, cy + 10.0 * s),
+	]), col)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - 12.0 * s, cy + 10.0 * s), Vector2(cx - 6.0 * s, cy - 4.0 * s),
+		Vector2(cx, cy + 10.0 * s),
+	]), col)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx, cy + 10.0 * s), Vector2(cx + 6.0 * s, cy - 4.0 * s), Vector2(cx + 12.0 * s, cy + 10.0 * s),
+	]), col)
+
+
+func _draw_front_street(ground_y: float, t: float) -> void:
+	var sw := VIRTUAL_SIZE.x
+	draw_rect(Rect2(0, ground_y, sw, VIRTUAL_SIZE.y - ground_y), STREET)
+	draw_line(Vector2(0, ground_y + 5.0), Vector2(sw, ground_y + 5.0), STREET_LINE, 1.0)
+	# Wet-street center reflection shimmer.
+	if not GameTheme.ui_reduced_motion():
+		var shimmer_x := fmod(t * 30.0, sw + 60.0) - 30.0
+		draw_rect(Rect2(shimmer_x, ground_y + 8.0, 40.0, 2.0), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.15))
+
+
+func _draw_district_strip(ground_y: float, slots: Array) -> void:
+	if slots.is_empty():
+		return
+	var sw := VIRTUAL_SIZE.x
+	var count := mini(slots.size(), 12)
+	var pad := 6.0
+	var block_w := (sw - pad * 2.0) / float(count) - 2.0
+	var by := ground_y + 10.0
+	for i in count:
+		var slot: Dictionary = slots[i]
+		var bx := pad + float(i) * (block_w + 2.0)
+		var unlocked: bool = bool(slot.get("unlocked", false))
+		var col: Color = slot.get("color", Color8(60, 60, 80))
+		var shell := Color8(22, 24, 36) if unlocked else Color8(14, 15, 22)
+		draw_rect(Rect2(bx, by, block_w, 12.0), shell)
+		if unlocked:
+			draw_rect(Rect2(bx + 1.0, by + 1.0, block_w - 2.0, 4.0), Color(col, 0.85))
+			if _hash_flicker(i * 23 + 5, _t):
+				draw_rect(Rect2(bx + 2.0, by + 6.0, maxf(2.0, block_w * 0.35), 3.0), Color(col, 0.55))
+			var short_lbl: String = str(slot.get("short", ""))
+			if short_lbl.length() > 0 and block_w >= 14.0:
+				var font := ThemeDB.fallback_font
+				var fs := 7
+				draw_string(font, Vector2(bx + 1.0, by + 11.0), short_lbl.substr(0, 3),
+						HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col, 0.7))
+
+
+func _draw_atmosphere(heat: float, rank_idx: int, t: float, tier: int) -> void:
 	var sw := VIRTUAL_SIZE.x
 	var sh := VIRTUAL_SIZE.y
-	if heat >= 25.0:
-		var haze_a := minf(90.0, (heat - 25.0) * 1.4)
-		draw_rect(Rect2(0, 0, sw, sh), Color(INK_CRIMSON.r, INK_CRIMSON.g, INK_CRIMSON.b, haze_a / 255.0 * 0.35))
-	if heat >= 40.0:
-		for i in 3:
-			var wx := fmod(sw * (0.2 + i * 0.28) + t * 12.0 * (i + 1), sw)
-			var wy := sh - 30.0 - 20.0 * sin(t * 0.8 + i * 2.1)
-			draw_circle(Vector2(wx, wy), 8.0, Color(0.314, 0.314, 0.353, 0.137))
-	if heat >= 60.0 and (GameTheme.ui_reduced_motion() or int(t * 3.0) % 2 == 0):
-		draw_rect(Rect2(0, 0, sw, sh), Color(0.157, 0.235, 0.706, 0.071))
+	# Full-width crimson top gradient (replaces pygame flat wash + ellipses).
+	if heat >= 15.0:
+		var steps := 6
+		for i in steps:
+			var frac := float(i) / float(steps)
+			var intensity := clampf((heat - 15.0) / 85.0, 0.0, 1.0) * (1.0 - frac * 0.65)
+			var band_h := sh * 0.12
+			draw_rect(Rect2(0, band_h * frac, sw, band_h),
+					Color(INK_CRIMSON.r, INK_CRIMSON.g, INK_CRIMSON.b, intensity * 0.22))
+	# Rotating blue siren slice at 60%+ (not pygame full-rect flash).
+	if heat >= 60.0:
+		if GameTheme.ui_reduced_motion() or int(t * 3.0) % 2 == 0:
+			var angle := t * 2.8 if not GameTheme.ui_reduced_motion() else 0.0
+			var cx := sw * 0.5
+			var cy := 8.0
+			var r := sw * 0.95
+			var wedge := 0.55
+			var p0 := Vector2(cx, cy)
+			var p1 := p0 + Vector2(cos(angle), sin(angle)) * r
+			var p2 := p0 + Vector2(cos(angle + wedge), sin(angle + wedge)) * r
+			draw_colored_polygon(PackedVector2Array([p0, p1, p2]),
+					Color(0.157, 0.235, 0.706, 0.09))
 	var crime_lord_idx := PrestigeScript.rank_index("Crime Lord")
 	if rank_idx >= crime_lord_idx:
-		draw_rect(Rect2(0, sh - 44.0, sw, 24.0), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.098))
-	if districts_owned >= 5:
-		for i in mini(districts_owned, 12):
-			var lx := 8.0 + fmod(float(i * 17), maxf(1.0, sw - 16.0))
-			var ly := sh - 28.0 - float(i % 3) * 8.0
-			draw_circle(Vector2(lx, ly), 2.0, Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.471))
+		draw_rect(Rect2(0, sh - 52.0, sw, 18.0),
+				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.11))
+
+
+func _draw_scanlines() -> void:
+	var sw := VIRTUAL_SIZE.x
+	var sh := VIRTUAL_SIZE.y
+	var y := 0.0
+	while y < sh:
+		draw_line(Vector2(0, y), Vector2(sw, y), Color(0, 0, 0, 0.04), 1.0)
+		y += 4.0
 
 
 func _draw_hustle_glass() -> void:
@@ -334,9 +500,21 @@ func _draw_hustle_glass() -> void:
 	var bh := rect.size.y
 	var br := maxf(12.0, bw / 5.0)
 
-	if _income_per_second > 0.0 and not GameTheme.ui_reduced_motion():
-		var pulse := 40.0 + 35.0 * (0.5 + 0.5 * sin(_t * 2.2))
-		draw_arc(Vector2(cx, cy), bw * 0.5 + 12.0, 0.0, TAU, 32, Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, pulse / 255.0), 2.0)
+	# Radial pulse rings + street reflection under disc.
+	if not GameTheme.ui_reduced_motion():
+		for ring in 3:
+			var phase := _t * 1.8 - ring * 0.45
+			var radius := bw * (0.52 + ring * 0.14) + 6.0 * sin(phase)
+			var alpha := 0.08 + 0.12 * (0.5 + 0.5 * sin(phase))
+			if _income_per_second > 0.0:
+				alpha *= 1.4
+			draw_arc(Vector2(cx, cy), radius, 0.0, TAU, 32,
+					Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, alpha), 1.5)
+		var refl_y := cy + bh * 0.55
+		draw_line(Vector2(cx - bw * 0.35, refl_y), Vector2(cx + bw * 0.35, refl_y),
+				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.25), 2.0)
+		draw_line(Vector2(cx - bw * 0.15, refl_y + 3.0), Vector2(cx + bw * 0.15, refl_y + 3.0),
+				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.12), 1.0)
 
 	var fill_a := 0.647 if _hustle_hover else 0.471
 	var glass := StyleBoxFlat.new()
@@ -367,55 +545,18 @@ func _draw_hustle_glass() -> void:
 	var font := ThemeDB.fallback_font
 	var font_size := GameTheme.scaled_font(14 if _hustle_active else 13)
 	var lbl_size := font.get_string_size(hustle_lbl, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	draw_string(font, Vector2(cx - lbl_size.x * 0.5, cy - 8.0), hustle_lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, INK_BONE if not _hustle_hover else INK_GOLD_BRIGHT)
+	draw_string(font, Vector2(cx - lbl_size.x * 0.5, cy - 8.0), hustle_lbl,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, INK_BONE if not _hustle_hover else INK_GOLD_BRIGHT)
 	var hint := "+%s" % FormatUtil.format_money(_click_value)
 	var hint_size := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size - 1)
-	draw_string(font, Vector2(cx - hint_size.x * 0.5, cy + 14.0), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size - 1, INK_GOLD_BRIGHT)
+	draw_string(font, Vector2(cx - hint_size.x * 0.5, cy + 14.0), hint,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size - 1, INK_GOLD_BRIGHT)
 
 
-func _draw_star(rx: float, ry: float, i: int, t: float) -> void:
-	var a := 120.0 + 100.0 * sin(t * 0.7 + i * 1.7)
-	draw_rect(Rect2(rx, ry, 2.0, 2.0), Color(0.863, 0.863, 1.0, a / 255.0))
+func _hash01(seed: int, t: float) -> float:
+	var h := (seed * 1103515245 + int(t * 1000.0)) & 0x7FFFFFFF
+	return float(h % 1000) / 1000.0
 
 
-func _lamppost(lx: float, ground_y: float) -> void:
-	var pole_top := ground_y - 70.0
-	draw_rect(Rect2(lx, pole_top, 3.0, 70.0), Color8(80, 82, 100))
-	draw_rect(Rect2(lx - 1.0, pole_top, 14.0, 3.0), Color8(80, 82, 100))
-	draw_circle(Vector2(lx + 12.0, pole_top), 5.0, Color8(255, 220, 100))
-	draw_circle(Vector2(lx, ground_y - 2.0), 12.0, Color(1.0, 0.863, 0.314, 0.196))
-
-
-func _figure(fx: float, fy: float, col: Color) -> void:
-	draw_circle(Vector2(fx, fy - 15.0), 5.0, col)
-	draw_rect(Rect2(fx - 4.0, fy - 10.0, 8.0, 13.0), col)
-	draw_rect(Rect2(fx - 4.0, fy + 3.0, 3.0, 10.0), col)
-	draw_rect(Rect2(fx + 1.0, fy + 3.0, 3.0, 10.0), col)
-
-
-func _car(car_x: float, car_y: float, col: Color = Color8(120, 25, 25)) -> void:
-	draw_rect(Rect2(car_x, car_y, 40.0, 16.0), col)
-	var body_top := Color(minf(1.0, col.r + 0.118), minf(1.0, col.g + 0.118), minf(1.0, col.b + 0.118))
-	draw_rect(Rect2(car_x + 6.0, car_y - 9.0, 26.0, 10.0), body_top)
-	draw_rect(Rect2(car_x + 8.0, car_y - 7.0, 10.0, 7.0), Color8(160, 190, 210))
-	draw_rect(Rect2(car_x + 20.0, car_y - 7.0, 10.0, 7.0), Color8(160, 190, 210))
-	draw_circle(Vector2(car_x + 9.0, car_y + 16.0), 5.0, Color8(50, 50, 50))
-	draw_circle(Vector2(car_x + 31.0, car_y + 16.0), 5.0, Color8(50, 50, 50))
-	draw_circle(Vector2(car_x + 9.0, car_y + 16.0), 3.0, Color8(85, 85, 85))
-	draw_circle(Vector2(car_x + 31.0, car_y + 16.0), 3.0, Color8(85, 85, 85))
-
-
-func _storefront(bx2: float, bw: float, bh: float, ground_y: float, col: Color,
-		door: bool = true, sign_col: Color = Color.TRANSPARENT) -> void:
-	draw_rect(Rect2(bx2, ground_y - bh, bw, bh), col)
-	var trim := Color(minf(1.0, col.r + 0.071), minf(1.0, col.g + 0.071), minf(1.0, col.b + 0.071))
-	draw_rect(Rect2(bx2, ground_y - bh, bw, 7.0), trim)
-	if door:
-		var dw := maxf(8.0, bw / 4.0)
-		draw_rect(Rect2(bx2 + bw * 0.5 - dw * 0.5, ground_y - 30.0, dw, 30.0), Color8(8, 8, 16))
-	for wi in 2:
-		var wlx := bx2 + 6.0 + wi * (bw - 20.0) / 2.0
-		if wlx + 16.0 < bx2 + bw:
-			draw_rect(Rect2(wlx, ground_y - bh + 14.0, 16.0, 12.0), Color8(255, 220, 120))
-	if sign_col.a > 0.01:
-		draw_rect(Rect2(bx2 + 4.0, ground_y - bh - 7.0, bw - 8.0, 6.0), sign_col)
+func _hash_flicker(seed: int, t: float) -> bool:
+	return _hash01(seed, t) > 0.35

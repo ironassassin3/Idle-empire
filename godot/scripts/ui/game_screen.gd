@@ -448,6 +448,37 @@ func _districts_owned() -> int:
 	return n
 
 
+func _city_top_building_keys() -> Array:
+	var ranked: Array = []
+	for b in GameState.buildings:
+		if b.owned > 0:
+			ranked.append({"key": b.icon_key, "owned": b.owned})
+	ranked.sort_custom(func(a, b): return int(a["owned"]) > int(b["owned"]))
+	var out: Array = []
+	for entry in ranked:
+		out.append(str(entry["key"]))
+		if out.size() >= 3:
+			break
+	return out
+
+
+func _city_district_slots() -> Array:
+	var out: Array = []
+	var limit := mini(GameState.territories.size(), 12)
+	for i in limit:
+		var t = GameState.territories[i]
+		if typeof(t) != TYPE_DICTIONARY:
+			continue
+		var name_str := str(t.get("name", ""))
+		var short := name_str.substr(0, mini(3, name_str.length())).to_upper()
+		out.append({
+			"unlocked": bool(t.get("unlocked", false)),
+			"color": t.get("color", Color8(60, 60, 80)),
+			"short": short,
+		})
+	return out
+
+
 func _refresh_city_view(overlay_blocking: bool) -> void:
 	if _city_view == null or not _city_view.has_method("refresh"):
 		return
@@ -463,6 +494,8 @@ func _refresh_city_view(overlay_blocking: bool) -> void:
 		GameState.income_per_second(),
 		_BuffSystem.has_buff(GameState, "hustle"),
 		GameConfig.CLICK_HUSTLE_MULT,
+		_city_top_building_keys(),
+		_city_district_slots(),
 	)
 
 
