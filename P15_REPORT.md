@@ -1,41 +1,56 @@
 # P15 Report — City-First UI Rebuild v2
 
-**Scope this session:** P15.1 → P15.3b (core + visual differentiation)  
+**Scope this session:** P15.4 → P15.7 (+ P15.8 partial docs)  
 **Direction:** Concept A — Skyline progression strip ([`UI_REBUILD_V2_ARCHITECTURE.md`](UI_REBUILD_V2_ARCHITECTURE.md))
 
-## pygame parity → Godot identity (P15.3b)
-
-Owner taste gate: initial P15.1 renderer mirrored pygame `draw_scene` too literally (lamppost, single storefront, hustle disc). **P15.3b** rewrites [`city_view.gd`](godot/scripts/ui/city_view.gd) as a Godot-native v2 renderer per architecture §6.1:
-
-- 3-layer parallax skyline (not flat pygame sky bands)
-- Top-3 owned **building-type** neon facades (not generic storefront rects)
-- Horizontal **district strip** with territory colors (replaces scattered gold dots)
-- Crimson **top gradient** + rotating **siren wedge** for heat (not smoke ellipses)
-- Art-deco chevron frame; **YOUR EMPIRE** label hidden (header shows rank)
-- Hustle: radial pulse rings + street reflection line
-
-Pygame tier **thresholds** unchanged (5/15/35/80); geometry and motion are not pixel-parity.
-
-## Done (P15.1–P15.3b)
+## Done (P15.1–P15.7)
 
 | Phase | Deliverable | Notes |
 |-------|-------------|-------|
-| P15.1 | `godot/scenes/ui/city_view.tscn`, `godot/scripts/ui/city_view.gd` | Code-drawn skyline tiers (thresholds 5/15/35/80), atmosphere, glass hustle overlay. 30 Hz redraw throttle; headless skips `_draw`. |
-| P15.2 | `game_screen.tscn` layout | `Header → CityViewport (~30% min 180px) → StatusStrip → Body/Right → BottomBar`. Removed `Body/Left` column. |
-| P15.3 | GameState binding | `city_view.refresh(...)` from `game_screen._process`; hustle tap → `_on_hustle`; `UI_RUSTIC_THEME=false`, `UI_CITY_V2=true`. |
-| P15.3b | Visual differentiation | v2 renderer; `refresh()` extended with top building keys + district strip slots. |
+| P15.1 | `city_view.tscn`, `city_view.gd` | Skyline tiers 5/15/35/80; 30 Hz redraw; headless skips `_draw`. |
+| P15.2 | `game_screen.tscn` layout | Header → CityViewport → StatusStrip → Body/Right → BottomBar. |
+| P15.3 | GameState binding | `city_view.refresh(...)`; hustle tap → `_on_hustle`. |
+| P15.3b | Visual differentiation | Godot-native v2 renderer (parallax, facades, district strip, siren heat). |
+| P15.4 | Theme v2 | `city_noir_theme.tres`; ink `StyleBoxFlat` scroll wraps; rustic gated off when city v2; gold-cap section headers. |
+| P15.5 | Status strip + coin on city | Coin/ad row on city bottom bar; compact heat + prestige + dragon chips; `get_hustle_rect()`. |
+| P15.6 | Tab row ink cards | `make_ink_row_card_flat` — dark fill + thin gold/green border; zero content margin on row root. |
+| P15.7 | Rollback flags | `UI_CITY_VIEW` hides CityViewport + fallback HUSTLE btn; independent from `UI_RUSTIC_THEME`. |
+
+## Key visual changes (P15.4–P15.6)
+
+- **Panels:** Ink `#0c0c14` flat panels with 1px gold hairline (no rustic leather wrap).
+- **Tab scroll areas:** Minimal 2px ink frame — avoids row margin clip regression.
+- **Section headers:** Gold caps on ink strip (`FRONT BUSINESSES`, etc.).
+- **Rows:** Ink card fill + 1px affordance border (green buyable, gold Pete, muted locked).
+- **Status strip:** Single compact heat row — prestige chip + dragon chip; coin floats on city street band.
+- **City hustle:** Click value drawn on glass overlay (StatusStrip `ClickInfo` hidden in v2).
+
+## Flags (`game_config.gd`)
+
+| Flag | Default | Effect |
+|------|---------|--------|
+| `UI_CITY_V2` | `true` | City-first layout + ink theme path |
+| `UI_CITY_VIEW` | `true` | When `false`: hide CityViewport, restore StatusStrip rows + fallback HUSTLE |
+| `UI_RUSTIC_THEME` | `false` | Rustic bake + ledger wraps (independent rollback) |
 
 ## Verify
 
 | Check | Result |
 |-------|--------|
 | `python sim_smoke.py` | PASS |
-| `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity (post P15.3b) |
+| `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity |
 
-## Remaining (P15.4–P15.8)
+## Remaining (P15.8)
 
-- **P15.4** — Theme v2: retire `_apply_rustic_surfaces` / row wrap together; noir flat default
-- **P15.5** — Coin ad row on city strip; `get_hustle_rect()` for tutorial highlight
-- **P15.6** — Tab row de-ledger (ink StyleBoxFlat cards)
-- **P15.7** — `UI_CITY_VIEW` rollback flag + dev toggle
-- **P15.8** — Capture matrix, telemetry (`ui_city_tier_change`), device pass, owner taste gate
+- [ ] Capture matrix PNGs filled (`docs/ui/capture_matrix/`)
+- [ ] Telemetry: `ui_city_tier_change`, `ui_hustle_tap` migration
+- [ ] Device pass (Moto G FPS ≥30)
+- [ ] Owner taste gate (15s recording, P14 vs P15 side-by-side)
+- [ ] P14 funnel regression check
+
+## Screenshot presets (P15.8 partial)
+
+```bash
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier0.png --city-tier 0
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier4.png --city-tier 4 --heat 75
+```

@@ -26,8 +26,10 @@ Other surfaces (tab idle/active, header strip, buttons) stay procedural until MM
 
 ## Toggle
 
-- **`GameConfig.UI_RUSTIC_THEME`** (`godot/scripts/autoload/game_config.gd`) — master switch; set `false` for flat `StyleBoxFlat` rollback.
-- Global theme: `rustic_noir_theme.tres` applied at runtime when bake/load succeeds; `noir_theme.tres` remains the project default for rollback.
+- **`GameConfig.UI_RUSTIC_THEME`** — rustic bake + ledger wraps; independent from city layout.
+- **`GameConfig.UI_CITY_VIEW`** — when `false`, hides city viewport (P14 dev rollback); see `P15_REPORT.md`.
+- **`GameConfig.UI_CITY_V2`** — city-first layout + ink theme path (default on).
+- Global theme: `city_noir_theme.tres` when city v2; `rustic_noir_theme.tres` when rustic; `noir_theme.tres` project default.
 
 ## Export workflow (Material Maker)
 

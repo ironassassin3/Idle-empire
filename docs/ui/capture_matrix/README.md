@@ -25,3 +25,24 @@ Screenshot baseline for touch-first UI validation. Capture after each P14 sub-ph
 - [ ] **memory_soak.gd** — 120s headless PASS after grain node lands
 
 Store exports under this folder when device pass runs (P14.7/P14.8).
+
+## P15 city tier presets (`screenshot.gd`)
+
+Extend capture matrix for skyline strip validation. Requires windowed Godot (not `--headless`).
+
+| Preset | Args | Assert |
+|--------|------|--------|
+| Empty lot | `--city-tier 0` | Tier-0 skyline |
+| Tier 1 / 2 / 3 / 4 | `--city-tier 1` … `4` | Building thresholds 5 / 15 / 35 / 80 |
+| Heat stress | `--heat 75` | Crimson haze + siren wedge |
+| Custom count | `--buildings 100` | Max tier silhouette |
+| Affordance rows | `--cash 5000 --tab 0` | Green ink row borders |
+
+Example:
+
+```bash
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier0.png --city-tier 0 --w 720 --h 1280
+godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out heat75.png --city-tier 2 --heat 75
+```
+
+Combine with existing tab index (`--tab N`) and `--cash` for row affordance states.

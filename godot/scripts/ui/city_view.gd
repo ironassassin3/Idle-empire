@@ -100,6 +100,10 @@ func get_hustle_rect_global() -> Rect2:
 	return _hustle_overlay.get_global_rect()
 
 
+func get_hustle_rect() -> Rect2:
+	return get_hustle_rect_global()
+
+
 func get_hustle_center_global() -> Vector2:
 	return _hustle_overlay.get_global_rect().get_center()
 
