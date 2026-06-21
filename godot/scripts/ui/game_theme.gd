@@ -167,7 +167,70 @@ static func ink_tab_bar_style() -> StyleBoxFlat:
 	sb.set_border_width(Side.SIDE_LEFT, 0)
 	sb.set_border_width(Side.SIDE_RIGHT, 0)
 	sb.set_border_width(Side.SIDE_BOTTOM, 0)
-	sb.set_content_margin_all(2.0)
+	sb.content_margin_left = 2.0
+	sb.content_margin_right = 2.0
+	sb.content_margin_top = 2.0
+	sb.content_margin_bottom = 4.0
+	return sb
+
+
+static func make_ink_chip_flat(active: bool = false) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("141018") if active else Color("0c0c14")
+	sb.border_color = GOLD_BRIGHT if active else Color(GOLD, 0.45)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 8.0
+	sb.content_margin_right = 8.0
+	sb.content_margin_top = 3.0
+	sb.content_margin_bottom = 3.0
+	return sb
+
+
+static func make_ink_tab_strip_flat(active: bool) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("1a1528") if active else Color("0a0a12")
+	sb.border_color = GOLD_BRIGHT if active else Color(GOLD, 0.18)
+	sb.set_border_width_all(0)
+	sb.set_border_width(Side.SIDE_TOP, 1 if active else 0)
+	sb.set_border_width(Side.SIDE_BOTTOM, 3 if active else 1)
+	sb.set_corner_radius_all(0)
+	sb.content_margin_left = 2.0
+	sb.content_margin_right = 2.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 2.0
+	return sb
+
+
+static func ink_toast_style() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("0c0c14", 0.92)
+	sb.border_color = Color(GOLD, 0.55)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 10.0
+	sb.content_margin_right = 10.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_bottom = 4.0
+	return sb
+
+
+static func ink_overlay_modal_style() -> StyleBoxFlat:
+	var sb := ink_panel_style()
+	sb.bg_color = Color("0a0a12", 0.96)
+	sb.border_color = Color(GOLD, 0.5)
+	sb.set_content_margin_all(16.0)
+	return sb
+
+
+static func ink_tutorial_banner_style() -> StyleBoxFlat:
+	var sb := ink_toast_style()
+	sb.bg_color = Color("0a0a12", 0.94)
+	sb.border_color = Color(BLUE_BRIGHT, 0.65)
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 8.0
+	sb.content_margin_bottom = 8.0
 	return sb
 
 
@@ -350,6 +413,8 @@ static func make_panel_flat() -> StyleBoxFlat:
 
 
 static func make_chip_flat(active: bool = false) -> StyleBoxFlat:
+	if is_city_v2_active():
+		return make_ink_chip_flat(active)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = BADGE_BG if active else CHIP_BG
 	sb.border_color = GOLD_BRIGHT if active else CHIP_BORDER
@@ -393,6 +458,8 @@ static func tab_strip_style(active: bool) -> StyleBox:
 	var rustic := _rustic_tab_style(active)
 	if rustic != null:
 		return rustic
+	if is_city_v2_active():
+		return make_ink_tab_strip_flat(active)
 	if _rustic_active and texture_exists(TEX_TAB_BAR):
 		var tex := StyleBoxTexture.new()
 		tex.texture = load(TEX_TAB_BAR)
@@ -431,8 +498,26 @@ static func apply_economy_hud(balance: Label, ips: Label, rank: Label) -> void:
 	ips.add_theme_font_size_override("font_size", scaled_font(FONT_IPS))
 	ips.add_theme_color_override("font_color", GREEN)
 	rank.add_theme_font_size_override("font_size", scaled_font(FONT_RANK))
-	rank.add_theme_color_override("font_color", TEXT_MUTED)
+	if is_city_v2_active():
+		rank.add_theme_color_override("font_color", GOLD)
+	else:
+		rank.add_theme_color_override("font_color", TEXT_MUTED)
 	rank.clip_text = true
+
+
+static func apply_ink_icon_button(btn: Button) -> void:
+	if btn == null:
+		return
+	var normal := make_ink_chip_flat(false)
+	var hover := make_ink_chip_flat(true)
+	var pressed := make_ink_chip_flat(true)
+	pressed.bg_color = pressed.bg_color.darkened(0.08)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("disabled", make_ink_chip_flat(false))
+	btn.add_theme_color_override("font_color", GOLD_BRIGHT)
+	btn.add_theme_font_size_override("font_size", scaled_font(16))
 
 
 static func tab_label_with_badge(base: String, count: int) -> String:
@@ -504,6 +589,8 @@ static func menu_ledger_style() -> StyleBox:
 
 
 static func overlay_ledger_style() -> StyleBox:
+	if is_city_v2_active():
+		return ink_overlay_modal_style()
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_MODAL, _SLICE_MARGIN, 20.0)
 		if sb != null:
@@ -546,7 +633,11 @@ static func apply_tab_button(btn: Button, active: bool = false) -> void:
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_stylebox_override("disabled", tab_strip_style(active))
-	btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT_MUTED)
+	if is_city_v2_active():
+		btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT)
+		btn.add_theme_color_override("font_hover_color", GOLD_BRIGHT)
+	else:
+		btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT_MUTED)
 	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
 
 
