@@ -567,6 +567,28 @@ static func make_menu_preview_flat() -> StyleBoxFlat:
 	return sb
 
 
+static func make_ink_menu_preview_flat() -> StyleBoxFlat:
+	var sb := ink_panel_style()
+	sb.bg_color = Color("0a0a12")
+	sb.border_color = Color(GOLD, 0.4)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 16.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 12.0
+	sb.content_margin_bottom = 12.0
+	return sb
+
+
+static func make_ink_menu_button_flat(primary: bool = false) -> StyleBoxFlat:
+	var sb := make_ink_chip_flat(primary)
+	sb.content_margin_left = 16.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 12.0
+	sb.content_margin_bottom = 12.0
+	sb.set_corner_radius_all(6)
+	return sb
+
+
 static func make_menu_button_flat(primary: bool = false) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = BADGE_BG if primary else CHIP_BG
@@ -581,6 +603,13 @@ static func make_menu_button_flat(primary: bool = false) -> StyleBoxFlat:
 
 
 static func menu_ledger_style() -> StyleBox:
+	if is_city_v2_active():
+		var sb := ink_overlay_modal_style()
+		sb.content_margin_left = 24.0
+		sb.content_margin_right = 24.0
+		sb.content_margin_top = 28.0
+		sb.content_margin_bottom = 24.0
+		return sb
 	if _rustic_active:
 		var sb := _rustic_slice_style(RusticTextureBaker.KEY_MODAL, _SLICE_MARGIN, 28.0)
 		if sb != null:
@@ -608,6 +637,8 @@ static func overlay_ledger_style() -> StyleBox:
 
 
 static func menu_preview_style() -> StyleBox:
+	if is_city_v2_active():
+		return make_ink_menu_preview_flat()
 	return make_menu_preview_flat()
 
 
@@ -645,6 +676,20 @@ static func apply_menu_button(btn: Button, primary: bool = false) -> void:
 	if btn == null:
 		return
 	btn.custom_minimum_size.y = maxf(float(btn.custom_minimum_size.y), float(MENU_BTN_MIN_H))
+	if is_city_v2_active():
+		var normal := make_ink_menu_button_flat(primary)
+		var hover := make_ink_menu_button_flat(primary)
+		hover.bg_color = hover.bg_color.lightened(0.06)
+		var pressed := make_ink_menu_button_flat(primary)
+		pressed.bg_color = pressed.bg_color.darkened(0.08)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", pressed)
+		btn.add_theme_stylebox_override("disabled", make_ink_menu_button_flat(false))
+		btn.add_theme_color_override("font_color", GOLD_BRIGHT if primary else TEXT)
+		btn.add_theme_color_override("font_hover_color", GOLD_BRIGHT)
+		btn.add_theme_font_size_override("font_size", scaled_font(16 if primary else 15))
+		return
 	if _rustic_active:
 		var normal := _rustic_btn_style(RusticTextureBaker.KEY_BTN_NORMAL)
 		var hover := _rustic_btn_style(RusticTextureBaker.KEY_BTN_HOVER)

@@ -2,6 +2,10 @@ extends CanvasLayer
 
 const MusicDefs = preload("res://scripts/audio/music_defs.gd")
 
+const _BASE_MARGIN := 20
+const _INK_BG := Color("0c0c14")
+
+@onready var _margin: MarginContainer = $Margin
 @onready var _continue_btn: Button = $Margin/Center/LedgerPanel/VBox/ContinueBtn
 @onready var _new_btn: Button = $Margin/Center/LedgerPanel/VBox/NewBtn
 @onready var _import_btn: Button = $Margin/Center/LedgerPanel/VBox/ImportBtn
@@ -21,6 +25,8 @@ func _ready() -> void:
 	if AudioManager.is_enabled():
 		AudioManager.set_music_mode(MusicDefs.MusicMode.MENU)
 	_version.text = GameConfig.VERSION
+	_apply_safe_area()
+	get_viewport().size_changed.connect(_apply_safe_area)
 	_apply_menu_theme()
 	_continue_btn.pressed.connect(_on_continue)
 	_new_btn.pressed.connect(_on_new)
@@ -32,8 +38,29 @@ func _ready() -> void:
 	_refresh_save_ui()
 
 
+func _apply_safe_area() -> void:
+	var safe := DisplayServer.get_display_safe_area()
+	var screen := DisplayServer.screen_get_size()
+	if screen.x <= 0 or screen.y <= 0:
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var sx := vp.x / float(screen.x)
+	var sy := vp.y / float(screen.y)
+	var left := _BASE_MARGIN + int(maxf(0.0, float(safe.position.x)) * sx)
+	var top := _BASE_MARGIN + int(maxf(0.0, float(safe.position.y)) * sy)
+	var right := _BASE_MARGIN + int(maxf(0.0, float(screen.x - (safe.position.x + safe.size.x))) * sx)
+	var bottom := _BASE_MARGIN + int(maxf(0.0, float(screen.y - (safe.position.y + safe.size.y))) * sy)
+	_margin.add_theme_constant_override("margin_left", left)
+	_margin.add_theme_constant_override("margin_top", top)
+	_margin.add_theme_constant_override("margin_right", right)
+	_margin.add_theme_constant_override("margin_bottom", bottom)
+
+
 func _apply_menu_theme() -> void:
-	$Background.color = GameTheme.BG
+	if GameTheme.is_city_v2_active():
+		$Background.color = _INK_BG
+	else:
+		$Background.color = GameTheme.BG
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_TITLE))
 	_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_subtitle.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_SUBTITLE))

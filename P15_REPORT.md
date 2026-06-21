@@ -1,6 +1,6 @@
 # P15 Report — City-First UI Rebuild v2
 
-**Scope this session:** P15.9 — ink chrome polish (header, status strip, bottom nav, toasts)  
+**Scope this session:** P15.10 — main menu ink pass (ledger → ink modal, safe margins)  
 **Direction:** Concept A — Skyline progression strip ([`UI_REBUILD_V2_ARCHITECTURE.md`](UI_REBUILD_V2_ARCHITECTURE.md))
 
 ## Done (P15.1–P15.7)
@@ -36,6 +36,26 @@
 | Toast + tutorial ink pills | Notif wrapped in `ink_toast_style`; tutorial banner ink panel (blue accent) |
 | Overlay frames | `overlay_frame.gd` skips ledger brackets in city v2; `ink_overlay_modal_style` |
 
+## P15.10 — main menu ink pass
+
+| Item | Status |
+|------|--------|
+| Ledger panel | `menu_ledger_style()` → `ink_overlay_modal_style` when city v2; brackets gated in `menu_ledger_panel.gd` |
+| Preview card | `make_ink_menu_preview_flat` — dark ink fill, gold hairline |
+| Menu buttons | `make_ink_menu_button_flat` + `apply_menu_button` ink branch (primary gold border) |
+| Background | `#0c0c14` ink field when city v2 |
+| Safe area | Portrait margins via `DisplayServer.get_display_safe_area()` in `main_menu.gd` |
+| Screenshot | `screenshot.gd --menu` preset for capture matrix |
+
+## Remaining (P15.10+)
+
+- [ ] Capture matrix PNGs filled (`docs/ui/capture_matrix/`)
+- [x] Telemetry: `ui_city_tier_change`, `ui_hustle_tap`
+- [ ] Device pass (Moto G FPS ≥30)
+- [ ] Owner taste gate (15s recording, P14 vs P15 side-by-side)
+- [ ] P14 funnel regression check
+- [x] Main menu ink pass (if still ledger-ish)
+
 ## Key visual changes (P15.4–P15.6)
 
 - **Panels:** Ink `#0c0c14` flat panels with 1px gold hairline (no rustic leather wrap).
@@ -57,22 +77,14 @@
 
 | Check | Result |
 |-------|--------|
-| `python sim_smoke.py` | PASS |
-| `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity |
+| `python sim_smoke.py` | PASS (P15.10) |
+| `python sim_godot_soak.py` (Godot 4.6.3, 60s) | PASS — soak + income parity (P15.10) |
 
-## Remaining (P15.9+)
-
-- [ ] Capture matrix PNGs filled (`docs/ui/capture_matrix/`)
-- [x] Telemetry: `ui_city_tier_change`, `ui_hustle_tap`
-- [ ] Device pass (Moto G FPS ≥30)
-- [ ] Owner taste gate (15s recording, P14 vs P15 side-by-side)
-- [ ] P14 funnel regression check
-- [ ] Main menu ink pass (if still ledger-ish)
-
-## Screenshot presets (P15.8 partial)
+## Screenshot presets (P15.8+)
 
 ```bash
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier0.png --city-tier 0
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out tier4.png --city-tier 4 --heat 75
 godot --path godot -s res://scripts/tools/screenshot.gd -- --tab 0 --out districts5.png --city-tier 2 --districts 5
+godot --path godot -s res://scripts/tools/screenshot.gd -- --menu --out main_menu_ink.png
 ```

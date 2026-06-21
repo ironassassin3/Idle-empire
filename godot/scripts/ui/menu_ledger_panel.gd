@@ -8,10 +8,13 @@ const _INSET := 8.0
 func _ready() -> void:
 	add_theme_stylebox_override("panel", GameTheme.menu_ledger_style())
 	mouse_filter = MOUSE_FILTER_IGNORE
-	queue_redraw()
+	if not GameTheme.is_city_v2_active():
+		queue_redraw()
 
 
 func _draw() -> void:
+	if GameTheme.is_city_v2_active():
+		return
 	var w := size.x
 	var h := size.y
 	if w < 2.0 or h < 2.0:
