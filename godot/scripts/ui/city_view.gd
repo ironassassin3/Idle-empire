@@ -9,6 +9,9 @@ const PrestigeScript = preload("res://scripts/systems/prestige.gd")
 const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
 const MIN_HUSTLE_SIZE := 48.0
+const HUSTLE_GROUND_Y := VIRTUAL_SIZE.y - 28.0
+const HUSTLE_SIZE_SCALE := 0.85
+const HUSTLE_COIN_RESERVE := 38.0
 
 const INK := Color(0.031, 0.039, 0.098)
 const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
@@ -178,9 +181,13 @@ func _layout_hustle() -> void:
 		return
 	var scale := size / VIRTUAL_SIZE
 	var cx := size.x * 0.5
-	var cy := size.y * 0.78
-	var bw := maxf(MIN_HUSTLE_SIZE, 120.0 * scale.x * _click_scale)
-	var bh := maxf(MIN_HUSTLE_SIZE, 56.0 * scale.y * _click_scale)
+	var bw := maxf(MIN_HUSTLE_SIZE, 120.0 * scale.x * _click_scale * HUSTLE_SIZE_SCALE)
+	var bh := maxf(MIN_HUSTLE_SIZE, 56.0 * scale.y * _click_scale * HUSTLE_SIZE_SCALE)
+	# Sidewalk placement: center on street plane (ground_y+), not mid-skyline.
+	var ground_y_px := size.y * (HUSTLE_GROUND_Y / VIRTUAL_SIZE.y)
+	var street_cy := ground_y_px + bh * 0.22
+	var max_cy := size.y - HUSTLE_COIN_RESERVE - bh * 0.5
+	var cy := minf(street_cy, max_cy)
 	_hustle_overlay.position = Vector2(cx - bw * 0.5, cy - bh * 0.5)
 	_hustle_overlay.size = Vector2(bw, bh)
 	_mark_dirty()
@@ -520,7 +527,7 @@ func _draw_hustle_glass() -> void:
 		draw_line(Vector2(cx - bw * 0.15, refl_y + 3.0), Vector2(cx + bw * 0.15, refl_y + 3.0),
 				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.12), 1.0)
 
-	var fill_a := 0.647 if _hustle_hover else 0.471
+	var fill_a := 0.647 if _hustle_hover else 0.314
 	var glass := StyleBoxFlat.new()
 	glass.bg_color = Color(INK_GLASS.r, INK_GLASS.g, INK_GLASS.b, fill_a)
 	glass.set_corner_radius_all(int(br))
