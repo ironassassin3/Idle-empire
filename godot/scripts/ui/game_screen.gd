@@ -236,6 +236,7 @@ func _ready() -> void:
 	_build_config_tab()
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
+	_setup_tutorial_banner_dismiss()
 	_refresh_all()
 	Telemetry.log_event("ui_session_start", {"tab": _tab_name(_tab)})
 
@@ -381,6 +382,7 @@ func _wrap_tutorial_banner() -> void:
 	panel.set_meta("_ink_banner", true)
 	_tutorial_banner.set_meta("_ink_banner", true)
 	_tutorial_shell = panel
+	_setup_tutorial_banner_dismiss()
 
 
 func _apply_city_layout() -> void:
@@ -957,7 +959,7 @@ func _refresh_overlays() -> void:
 		if _tutorial_shell:
 			_tutorial_shell.visible = true
 		var tut: String = _TutorialSystem.current_text(GameState)
-		_tutorial_banner.text = tut + "\n(Skip tutorial in Config)"
+		_tutorial_banner.text = tut + "\n(tap to dismiss)"
 	else:
 		_tutorial_banner.visible = false
 		if _tutorial_shell:
@@ -1127,6 +1129,30 @@ func _pick_event_choice(idx: int) -> void:
 	_log_overlay_dismiss("event")
 	_EventSystem.resolve_event(GameState, idx)
 	GameState.stats_changed.emit()
+	_refresh_overlays()
+
+
+func _setup_tutorial_banner_dismiss() -> void:
+	var target: Control = _tutorial_shell if _tutorial_shell else _tutorial_banner
+	if target.get_meta("_tap_dismiss", false):
+		return
+	target.mouse_filter = Control.MOUSE_FILTER_STOP
+	target.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	target.gui_input.connect(_on_tutorial_banner_input)
+	target.set_meta("_tap_dismiss", true)
+
+
+func _on_tutorial_banner_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var mb := event as InputEventMouseButton
+	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if _TutorialSystem.is_complete(GameState):
+		return
+	if _pick_blocking_overlay().get("blocking", false):
+		return
+	_TutorialSystem.advance_tutorial(GameState)
 	_refresh_overlays()
 
 
