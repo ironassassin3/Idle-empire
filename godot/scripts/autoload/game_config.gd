@@ -27,6 +27,9 @@ const POST_PRESTIGE_CHOPS := 3
 const PRESTIGE_EARNINGS_GROWTH := 8.0
 
 const MANAGER_INCOME_MULT := 1.5
+# Purchase automation (Accountant, Mechanic, Talent Scout) unlocks after first prestige.
+const MANAGER_AUTOBUY_REQUIRES_PRESTIGE := true
+const MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT := 1
 const AUTOSAVE_INTERVAL := 30.0
 const OFFLINE_CAP_HOURS := 12.0
 const OFFLINE_EFFICIENCY := 0.6

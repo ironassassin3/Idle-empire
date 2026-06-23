@@ -16,10 +16,10 @@ const LATE_RANK_GATES: Dictionary = {
 const _RAW: Array = [
 	["Sticky Pete", 0, "Runs the corner crew hands-off.", 3_000.0, "Street Boss", "1.5x Dealer income", "Street Boss"],
 	["The Collector", 1, "Nobody skips a payment.", 10_000.0, "Enforcer", "1.5x Racket + raid shield", "Protection"],
-	["The Mechanic", 2, "Chop shop runs itself.", 8_000.0, "Night Shift", "1.5x Chop Shop", "Night Shift"],
+	["The Mechanic", 2, "Chop shop runs itself.", 8_000.0, "Night Shift", "1.5x Chop Shop + auto-buy after 1st prestige", "Night Shift"],
 	["Lucky Sal", 3, "He's never lost a bet.", 4_000.0, "Bookmaker", "1.5x Betting", "Bookmaker"],
 	["Clean Carl", 4, "Everything's legitimate.", 50_000.0, "Front Man", "Heat forecast + rescue", "The Lawyer"],
-	["The Accountant", 5, "Makes debts disappear.", 65_000.0, "Fixer", "1.5x Loan Shark", "Automation"],
+	["The Accountant", 5, "Makes debts disappear.", 65_000.0, "Fixer", "1.5x Loan Shark + auto-buy after 1st prestige", "Automation"],
 	["Maxine the Dealer", 6, "House always wins.", 500_000_000.0, "Pit Boss", "Boosts manager behaviors", "Pit Boss"],
 	["The Promoter", 7, "VIP list only.", 4_000_000_000.0, "Club King", "Heat autopilot", "Club King"],
 	["The Smuggler", 8, "Containers arrive.", 30_000_000_000.0, "Dock Master", "Ops alerts", "Dock Master"],

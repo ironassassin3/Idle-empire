@@ -297,7 +297,7 @@ static func apply_perks(state) -> void:
 
 static func tick_perk_effects(state, dt: float) -> Array[String]:
 	var messages: Array[String] = []
-	if state.perk_auto_buy:
+	if state.perk_auto_buy and _ManagerSystem.manager_autobuy_unlocked(state):
 		state.perk_autobuy_timer += dt
 		if state.perk_autobuy_timer >= PERK_AUTO_INTERVAL:
 			state.perk_autobuy_timer = 0.0
