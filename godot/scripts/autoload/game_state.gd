@@ -693,10 +693,18 @@ func do_prestige() -> bool:
 		b.income_multiplier = 1.0
 	for u in upgrades:
 		u.purchased = false
+	# Hard reset: un-hire all managers. Keeping them hired across prestige was an
+	# early-start bonus (free automation + skipped hire costs on the new run).
+	managers = ManagerDefs.make_managers()
 	_ManagerSystem.reset_runtime(self)
 	promoter_heat_target = 50.0
-	_TerritorySystem.partial_territory_reset(territories, self)
 	_RivalSystem.reconstitute_eliminated_rivals(rivals, _rng)
+	# Full territory wipe, including the 5 strategic districts. partial_territory_reset
+	# left those owned, so a new run started with their income bonus already active —
+	# a head start. Prestige is a clean slate; mirror reset_new_game().
+	territories = _WorldState.make_territories()
+	_TerritorySystem.assign_rival_territories(territories, rivals)
+	city_control_milestones = []
 	crew = _CrewSystem.default_crew()
 	operations = _OperationSystem.make_operations()
 	_buildings_reset_specials()
