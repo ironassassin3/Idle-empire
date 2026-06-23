@@ -97,3 +97,7 @@ CRIT_SPARK_DURATION   = 0.55  # crit spark lifetime (s)
 # reachable BEFORE first prestige (~8-11 min ahead of it with the hire-nudge).
 # Cost alone can't land auto-buy in the early-mid run — building reinvestment
 # out-ROIs managers until near prestige. See src/managers.py + _measure_p106.py.
+
+# Manager purchase automation (Accountant, Mechanic, Talent Scout perk) — post-P1.
+MANAGER_AUTOBUY_REQUIRES_PRESTIGE = True
+MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT = 1

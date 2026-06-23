@@ -317,14 +317,16 @@ def apply_perks(state) -> None:
 def tick_perk_effects(state, dt: float) -> None:
     """Tick permanent automation perks. Called once per frame from PlayingState."""
     if getattr(state, '_perk_auto_buy', False):
-        state._perk_autobuy_timer = getattr(state, '_perk_autobuy_timer', 0.0) + dt
-        if state._perk_autobuy_timer >= _PERK_AUTO_INTERVAL:
-            state._perk_autobuy_timer = 0.0
-            try:
-                import src.managers as _mgr
-                _mgr._auto_buy_best(state)
-            except Exception:
-                pass
+        from src.managers import manager_autobuy_unlocked
+        if manager_autobuy_unlocked(state):
+            state._perk_autobuy_timer = getattr(state, '_perk_autobuy_timer', 0.0) + dt
+            if state._perk_autobuy_timer >= _PERK_AUTO_INTERVAL:
+                state._perk_autobuy_timer = 0.0
+                try:
+                    import src.managers as _mgr
+                    _mgr._auto_buy_best(state)
+                except Exception:
+                    pass
 
     if getattr(state, '_perk_auto_upgrade', False):
         state._perk_autoupg_timer = getattr(state, '_perk_autoupg_timer', 0.0) + dt

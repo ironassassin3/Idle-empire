@@ -58,3 +58,7 @@ python sim_smoke.py
 
 - P2→P3 (~3 min) is still faster than P1; acceptable if later cycles stretch to 7–15 min. Revisit `POST_PRESTIGE_*` via env (`IDLE_POST_PRESTIGE_DEALERS` etc.) if playtests feel rushed.
 - Godot `next_prestige_earnings` uses a fixed $160M bar after P1 plus `max(growth, route×0.5)` on later cycles; pygame uses `route × GROWTH`. Parity gap is intentional for now — sim runs on pygame `PlayingState`.
+
+## Manager auto-buy gate (2026-06-22)
+
+Accountant / Mechanic **purchase** automation and Talent Scout building auto-buy are gated until `prestige_count >= 1`. Income mults (1.5×) remain active when hired pre-P1. Expect **unchanged P1 timing**; post-P1 snowball slightly slower until managers' auto-buy kicks in after first reset. Re-run `sim_prestige_strategies.py --strategies balanced no_managers` to compare.

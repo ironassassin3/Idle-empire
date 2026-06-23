@@ -18,6 +18,16 @@ const PROMOTER_TARGETS := [40.0, 50.0, 60.0]
 const COIN_LIFETIME := 8.0
 
 
+static func manager_autobuy_unlocked(state) -> bool:
+	if not GameConfig.MANAGER_AUTOBUY_REQUIRES_PRESTIGE:
+		return true
+	return state.prestige_count >= GameConfig.MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT
+
+
+static func purchase_autobuy_gate_text() -> String:
+	return "Unlocks after 1st prestige"
+
+
 static func manager_active(state, name: String) -> bool:
 	for m in state.managers:
 		if m.hired and m.display_name == name:
@@ -357,13 +367,13 @@ static func tick_manager_effects(state, dt: float) -> Array[String]:
 	tick_collector_shield(state, dt)
 	tick_broker_retry_cd(state, dt)
 	tick_promoter_heat(state, dt)
-	if manager_active(state, "The Mechanic"):
+	if manager_active(state, "The Mechanic") and manager_autobuy_unlocked(state):
 		state.mechanic_timer += dt
 		if state.mechanic_timer >= behavior_interval(MECHANIC_AUTOBUY_INTERVAL, state):
 			state.mechanic_timer = 0.0
 			if _auto_buy_chop_shop(state):
 				messages.append("Mechanic ordered another Chop Shop")
-	if manager_active(state, "The Accountant"):
+	if manager_active(state, "The Accountant") and manager_autobuy_unlocked(state):
 		state.autobuy_timer += dt
 		if state.autobuy_timer >= behavior_interval(AUTOBUY_INTERVAL, state):
 			state.autobuy_timer = 0.0
@@ -415,3 +425,43 @@ static func reset_runtime(state) -> void:
 	state.smuggler_timer = 0.0
 	state.smuggler_notified.clear()
 	state.promoter_heat_target = 50.0
+
+
+## Phase 123 roster status — (text, color, badge_kind) for manager_row.gd.
+static func employee_status(state, idx: int) -> Dictionary:
+	if idx < 0 or idx >= state.managers.size():
+		return {"text": "", "color": GameTheme.TEXT_MUTED, "badge_kind": ""}
+	var mgr: Manager = state.managers[idx]
+	if mgr.hired:
+		match mgr.display_name:
+			"Lucky Sal":
+				return {"text": "Collecting coins", "color": GameTheme.GOLD_BRIGHT, "badge_kind": "auto"}
+			"The Mechanic":
+				if not manager_autobuy_unlocked(state):
+					return {"text": purchase_autobuy_gate_text(), "color": GameTheme.TEXT_MUTED, "badge_kind": "gated"}
+				return {"text": "Auto-buying Chop Shops", "color": GameTheme.GREEN, "badge_kind": "auto"}
+			"The Collector":
+				var shield: float = collector_shield_fraction(state)
+				if shield >= 1.0:
+					return {"text": "Shield ready", "color": GameTheme.BLUE_BRIGHT, "badge_kind": "ready"}
+				return {"text": "Shield charging (%d%%)" % int(shield * 100.0), "color": GameTheme.BLUE_BRIGHT, "badge_kind": "working"}
+			"Clean Carl":
+				return {"text": "Monitoring heat", "color": GameTheme.GOLD, "badge_kind": "working"}
+			"The Accountant":
+				if not manager_autobuy_unlocked(state):
+					return {"text": purchase_autobuy_gate_text(), "color": GameTheme.TEXT_MUTED, "badge_kind": "gated"}
+				return {"text": "Auto-buying", "color": GameTheme.GREEN, "badge_kind": "auto"}
+			"The Promoter":
+				var tgt: int = int(promoter_heat_target(state))
+				return {"text": "Maintaining heat ≤ %d%%" % tgt, "color": GameTheme.RED, "badge_kind": "auto"}
+			"The Smuggler":
+				return {"text": "Monitoring operations", "color": GameTheme.TEXT_MUTED, "badge_kind": "working"}
+			"The Broker":
+				return {"text": "Turf intel active", "color": GameTheme.BLUE_BRIGHT, "badge_kind": "working"}
+			"Sticky Pete":
+				return {"text": "Marking best building buy", "color": GameTheme.GOLD, "badge_kind": "working"}
+			_:
+				return {"text": "On payroll", "color": GameTheme.GREEN, "badge_kind": "working"}
+	if not ManagerDefs.is_unlocked(state, idx):
+		return {"text": "Locked: %s" % ManagerDefs.unlock_text(idx), "color": GameTheme.TEXT_MUTED, "badge_kind": ""}
+	return {"text": "Payroll open — ready to hire", "color": GameTheme.GOLD_BRIGHT, "badge_kind": "ready"}

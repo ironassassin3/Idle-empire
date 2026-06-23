@@ -70,7 +70,7 @@ MANAGERS: List[Manager] = [
             specialty="* Protection — first raid bounces off"),
     Manager("The Mechanic",     2,
             "Chop shop runs itself. He only shows up to count the money.",
-            8_000.0, "Night Shift", "AUTO-BUYS Chop Shop at 2× cost buffer",
+            8_000.0, "Night Shift", "1.5x Chop Shop + auto-buy after 1st prestige",
             specialty="* Night Shift — Chop Shops run themselves"),
     Manager("Lucky Sal",        3,
             "He's never lost a bet. The house just doesn't know that.",
@@ -82,7 +82,7 @@ MANAGERS: List[Manager] = [
             specialty="* The Lawyer — heat forecast & emergency dump"),
     Manager("The Accountant",   5,
             "Makes debts disappear. Legally, most of the time.",
-            65_000.0, "Fixer",  "AUTO-BUYS buildings + 1.5x Loan Shark",
+            65_000.0, "Fixer",  "1.5x Loan Shark + auto-buy after 1st prestige",
             specialty="* Automation — buys the best building for you"),
     Manager("Maxine the Dealer",6,
             "House always wins. She makes sure the house is yours.",
@@ -891,6 +891,18 @@ def empire_efficiency_report(state) -> dict | None:
 _AUTOBUY_INTERVAL = 3.0  # seconds between Accountant auto-purchases
 
 
+def manager_autobuy_unlocked(state) -> bool:
+    """Purchase automation (Accountant, Mechanic, Talent Scout) after first prestige."""
+    import config
+    if not config.MANAGER_AUTOBUY_REQUIRES_PRESTIGE:
+        return True
+    return getattr(state, '_prestige_count', 0) >= config.MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT
+
+
+def purchase_autobuy_gate_text() -> str:
+    return "Unlocks after 1st prestige"
+
+
 def _auto_buy_chop_shop(state) -> bool:
     """Mechanic (Phase 113): auto-buy Chop Shop when balance >= 2× next cost."""
     if not manager_active(state, "The Mechanic"):
@@ -923,7 +935,7 @@ def tick_manager_effects(state, dt: float) -> None:
     beh_iv = lambda base: _behavior_interval(base, state)
 
     # ── The Mechanic (idx 2): partial automation — Chop Shop only (Phase 113)
-    if manager_active(state, "The Mechanic"):
+    if manager_active(state, "The Mechanic") and manager_autobuy_unlocked(state):
         state._mechanic_timer = getattr(state, '_mechanic_timer', 0.0) + dt
         if state._mechanic_timer >= beh_iv(_MECHANIC_AUTOBUY_INTERVAL):
             state._mechanic_timer = 0.0
@@ -938,7 +950,7 @@ def tick_manager_effects(state, dt: float) -> None:
                         pass
 
     # ── The Accountant (idx 5): AUTOMATION — auto-buys the best-value building
-    if manager_active(state, "The Accountant"):
+    if manager_active(state, "The Accountant") and manager_autobuy_unlocked(state):
         state._autobuy_timer = getattr(state, '_autobuy_timer', 0.0) + dt
         if state._autobuy_timer >= beh_iv(_AUTOBUY_INTERVAL):
             state._autobuy_timer = 0.0
@@ -1041,7 +1053,9 @@ def _employee_status(state, idx: int) -> tuple[str, tuple, str]:
         if name == "Lucky Sal":
             return "Collecting coins", theme.NOIR_GOLD_BRIGHT, "auto"
         if name == "The Mechanic":
-            return "Managing Chop Shops", theme.GREEN, "auto"
+            if not manager_autobuy_unlocked(state):
+                return purchase_autobuy_gate_text(), theme.TEXT_MUTED, "gated"
+            return "Auto-buying Chop Shops", theme.GREEN, "auto"
         if name == "The Collector":
             shield = collector_shield_fraction(state)
             if shield >= 1.0:
@@ -1054,7 +1068,9 @@ def _employee_status(state, idx: int) -> tuple[str, tuple, str]:
                 return f"Forecast {sign}{delta:.0f}% / 2m", theme.NOIR_GOLD, "working"
             return "Monitoring heat", theme.NOIR_GOLD, "working"
         if name == "The Accountant":
-            return "Empire automation active", theme.GREEN, "auto"
+            if not manager_autobuy_unlocked(state):
+                return purchase_autobuy_gate_text(), theme.TEXT_MUTED, "gated"
+            return "Auto-buying", theme.GREEN, "auto"
         if name == "The Promoter":
             tgt = int(promoter_heat_target(state))
             return f"Maintaining heat ≤ {tgt}%", theme.CRIT_COLOR, "auto"
@@ -1202,9 +1218,11 @@ def _draw_manager_card(surface, state, fonts, idx: int, rr: pygame.Rect,
     st_s = fonts['xs'].render(status_txt, True, status_col)
     surface.blit(st_s, (text_x, st_y))
 
-    if badge_kind in ('auto', 'ready', 'working') and mgr.hired:
-        badge_lbl = "AUTO" if badge_kind == 'auto' else ("READY" if badge_kind == 'ready' else "ACTIVE")
-        _draw_pill(surface, fonts, badge_lbl, rr.right - 58, st_y - 2, status_col)
+    if badge_kind in ('auto', 'ready', 'working', 'gated') and mgr.hired:
+        badge_lbl = "AUTO" if badge_kind in ('auto', 'gated') else (
+            "READY" if badge_kind == 'ready' else "ACTIVE")
+        pill_col = theme.TEXT_MUTED if badge_kind == 'gated' else status_col
+        _draw_pill(surface, fonts, badge_lbl, rr.right - 58, st_y - 2, pill_col)
 
     if not mgr.hired and not unlocked:
         if idx >= _LATE_TIER_START:
@@ -1436,17 +1454,21 @@ def handle_click(state, pos: tuple, panel_rect: pygame.Rect) -> bool:
                             "Collector's shield is up — first raid bounces",
                             theme.TEXT_GOLD)
                     elif mgr.name == "The Mechanic":
-                        _ui.push_notification(
-                            "Mechanic's on night shift — Chop Shops auto-buy",
-                            theme.TEXT_GOLD)
+                        _mech_msg = (
+                            "Mechanic's on night shift — Chop Shops auto-buy"
+                            if manager_autobuy_unlocked(state)
+                            else "Mechanic hired — auto-buy unlocks after 1st prestige")
+                        _ui.push_notification(_mech_msg, theme.TEXT_GOLD)
                     elif mgr.name == "Clean Carl":
                         _ui.push_notification(
                             "Carl's watching heat — forecast + one emergency dump",
                             theme.TEXT_GOLD)
                     elif mgr.name == "The Accountant":
-                        _ui.push_notification(
-                            "The Accountant is on payroll — auto-buy active",
-                            theme.TEXT_GOLD)
+                        _acct_msg = (
+                            "The Accountant is on payroll — auto-buy active"
+                            if manager_autobuy_unlocked(state)
+                            else "Accountant hired — auto-buy unlocks after 1st prestige")
+                        _ui.push_notification(_acct_msg, theme.TEXT_GOLD)
                     elif mgr.name == "Maxine the Dealer":
                         _ui.push_notification(
                             "Maxine boosts the family — behaviors scale with casinos",

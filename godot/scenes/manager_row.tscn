@@ -33,6 +33,15 @@ theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
 theme_override_font_sizes/font_size = 11
 text = "Role"
 
+[node name="BadgeLabel" type="Label" parent="Margin/VBox/Header"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_font_sizes/font_size = 10
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "AUTO"
+
 [node name="DescLabel" type="Label" parent="Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
