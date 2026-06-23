@@ -72,6 +72,13 @@ static func check_requirements(state) -> Dictionary:
 		reqs["rackets"] = {"current": rackets, "required": GameConfig.FIRST_PRESTIGE_RACKETS, "met": rackets >= GameConfig.FIRST_PRESTIGE_RACKETS}
 		reqs["chops"] = {"current": chops, "required": GameConfig.FIRST_PRESTIGE_CHOPS, "met": chops >= GameConfig.FIRST_PRESTIGE_CHOPS}
 		reqs["rank"] = {"current": rank, "required": GameConfig.FIRST_PRESTIGE_RANK, "met": rank_index(rank) >= rank_index(GameConfig.FIRST_PRESTIGE_RANK)}
+	else:
+		var dealers2: int = state.buildings[0].owned if state.buildings.size() > 0 else 0
+		var rackets2: int = state.buildings[1].owned if state.buildings.size() > 1 else 0
+		var chops2: int = state.buildings[2].owned if state.buildings.size() > 2 else 0
+		reqs["dealers"] = {"current": dealers2, "required": GameConfig.POST_PRESTIGE_DEALERS, "met": dealers2 >= GameConfig.POST_PRESTIGE_DEALERS}
+		reqs["rackets"] = {"current": rackets2, "required": GameConfig.POST_PRESTIGE_RACKETS, "met": rackets2 >= GameConfig.POST_PRESTIGE_RACKETS}
+		reqs["chops"] = {"current": chops2, "required": GameConfig.POST_PRESTIGE_CHOPS, "met": chops2 >= GameConfig.POST_PRESTIGE_CHOPS}
 	return reqs
 
 

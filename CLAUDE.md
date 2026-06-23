@@ -1,14 +1,14 @@
-# Project: Criminal Empire ‚Äî 2D Idle Game
+# Project: Criminal Empire ó 2D Idle Game
 
-> **MANDATORY ‚Äî read before any art/UI/audio work:** [`ART_POLICY.md`](ART_POLICY.md)  
+> **MANDATORY ó read before any art/UI/audio work:** [`ART_POLICY.md`](ART_POLICY.md)  
 > No generative-AI assets. Visuals and SFX are **code-built** (or owner-provided hand art only).
 
 ## Ship target vs prototype
 
 | Runtime | Role |
 |---------|------|
-| **`godot/`** | **1.0 product** ‚Äî mobile launch vehicle. All player-facing UI, feel, and new features land here. |
-| **pygame (`src/`, `main.py`)** | **Prototype / balance lab** ‚Äî mechanics reference and sim harness (`sim_pacing.py`, `sim_smoke.py`, income parity). Not maintained for UI or presentation. Do not spend effort on pygame polish phases. |
+| **`godot/`** | **1.0 product** ó mobile launch vehicle. All player-facing UI, feel, and new features land here. |
+| **pygame (`src/`, `main.py`)** | **Prototype / balance lab** ó mechanics reference and sim harness (`sim_pacing.py`, `sim_smoke.py`, income parity). Not maintained for UI or presentation. Do not spend effort on pygame polish phases. |
 
 Balance changes: prove in pygame sims if convenient, then port constants to Godot. Gameplay/UI work: **Godot first.**
 
@@ -16,44 +16,45 @@ Balance changes: prove in pygame sims if convenient, then port constants to Godo
 - Be concise by default. Lead with the conclusion, then minimal supporting detail.
 - Prefer bullets and short tables over paragraphs. No preamble, no filler, no motivational language.
 - Don't restate the question or recap context the user already has.
-- Answer what was asked ‚Äî don't volunteer tangents or over-explain.
+- Answer what was asked ó don't volunteer tangents or over-explain.
 - Match response length to the task: one-liners for simple things, detail only when it changes a decision.
 - Don't be a yes-man. Challenge weak reasoning and give evidence-based pushback when warranted.
 - Show code/file refs as clickable links, not fenced restatements of code the user can open.
 
 ## What This Is
-A modular idle/incremental game where the player builds a criminal empire. Core loop: buy buildings ‚Üí earn income/s ‚Üí buy upgrades ‚Üí gain Influence ‚Üí prestige. Layered systems: heat, territory warfare, rival factions, crew assignments, illegal operations, prestige perk tree.
+A modular idle/incremental game where the player builds a criminal empire. Core loop: buy buildings ? earn income/s ? buy upgrades ? gain Influence ? prestige. Layered systems: heat, territory warfare, rival factions, crew assignments, illegal operations, prestige perk tree.
 
 ## Commands
 ```
 # Ship target (Godot 1.0)
 # Open godot/project.godot in Godot 4.3+ and press F5
 
-# Prototype / balance lab (pygame ‚Äî sims + optional manual playtest)
+# Prototype / balance lab (pygame ó sims + optional manual playtest)
 python main.py
 python sim_pacing.py --minutes 45 --active 0.33 --cps 2
+python sim_prestige_strategies.py --active 0.33 --minutes 120 --prestiges 10
 python sim_godot_soak.py --godot "<path-to-godot>"
 pip install pygame-ce   # only needed for lab sims
 flake8 .
 ```
 
-## Key Files (pygame prototype ‚Äî lab reference)
+## Key Files (pygame prototype ó lab reference)
 
 Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui.py`) as the product UI.**
 
 | File | Purpose |
 |---|---|
-| `main.py` | Engine entry point. `MenuState` ‚Üí `PlayingState` handoff only. |
+| `main.py` | Engine entry point. `MenuState` ? `PlayingState` handoff only. |
 | `config.py` | All constants: `SCREEN_WIDTH=900`, `SCREEN_HEIGHT=720`, `FPS`, colours, font sizes. |
-| `src/states.py` | `PlayingState` ‚Äî main game loop: `update()`, `draw()`, `handle_events()`. Tab routing, milestone queue, achievement throttle, income cache. |
+| `src/states.py` | `PlayingState` ó main game loop: `update()`, `draw()`, `handle_events()`. Tab routing, milestone queue, achievement throttle, income cache. |
 | `src/buildings.py` | 11 `Building` dataclasses, `draw_panel()`, `handle_click()`, `update_building_specials()`. |
 | `src/managers.py` | 11 manager objects, `compute_base_income()`. |
 | `src/upgrades.py` | Tiered upgrades with `effect_key` system. |
-| `src/prestige.py` | Prestige/Influence system, 13 `HIERARCHY` ranks (Street Hustler ‚Üí Shadow Government), `RANK_UNLOCKS`. |
+| `src/prestige.py` | Prestige/Influence system, 13 `HIERARCHY` ranks (Street Hustler ? Shadow Government), `RANK_UNLOCKS`. |
 | `src/prestige_tree.py` | Perk tree, `perks_purchased` list. |
 | `src/ui.py` | All render helpers: `draw_stats()`, `draw_right_panel()`, `draw_milestone_overlay()`, notification stack, surface caches. |
 | `src/save_load.py` | JSON save/load with field migration. `load_game_preview()` for title screen. |
-| `src/heat.py` | Heat meter (0‚Äì100). `reduce_heat()`. Police raids at 60%+. |
+| `src/heat.py` | Heat meter (0ñ100). `reduce_heat()`. Police raids at 60%+. |
 | `src/territory.py` | 5 territories + warfare (Attack/Bribe/Negotiate/Sabotage). Success chance uses rival penalty. |
 | `src/rivals.py` | 5 rival factions with Traits, passive growth, rival-vs-rival combat, defeat system. |
 | `src/crew.py` | 5 crew roles (Protection/Collection/Smuggling/Territory/Heat). Pool = total buildings owned. |
@@ -65,15 +66,15 @@ Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui
 ## Architecture Rules
 
 ### State machine
-All states inherit `GameState` (src/state_base.py). `main.py` only switches between `MenuState` and `PlayingState` ‚Äî no loose booleans.
+All states inherit `GameState` (src/state_base.py). `main.py` only switches between `MenuState` and `PlayingState` ó no loose booleans.
 
 ### Income pipeline
 ```
 buildings.income_per_second
-  ‚Üí managers.compute_base_income
-  ‚Üí PlayingState.income_per_second   # applies prestige mult √ó heat mult √ó territory mult √ó syndicate buffs √ó crew collection bonus
+  ? managers.compute_base_income
+  ? PlayingState.income_per_second   # applies prestige mult ◊ heat mult ◊ territory mult ◊ syndicate buffs ◊ crew collection bonus
 ```
-`income_per_second` is a cached property ‚Äî `_ips_dirty = True` is set at the top of `update()` so it recomputes at most once per frame.
+`income_per_second` is a cached property ó `_ips_dirty = True` is set at the top of `update()` so it recomputes at most once per frame.
 
 ### Delta time
 Every movement, rate, and timer must multiply by `dt`. Never tie speed to FPS.
@@ -90,44 +91,44 @@ Tab width = 52px, labels use `'xs'` font.
 
 ### Milestone messages
 Strings in `_milestone_queue` **must** use `\n` as line separator:
-- First line ‚Üí title (gold text)
-- Remaining lines ‚Üí body (xs muted text)
+- First line ? title (gold text)
+- Remaining lines ? body (xs muted text)
 `draw_milestone_overlay()` in ui.py handles all cases. Do not pass flat strings.
 
-### Performance ‚Äî do not regress
-- `_ips_dirty` / `_ips_cached` pattern in `PlayingState` ‚Äî never call income computation more than once per frame.
+### Performance ó do not regress
+- `_ips_dirty` / `_ips_cached` pattern in `PlayingState` ó never call income computation more than once per frame.
 - `_STATS_SURF_CACHE` in ui.py rebuilds the stats tab surface at ~5fps, not 60fps.
-- `_ach_check_timer` ‚Äî achievements evaluated every 0.5s, not every frame.
-- Notification/coin/orbit surfaces are globally reused ‚Äî do not allocate new surfaces per-frame in draw code.
+- `_ach_check_timer` ó achievements evaluated every 0.5s, not every frame.
+- Notification/coin/orbit surfaces are globally reused ó do not allocate new surfaces per-frame in draw code.
 
 ## Code Style
 - **Naming:** PEP 8. `snake_case` functions/variables/files, `PascalCase` classes, `UPPER_CASE` constants.
 - **Imports:** Explicit only. Never `from pygame.locals import *`.
-- **File size:** >300 lines ‚Üí refactor helpers into a new module.
+- **File size:** >300 lines ? refactor helpers into a new module.
 - **Comments:** Only for non-obvious WHY (hidden constraints, workarounds). No docblock novels.
 
 ## Art & Assets
 
 **Full policy (required reading):** [`ART_POLICY.md`](ART_POLICY.md)
 
-- **No generative-AI assets** ‚Äî images, sprites, textures, UI art, audio, or marketing visuals.
-- **Code-built by default** ‚Äî pygame/Godot primitives, theme tokens, procedural SFX.
-- **Procedural music (Godot):** motif/scales/tempo scaffold ó [MUSIC_ARCHITECTURE.md](MUSIC_ARCHITECTURE.md), godot/scripts/audio/music_defs.gd (MusicDefs); PCM/sequencer in M1+.
+- **No generative-AI assets** ó images, sprites, textures, UI art, audio, or marketing visuals.
+- **Code-built by default** ó pygame/Godot primitives, theme tokens, procedural SFX.
+- **Procedural music (Godot):** motif/scales/tempo scaffold ù [MUSIC_ARCHITECTURE.md](MUSIC_ARCHITECTURE.md), godot/scripts/audio/music_defs.gd (MusicDefs); PCM/sequencer in M1+.
 - **Hand-authored only** when the project owner explicitly supplies files (agents must not AI-generate on their behalf).
 
-## Presentation Saga (pygame ‚Äî **archived**)
+## Presentation Saga (pygame ó **archived**)
 
-Phases 121‚Äì127 and 125 were pygame-only UI passes. **Inactive** ‚Äî Godot `game_screen.gd` is the live UI. Do not continue this track unless explicitly reviving the prototype.
+Phases 121ñ127 and 125 were pygame-only UI passes. **Inactive** ó Godot `game_screen.gd` is the live UI. Do not continue this track unless explicitly reviving the prototype.
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 121‚Äì127, 125 | Done (pygame) | Historical; parity ideas already ported or superseded in Godot P6‚ÄìP7 |
-| 126, 128 | **Godot only** ‚Äî Phase 126 done (`PHASE126_REPORT.md`); 128 partial in P6 |
+| 121ñ127, 125 | Done (pygame) | Historical; parity ideas already ported or superseded in Godot P6ñP7 |
+| 126, 128 | **Godot only** ó Phase 126 done (`PHASE126_REPORT.md`); 128 partial in P6 |
 
-**Lab sims (still maintained):** `sim_pacing.py`, `sim_smoke.py`, `sim_harness.py`, `sim_godot_soak.py` ‚Äî pygame design (Pete's Pick, hard prestige wipe, 0 starting dealers).
+**Lab sims (still maintained):** `sim_pacing.py`, `sim_prestige_strategies.py`, `sim_smoke.py`, `sim_harness.py`, `sim_godot_soak.py` ó pygame design (Pete's Pick, hard prestige wipe, 0 starting dealers).
 
 ## Save/Load
-New fields must be added with a migration default in `save_load.py` so old saves don't crash. Check `load_game_preview()` separately ‚Äî it reads a lightweight subset for the title screen.
+New fields must be added with a migration default in `save_load.py` so old saves don't crash. Check `load_game_preview()` separately ó it reads a lightweight subset for the title screen.
 
 ## graphify
 
@@ -135,11 +136,11 @@ This project has knowledge graphs under `graphify-out/`:
 
 | Graph | Path | Use for |
 |-------|------|---------|
-| **Port map** (preferred) | `graphify-out/port/graph.json`, `GRAPH_REPORT.md`, `graph.html` | pygame‚ÜîGodot layout, save schema, income pipeline, architecture |
+| **Port map** (preferred) | `graphify-out/port/graph.json`, `GRAPH_REPORT.md`, `graph.html` | pygame?Godot layout, save schema, income pipeline, architecture |
 | Full repo | `graphify-out/graph.json` | Broad corpus incl. phase reports/screenshots |
 
 Rules:
-- For cross-cutting architecture questions (save fields, income pipeline, tab layout, pygame‚ÜîGodot parity), query the **port map** first: read `graphify-out/port/GRAPH_REPORT.md` or run `python -m graphify query "<question>"` when `graphify-out/graph.json` exists (queries use root graph; for port-specific context read `graphify-out/port/GRAPH_REPORT.md` directly).
+- For cross-cutting architecture questions (save fields, income pipeline, tab layout, pygame?Godot parity), query the **port map** first: read `graphify-out/port/GRAPH_REPORT.md` or run `python -m graphify query "<question>"` when `graphify-out/graph.json` exists (queries use root graph; for port-specific context read `graphify-out/port/GRAPH_REPORT.md` directly).
 - Use `python -m graphify path "<A>" "<B>"` and `python -m graphify explain "<concept>"` for scoped subgraphs.
 - After modifying **code** in this session, run `python -m graphify update .` (AST-only, no API cost). On Windows use `python -m graphify`, not bare `graphify update`.
 - After large **Godot port** changes under `src/` or `godot/`, refresh the port map: `/graphify` on `src/` + `godot/scripts` with `--update` (or ask the user to run it).
