@@ -31,6 +31,11 @@ const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 var _pending_branch: String = ""
 var _branch_buttons: Dictionary = {}
 var _ui_time: float = 0.0
+# Signature of the last-built perk grid. stats_changed fires every frame, so we
+# only rebuild the cards when their visible state actually changes — otherwise a
+# fresh card is created between a click's mouse-down and mouse-up and the Buy
+# press never registers (you "can't spend influence").
+var _perk_sig: String = ""
 
 
 func _process(delta: float) -> void:
@@ -98,6 +103,7 @@ func open() -> void:
 	_branch_dialog.visible = false
 	_prestige_dialog.visible = false
 	_pending_branch = ""
+	_perk_sig = ""  # force a fresh build on open
 	_refresh()
 
 
@@ -139,6 +145,8 @@ func _refresh() -> void:
 		_blurb.visible = false
 		_perk_scroll.visible = true
 		_refresh_perks(committed)
+	if committed.is_empty():
+		_perk_sig = ""  # next commit must rebuild even if the signature repeats
 	_refresh_branch_buttons(committed)
 	_refresh_lock_strip()
 	_refresh_prestige_button()
@@ -188,7 +196,23 @@ func _refresh_branch_buttons(committed: String) -> void:
 			GameTheme.apply_ink_chip_button(btn, is_committed, 12, font_col)
 
 
+func _perk_signature(branch: String) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	parts.append(branch)
+	for entry in PrestigeTree.BRANCH_PERKS.get(branch, []):
+		var key: String = entry[0]
+		var owned: bool = key in GameState.perks_purchased
+		var gate: Dictionary = PrestigeTree.can_buy_perk(GameState, key)
+		parts.append("%s:%s:%s:%s" % [key, owned, gate.get("ok", false), gate.get("reason", "")])
+	return "|".join(parts)
+
+
 func _refresh_perks(branch: String) -> void:
+	# Rebuild only when the visible perk state changes; never every frame (see _perk_sig).
+	var sig: String = _perk_signature(branch)
+	if sig == _perk_sig and _perk_grid.get_child_count() > 0:
+		return
+	_perk_sig = sig
 	for child in _perk_grid.get_children():
 		child.queue_free()
 	var perks: Array = PrestigeTree.BRANCH_PERKS.get(branch, [])
