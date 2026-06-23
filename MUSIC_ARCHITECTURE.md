@@ -2,7 +2,13 @@
 
 > **Policy:** All music and SFX are **code-generated** per [`ART_POLICY.md`](ART_POLICY.md). No Suno, Udio, AI libraries, or external audio clips. This document is the creative + technical blueprint; implementation stays in GDScript using existing repo tools (`audio_manager.gd`, `sfxr.gd`, `src/sound.py` lab reference).
 
-**Status:** Architecture (M0). Current ship build has a single procedural ambient drone (`_ambient()` in `audio_manager.gd`). Phases M1–M4 below extend that stack without new dependencies.
+**Status:** Architecture (M0). Current ship build plays a procedural **Italian-café waltz** loop (`_render_cafe_loop()` in `audio_manager.gd`) for both menu and gameplay. Phases M1–M4 below extend that stack without new dependencies.
+
+> **Tuning note (2026-06-22):** Iterated twice on playtest feedback.
+> 1. *"Too creepy / anxiety-inducing."* Root cause was bitonal: pad/bass on **A** while melody/arp were rooted on **C**, producing a tritone (Eb-over-A) and an unarticulated sustained drone. Fixed by rooting everything in **one consonant key (C major: C–Am–F–G…)** with per-note envelopes.
+> 2. *"Warmer but alien, nothing like Italian café."* Root cause was raw oscillator timbre (square/sine = chiptune, not acoustic). Replaced the oscillator voices with **Karplus-Strong plucked-string synthesis** (`KSString` inner class): a **mandolin tremolo** lead (rapid re-pluck of the melody pitch), **fingerpicked nylon guitar** oom-pah-pah, and a soft **musette accordion** (detuned reed pair), all run through a one-pole **low-pass** to remove the digital edge. This is the café/trattoria trio, all code-built (no samples — policy-safe).
+>
+> The heat-tension layer is an in-key low **A** pedal (relative minor), not white-noise hiss. **Do not re-root the melody/bass to other keys** (reintroduces the clash) and **do not swap the KS voices back to raw oscillators** (reintroduces the "alien" timbre). Tune feel via `_FAMIGLIA_PROG` / `_FAMIGLIA_MELODY` (data), `MusicTempo` (tempo), `KSString.damp` (string brightness/sustain), and `lp_a` (low-pass warmth).
 
 ---
 
