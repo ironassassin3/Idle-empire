@@ -40,6 +40,11 @@ FIRST_PRESTIGE_RACKETS   = _env_int("IDLE_PRESTIGE_RACKETS",   8)
 FIRST_PRESTIGE_CHOPS     = _env_int("IDLE_PRESTIGE_CHOPS",     4)
 FIRST_PRESTIGE_RANK      = _os.environ.get("IDLE_PRESTIGE_RANK", "Made Man")
 
+# Soft rebuild gates for 2nd+ prestige — prevents route-only snowball after P1.
+POST_PRESTIGE_DEALERS    = _env_int("IDLE_POST_PRESTIGE_DEALERS", (FIRST_PRESTIGE_DEALERS * 3) // 4)
+POST_PRESTIGE_RACKETS    = _env_int("IDLE_POST_PRESTIGE_RACKETS", (FIRST_PRESTIGE_RACKETS * 3) // 4)
+POST_PRESTIGE_CHOPS      = _env_int("IDLE_POST_PRESTIGE_CHOPS",   (FIRST_PRESTIGE_CHOPS * 3) // 4)
+
 # Building indices in buildings list
 _IDX_DEALER  = 0
 _IDX_RACKET  = 1
@@ -74,8 +79,8 @@ def check_requirements(state) -> dict:
     """
     Return a dict describing whether each requirement is met.
     First prestige enforces building-count + rank gates (teaches the systems).
-    Later prestiges are gated purely on the escalating lifetime-earnings bar.
-    Keys: 'earnings', and (first prestige only) 'dealers'/'rackets'/'chops'/'rank'
+    Later prestiges add softened building rebuild gates (no rank gate).
+    Keys: 'earnings', and building keys when applicable
     Values: (current, required, met: bool)
     """
     required = prestige_earnings_required(state)
@@ -83,17 +88,24 @@ def check_requirements(state) -> dict:
     reqs = {
         'earnings': (route, required, route >= required),
     }
-    if getattr(state, '_prestige_count', 0) <= 0:
-        dealers = state.buildings[_IDX_DEALER].owned if len(state.buildings) > _IDX_DEALER else 0
-        rackets = state.buildings[_IDX_RACKET].owned if len(state.buildings) > _IDX_RACKET else 0
-        chops   = state.buildings[_IDX_CHOP].owned   if len(state.buildings) > _IDX_CHOP   else 0
-        rank    = get_rank(state.prestige_tokens)
+    n = getattr(state, '_prestige_count', 0)
+    dealers = state.buildings[_IDX_DEALER].owned if len(state.buildings) > _IDX_DEALER else 0
+    rackets = state.buildings[_IDX_RACKET].owned if len(state.buildings) > _IDX_RACKET else 0
+    chops   = state.buildings[_IDX_CHOP].owned   if len(state.buildings) > _IDX_CHOP   else 0
+    if n <= 0:
+        rank = get_rank(state.prestige_tokens)
         reqs.update({
             'dealers':  (dealers, FIRST_PRESTIGE_DEALERS, dealers >= FIRST_PRESTIGE_DEALERS),
             'rackets':  (rackets, FIRST_PRESTIGE_RACKETS, rackets >= FIRST_PRESTIGE_RACKETS),
             'chops':    (chops, FIRST_PRESTIGE_CHOPS, chops >= FIRST_PRESTIGE_CHOPS),
             'rank':     (rank, FIRST_PRESTIGE_RANK,
                          _rank_index(rank) >= _rank_index(FIRST_PRESTIGE_RANK)),
+        })
+    else:
+        reqs.update({
+            'dealers': (dealers, POST_PRESTIGE_DEALERS, dealers >= POST_PRESTIGE_DEALERS),
+            'rackets': (rackets, POST_PRESTIGE_RACKETS, rackets >= POST_PRESTIGE_RACKETS),
+            'chops':   (chops, POST_PRESTIGE_CHOPS, chops >= POST_PRESTIGE_CHOPS),
         })
     return reqs
 
@@ -436,6 +448,7 @@ class PrestigeManager:
 
         # Reset balance (lifetime_earnings keeps accumulating across prestiges)
         state.balance = 0.0
+        state._prestige_route_earnings = 0.0  # Godot parity — gate starts fresh each cycle
 
         # Reset buildings
         for b in state.buildings:

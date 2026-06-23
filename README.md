@@ -29,6 +29,7 @@ See [`godot/README.md`](godot/README.md) for layout, save import, and mobile exp
 pip install pygame-ce
 python main.py
 python sim_pacing.py --minutes 45 --active 0.33 --cps 2
+python sim_prestige_strategies.py --active 0.33 --minutes 120 --prestiges 10
 python sim_smoke.py
 ```
 
