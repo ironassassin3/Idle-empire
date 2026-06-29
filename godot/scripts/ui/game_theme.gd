@@ -4,6 +4,8 @@ extends RefCounted
 ## Rustic surfaces: procedural bake (RusticTextureBaker) with MM PNG drop-in override.
 
 const RusticTextureBaker = preload("res://scripts/ui/rustic_texture_baker.gd")
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
+const GameIcons = preload("res://scripts/ui/game_icons.gd")
 
 const BG := Color("08070a")
 const BG_PANEL := Color("121018")
@@ -117,6 +119,7 @@ static func apply_rustic_theme(tree: SceneTree = null) -> void:
 	var panel := _rustic_slice_style(RusticTextureBaker.KEY_PANEL, _SLICE_MARGIN)
 	if panel != null:
 		theme.set_stylebox("panel", &"PanelContainer", panel)
+	GameFonts.apply_to_theme(theme)
 	if tree != null and tree.root != null:
 		tree.root.theme = theme
 
@@ -130,11 +133,19 @@ static func apply_city_v2_theme(tree: SceneTree = null) -> void:
 	var theme := (load(theme_path) as Theme).duplicate(true)
 	if theme == null:
 		return
+	GameFonts.apply_to_theme(theme)
 	if tree != null and tree.root != null:
 		tree.root.theme = theme
 
 
-static func ink_panel_style() -> StyleBoxFlat:
+static func ink_panel_style() -> StyleBox:
+	var sb := _mm_slice_style(TEX_PANEL, _SLICE_MARGIN, 4.0)
+	if sb != null:
+		return sb
+	return _ink_panel_flat()
+
+
+static func _ink_panel_flat() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color("0c0c14")
 	sb.border_color = Color(GOLD, 0.35)
@@ -144,24 +155,30 @@ static func ink_panel_style() -> StyleBoxFlat:
 	return sb
 
 
-static func ink_scroll_wrap_style() -> StyleBoxFlat:
-	var sb := ink_panel_style()
-	sb.content_margin_left = 2.0
-	sb.content_margin_right = 2.0
-	sb.content_margin_top = 2.0
-	sb.content_margin_bottom = 2.0
+static func ink_scroll_wrap_style() -> StyleBox:
+	var sb := ink_panel_style().duplicate()
+	sb.set_content_margin_all(2.0)
 	return sb
 
 
-static func ink_header_strip_style() -> StyleBoxFlat:
-	var sb := ink_panel_style()
-	sb.bg_color = Color("08070a")
+static func ink_header_strip_style() -> StyleBox:
+	var sb := ink_panel_style().duplicate()
+	if sb is StyleBoxFlat:
+		(sb as StyleBoxFlat).bg_color = Color("08070a")
 	sb.set_content_margin_all(6.0)
 	return sb
 
 
-static func ink_tab_bar_style() -> StyleBoxFlat:
-	var sb := ink_panel_style()
+static func ink_tab_bar_style() -> StyleBox:
+	var sb := _mm_slice_style_margins(TEX_TAB_BAR, 16, 8, 16, 8, 4.0)
+	if sb != null:
+		sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+		return sb
+	return _ink_tab_bar_flat()
+
+
+static func _ink_tab_bar_flat() -> StyleBoxFlat:
+	var sb := _ink_panel_flat()
 	sb.bg_color = BG_PANEL
 	sb.set_border_width(Side.SIDE_TOP, 1)
 	sb.set_border_width(Side.SIDE_LEFT, 0)
@@ -215,12 +232,15 @@ static func ink_toast_style() -> StyleBoxFlat:
 	return sb
 
 
-static func ink_overlay_modal_style() -> StyleBoxFlat:
-	var sb := ink_panel_style()
-	sb.bg_color = Color("0a0a12", 0.96)
-	sb.border_color = Color(GOLD, 0.5)
-	sb.set_content_margin_all(16.0)
-	return sb
+static func ink_overlay_modal_style() -> StyleBox:
+	var sb := _mm_slice_style(TEX_MODAL, _SLICE_MARGIN, 16.0)
+	if sb != null:
+		return sb
+	var flat := _ink_panel_flat()
+	flat.bg_color = Color("0a0a12", 0.96)
+	flat.border_color = Color(GOLD, 0.5)
+	flat.set_content_margin_all(16.0)
+	return flat
 
 
 static func ink_tutorial_banner_style() -> StyleBoxFlat:
@@ -334,22 +354,28 @@ static func config_section_header_style() -> StyleBox:
 	return list_section_header_style()
 
 
-static func ink_config_row_style() -> StyleBoxFlat:
-	var sb := make_ink_row_card_flat(RowAffordance.LOCKED)
-	sb.content_margin_left = 10.0
-	sb.content_margin_right = 10.0
-	sb.content_margin_top = 6.0
-	sb.content_margin_bottom = 6.0
-	return sb
+static func ink_config_row_style() -> StyleBox:
+	var sb := _mm_slice_style(TEX_CARD, _CARD_SLICE, 8.0)
+	if sb != null:
+		return sb
+	var flat := make_ink_row_card_flat(RowAffordance.LOCKED)
+	flat.content_margin_left = 10.0
+	flat.content_margin_right = 10.0
+	flat.content_margin_top = 6.0
+	flat.content_margin_bottom = 6.0
+	return flat
 
 
-static func ink_stat_card_style() -> StyleBoxFlat:
-	var sb := make_ink_row_card_flat(RowAffordance.LOCKED)
-	sb.content_margin_left = 8.0
-	sb.content_margin_right = 8.0
-	sb.content_margin_top = 6.0
-	sb.content_margin_bottom = 6.0
-	return sb
+static func ink_stat_card_style() -> StyleBox:
+	var sb := _mm_slice_style(TEX_CARD, _CARD_SLICE, 6.0)
+	if sb != null:
+		return sb
+	var flat := make_ink_row_card_flat(RowAffordance.LOCKED)
+	flat.content_margin_left = 8.0
+	flat.content_margin_right = 8.0
+	flat.content_margin_top = 6.0
+	flat.content_margin_bottom = 6.0
+	return flat
 
 
 static func ink_progress_track_style() -> StyleBoxFlat:
@@ -431,6 +457,33 @@ static func truncate(text: String, max_chars: int) -> String:
 
 static func texture_exists(path: String) -> bool:
 	return not path.is_empty() and FileAccess.file_exists(path)
+
+
+static func _mm_slice_style(tex_path: String, margin: int, content: float = 8.0) -> StyleBoxTexture:
+	return _mm_slice_style_margins(tex_path, margin, margin, margin, margin, content)
+
+
+static func _mm_slice_style_margins(
+	tex_path: String,
+	ml: int,
+	mt: int,
+	mr: int,
+	mb: int,
+	content: float = 8.0,
+) -> StyleBoxTexture:
+	if not texture_exists(tex_path):
+		return null
+	var tex := load(tex_path) as Texture2D
+	if tex == null:
+		return null
+	var sb := StyleBoxTexture.new()
+	sb.texture = tex
+	sb.texture_margin_left = ml
+	sb.texture_margin_top = mt
+	sb.texture_margin_right = mr
+	sb.texture_margin_bottom = mb
+	sb.set_content_margin_all(content)
+	return sb
 
 
 static func make_panel_flat() -> StyleBoxFlat:
@@ -524,10 +577,13 @@ static func chip_style(active: bool = false) -> StyleBox:
 static func apply_economy_hud(balance: Label, ips: Label, rank: Label) -> void:
 	if balance == null or ips == null or rank == null:
 		return
+	balance.add_theme_font_override("font", GameFonts.mono(true))
 	balance.add_theme_font_size_override("font_size", scaled_font(FONT_BALANCE))
 	balance.add_theme_color_override("font_color", GOLD_BRIGHT)
+	ips.add_theme_font_override("font", GameFonts.mono(false))
 	ips.add_theme_font_size_override("font_size", scaled_font(FONT_IPS))
 	ips.add_theme_color_override("font_color", GREEN)
+	rank.add_theme_font_override("font", GameFonts.heading())
 	rank.add_theme_font_size_override("font_size", scaled_font(FONT_RANK))
 	if is_city_v2_active():
 		rank.add_theme_color_override("font_color", GOLD)
@@ -536,10 +592,50 @@ static func apply_economy_hud(balance: Label, ips: Label, rank: Label) -> void:
 	rank.clip_text = true
 
 
-static func apply_ink_icon_button(btn: Button) -> void:
+static func apply_flavor_label(lbl: Label) -> void:
+	if lbl == null:
+		return
+	lbl.add_theme_font_override("font", GameFonts.body_italic())
+
+
+static func apply_button_icon(btn: Button, icon_name: String, icon_px: int = 20, active: bool = true) -> void:
+	if btn == null or icon_name.is_empty():
+		return
+	var tex := GameIcons.texture(icon_name)
+	if tex == null:
+		return
+	btn.icon = tex
+	btn.add_theme_constant_override("icon_max_width", icon_px)
+	btn.add_theme_constant_override("icon_max_height", icon_px)
+	var on := GOLD_BRIGHT if active else TEXT_MUTED
+	btn.add_theme_color_override("icon_normal_color", on)
+	btn.add_theme_color_override("icon_hover_color", GOLD_BRIGHT)
+	btn.add_theme_color_override("icon_pressed_color", GOLD_BRIGHT)
+	btn.add_theme_color_override("icon_focus_color", GOLD_BRIGHT)
+	btn.add_theme_color_override("icon_disabled_color", TEXT_MUTED)
+
+
+static func apply_gear_icon_button(btn: Button) -> void:
 	if btn == null:
 		return
 	apply_ink_chip_button(btn, false, scaled_font(16), GOLD_BRIGHT)
+	btn.text = ""
+	btn.expand_icon = true
+	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	apply_button_icon(btn, GameIcons.GEAR, 22, true)
+
+
+static func apply_tab_nav_icon(btn: Button, icon_name: String, active: bool) -> void:
+	if btn == null:
+		return
+	apply_button_icon(btn, icon_name, 16, active)
+	btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+
+
+static func apply_ink_icon_button(btn: Button) -> void:
+	if btn == null:
+		return
+	apply_gear_icon_button(btn)
 
 
 static func apply_ink_chip_button(
@@ -613,11 +709,13 @@ static func make_menu_preview_flat() -> StyleBoxFlat:
 	return sb
 
 
-static func make_ink_menu_preview_flat() -> StyleBoxFlat:
-	var sb := ink_panel_style()
-	sb.bg_color = Color("0a0a12")
-	sb.border_color = Color(GOLD, 0.4)
-	sb.set_corner_radius_all(6)
+static func make_ink_menu_preview_flat() -> StyleBox:
+	var sb := ink_panel_style().duplicate()
+	if sb is StyleBoxFlat:
+		(sb as StyleBoxFlat).bg_color = Color("0a0a12")
+		(sb as StyleBoxFlat).border_color = Color(GOLD, 0.4)
+		(sb as StyleBoxFlat).set_corner_radius_all(6)
+	sb.set_content_margin_all(12.0)
 	sb.content_margin_left = 16.0
 	sb.content_margin_right = 16.0
 	sb.content_margin_top = 12.0
@@ -716,6 +814,10 @@ static func apply_tab_button(btn: Button, active: bool = false) -> void:
 	else:
 		btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT_MUTED)
 	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
+	if is_city_v2_active():
+		var icon_name: String = str(btn.get_meta("nav_icon", ""))
+		if not icon_name.is_empty():
+			apply_tab_nav_icon(btn, icon_name, active)
 
 
 static func apply_menu_button(btn: Button, primary: bool = false) -> void:
@@ -807,6 +909,11 @@ static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 
 static func row_card_style(affordance: int) -> StyleBox:
 	if is_city_v2_active():
+		var base := _mm_slice_style(TEX_CARD, _CARD_SLICE, _ROW_CONTENT)
+		if base != null:
+			var sb := base.duplicate() as StyleBoxTexture
+			sb.modulate_color = _row_card_modulate(affordance)
+			return sb
 		return make_ink_row_card_flat(affordance)
 	if _rustic_active:
 		var base := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _ROW_SLICE, _ROW_CONTENT)
@@ -856,6 +963,13 @@ static func apply_row_buy_button(btn: Button) -> void:
 static func draw_row_wax_seal(control: Control, affordance: int) -> void:
 	if affordance != RowAffordance.BUYABLE and affordance != RowAffordance.PETE:
 		return
+	if texture_exists(TEX_WAX_SEAL):
+		var tex := load(TEX_WAX_SEAL) as Texture2D
+		if tex != null:
+			var seal_size := 14.0
+			var tint := Color(GREEN, 0.92) if affordance == RowAffordance.BUYABLE else Color(GOLD_BRIGHT, 0.95)
+			control.draw_texture_rect(tex, Rect2(3.0, 4.0, seal_size, seal_size), false, tint)
+			return
 	var pos := Vector2(10.0, 10.0)
 	var radius := 5.5
 	var fill := Color(GOLD_BRIGHT, 0.9) if affordance == RowAffordance.PETE else Color(GREEN, 0.85)

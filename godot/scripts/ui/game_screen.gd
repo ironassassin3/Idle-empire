@@ -1,6 +1,8 @@
 extends CanvasLayer
 
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
+const GameIcons = preload("res://scripts/ui/game_icons.gd")
 
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 const _RivalSystem = preload("res://scripts/systems/rival_system.gd")
@@ -62,6 +64,7 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _tab_turf: Button = $Root/VBox/BottomBar/TurfBtn
 @onready var _tab_stats: Button = $Root/VBox/BottomBar/StatsBtn
 @onready var _cfg_btn: Button = $Root/VBox/Header/CfgBtn
+@onready var _wheel_chip: Button = $Root/VBox/Header/WheelChip
 @onready var _turf_subbar: HBoxContainer = $Root/VBox/Body/Right/TurfSubBar
 @onready var _sub_territory: Button = $Root/VBox/Body/Right/TurfSubBar/TerritoryBtn
 @onready var _sub_rivals: Button = $Root/VBox/Body/Right/TurfSubBar/RivalsBtn
@@ -101,6 +104,7 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _notif: Label = $Root/VBox/Notif
 @onready var _prestige_tree: CanvasLayer = $PrestigeTreeOverlay
 @onready var _dragon_patron: CanvasLayer = $DragonPatronOverlay
+@onready var _gambling: CanvasLayer = $GamblingOverlay
 @onready var _dragon_hud: PanelContainer = $Root/VBox/StatusStrip/DragonHud
 @onready var _dragon_name: Label = $Root/VBox/StatusStrip/DragonHud/VBox/Header/Name
 @onready var _dragon_mood: Label = $Root/VBox/StatusStrip/DragonHud/VBox/Header/Mood
@@ -121,8 +125,6 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _offline_title: Label = $OverlayLayer/OfflinePanel/VBox/Title
 @onready var _offline_body: Label = $OverlayLayer/OfflinePanel/VBox/Body
 @onready var _offline_continue: Button = $OverlayLayer/OfflinePanel/VBox/ContinueBtn
-var _offline_watch_ad: Button
-var _coin_ad_btn: Button
 @onready var _elim_panel: PanelContainer = $OverlayLayer/ElimPanel
 @onready var _elim_name: Label = $OverlayLayer/ElimPanel/VBox/Name
 @onready var _elim_flavor: Label = $OverlayLayer/ElimPanel/VBox/Flavor
@@ -130,6 +132,11 @@ var _coin_ad_btn: Button
 @onready var _elim_dismiss: Button = $OverlayLayer/ElimPanel/VBox/DismissBtn
 @onready var _tutorial_banner: Label = $TutorialBanner
 
+# --- Runtime UI state (timers, flags, dynamically-created widgets) ---
+# Ad buttons are built at runtime (not scene nodes), so they are plain vars.
+var _offline_watch_ad: Button
+var _offline_spin_btn: Button
+var _coin_ad_btn: Button
 var _tab: Tab = Tab.BLDGS
 var _notif_timer: float = 0.0
 var _ui_time: float = 0.0
@@ -226,6 +233,8 @@ func _ready() -> void:
 	_tab_turf.pressed.connect(_open_turf)
 	_tab_stats.pressed.connect(func(): _open_tab(Tab.STATS))
 	_cfg_btn.pressed.connect(func(): _open_tab(Tab.CONFIG))
+	_wheel_chip.pressed.connect(_on_wheel_chip)
+	_wheel_chip.visible = GameConfig.GAMBLING_ENABLED
 	_sub_territory.pressed.connect(func(): _set_turf_subtab(Tab.TURF))
 	_sub_rivals.pressed.connect(func(): _set_turf_subtab(Tab.RIVALS))
 	_sub_crew.pressed.connect(func(): _set_turf_subtab(Tab.CREW))
@@ -238,6 +247,12 @@ func _ready() -> void:
 	offline_vbox.add_child(_offline_watch_ad)
 	offline_vbox.move_child(_offline_watch_ad, offline_vbox.get_child_count() - 1)
 	_offline_watch_ad.pressed.connect(_on_offline_watch_ad)
+	_offline_spin_btn = Button.new()
+	_offline_spin_btn.text = "🎰 Spin now"
+	_offline_spin_btn.visible = false
+	offline_vbox.add_child(_offline_spin_btn)
+	offline_vbox.move_child(_offline_spin_btn, offline_vbox.get_child_count() - 1)
+	_offline_spin_btn.pressed.connect(_on_offline_spin)
 	_apply_overlay_theme()
 	_overlay_dim.gui_input.connect(_on_overlay_dim_input)
 	_coin_ad_btn = Button.new()
@@ -271,6 +286,7 @@ func _apply_header_theme() -> void:
 	_buy_mult_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP))
 	_advice_chip.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_CHIP - 1))
 	if GameTheme.is_city_v2_active():
+		_apply_nav_icon_meta()
 		GameTheme.apply_ink_icon_button(_cfg_btn)
 	for tab_btn in [_tab_bldgs, _tab_upgrs, _tab_mgrs, _tab_turf, _tab_stats,
 			_sub_territory, _sub_rivals, _sub_crew, _sub_ops]:
@@ -278,6 +294,15 @@ func _apply_header_theme() -> void:
 	_refresh_tab_strip()
 	if GameTheme.is_city_v2_active():
 		_apply_tab_body_ink()
+
+
+func _apply_nav_icon_meta() -> void:
+	_tab_bldgs.set_meta("nav_icon", GameIcons.BUILDINGS)
+	_tab_upgrs.set_meta("nav_icon", GameIcons.TREND_UP)
+	_tab_mgrs.set_meta("nav_icon", GameIcons.USERS_THREE)
+	_tab_turf.set_meta("nav_icon", GameIcons.MAP_PIN)
+	_tab_stats.set_meta("nav_icon", GameIcons.CHART_BAR)
+	# Turf subtabs keep text badges ("Ops 1/2", "Crew 0/5") — icons clip the 48px bar.
 
 
 func _apply_ui_surfaces() -> void:
@@ -597,27 +622,6 @@ func _wrap_content_panel(scroll: ScrollContainer) -> void:
 	scroll.set_meta("_rustic_panel", true)
 
 
-func _wrap_body_panel(inner: Control, style: StyleBox) -> void:
-	if inner.get_meta("_rustic_wrapped", false):
-		return
-	var parent := inner.get_parent()
-	if parent == null:
-		return
-	var idx := inner.get_index()
-	var shell := PanelContainer.new()
-	shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	shell.add_theme_stylebox_override("panel", style)
-	parent.remove_child(inner)
-	shell.add_child(inner)
-	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	inner.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	parent.add_child(shell)
-	parent.move_child(shell, idx)
-	inner.set_meta("_rustic_wrapped", true)
-
-
 func _apply_rustic_subtab_headers() -> void:
 	for lbl in [
 		_turf_bonus, _turf_milestones, _turf_control, _rivals_impact,
@@ -627,22 +631,29 @@ func _apply_rustic_subtab_headers() -> void:
 
 
 func _apply_overlay_theme() -> void:
+	_milestone_title.add_theme_font_override("font", GameFonts.heading())
 	_milestone_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_milestone_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))
 	_milestone_body.add_theme_color_override("font_color", GameTheme.TEXT)
 	_milestone_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_flavor_label(_milestone_body)
+	_event_title.add_theme_font_override("font", GameFonts.heading())
 	_event_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_event_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(17))
 	_event_desc.add_theme_color_override("font_color", GameTheme.TEXT)
 	_event_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_flavor_label(_event_desc)
+	_offline_title.add_theme_font_override("font", GameFonts.heading())
 	_offline_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_offline_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
 	_offline_body.add_theme_color_override("font_color", GameTheme.TEXT)
 	_offline_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_flavor_label(_offline_body)
 	_elim_name.add_theme_color_override("font_color", GameTheme.GOLD)
 	_elim_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))
 	_elim_flavor.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	_elim_flavor.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	GameTheme.apply_flavor_label(_elim_flavor)
 	_elim_rewards.add_theme_color_override("font_color", GameTheme.GREEN)
 	_elim_rewards.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	GameTheme.apply_overlay_cta(_milestone_dismiss, true)
@@ -650,6 +661,8 @@ func _apply_overlay_theme() -> void:
 	GameTheme.apply_overlay_cta(_offline_continue, true)
 	_offline_continue.mouse_filter = Control.MOUSE_FILTER_STOP
 	GameTheme.apply_overlay_cta(_offline_watch_ad, false)
+	if _offline_spin_btn:
+		GameTheme.apply_overlay_cta(_offline_spin_btn, false)
 	GameTheme.apply_overlay_cta(_elim_dismiss, true)
 	_elim_dismiss.text = "Tap to continue"
 
@@ -846,10 +859,8 @@ func _open_turf() -> void:
 func _set_turf_subtab(tab: Tab) -> void:
 	if tab == Tab.CREW and not _CrewSystem.is_unlocked(GameState):
 		GameState.notification.emit(_CrewSystem.unlock_requirement_text(GameState), GameTheme.TEXT_MUTED)
-		return
-	if tab == Tab.OPS and not _OperationSystem.is_unlocked(GameState):
+	elif tab == Tab.OPS and not _OperationSystem.is_unlocked(GameState):
 		GameState.notification.emit(_OperationSystem.unlock_requirement_text(GameState), GameTheme.TEXT_MUTED)
-		return
 	_set_tab(tab)
 
 
@@ -1050,6 +1061,8 @@ func _hide_all_overlay_panels() -> void:
 	_event_panel.visible = false
 	_offline_panel.visible = false
 	_offline_watch_ad.visible = false
+	if _offline_spin_btn:
+		_offline_spin_btn.visible = false
 	_elim_panel.visible = false
 	_elim_dismiss.modulate = Color.WHITE
 
@@ -1064,12 +1077,14 @@ func _apply_active_overlay(overlay_kind: String) -> void:
 			_offline_watch_ad.visible = (
 				Monetization.ads_available() and GameState.can_double_offline_via_ad()
 			)
+			_offline_spin_btn.visible = _has_spin_grant()
 		"daily":
 			_offline_panel.visible = true
 			_offline_title.text = "DAILY REWARD"
 			_offline_body.text = _offline_body_text(true)
 			_offline_continue.text = "Collect reward"
 			_offline_watch_ad.visible = false
+			_offline_spin_btn.visible = _has_spin_grant()
 		"elim":
 			_elim_panel.visible = true
 			_elim_name.text = GameState.elim_overlay_name
@@ -1140,11 +1155,26 @@ func _log_overlay_dismiss(kind: String) -> void:
 	_overlay_shown_at = 0
 
 
+func _has_spin_grant() -> bool:
+	return GameConfig.GAMBLING_ENABLED and GameState.gambling_spins_granted > 0
+
+
+func _spin_grant_line() -> String:
+	if not _has_spin_grant():
+		return ""
+	var n: int = GameState.gambling_spins_granted
+	return "\n\n🎰 +%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
+
+
 func _offline_body_text(daily_only: bool) -> String:
 	if daily_only:
 		return (
-			"★ Daily reward\n\nDay %d streak\n+%s added to your balance"
-			% [GameState.daily_streak, FormatUtil.format_money(GameState.daily_reward)]
+			"★ Daily reward\n\nDay %d streak\n+%s added to your balance%s"
+			% [
+				GameState.daily_streak,
+				FormatUtil.format_money(GameState.daily_reward),
+				_spin_grant_line(),
+			]
 		)
 	var hours: int = int(GameState.offline_secs_away / 3600.0)
 	var mins: int = int(int(GameState.offline_secs_away) % 3600 / 60.0)
@@ -1154,7 +1184,7 @@ func _offline_body_text(daily_only: bool) -> String:
 	if not GameState.offline_rival_events.is_empty():
 		rival_news = "\n\nWhile you were away:\n• " + "\n• ".join(GameState.offline_rival_events)
 	return (
-		"%s\n\nCash earned: +%s%s\n\nOps ready: %d\nTerritory: %d / %d\nRivals active: %d (%d at war)%s"
+		"%s\n\nCash earned: +%s%s\n\nOps ready: %d\nTerritory: %d / %d\nRivals active: %d (%d at war)%s%s"
 		% [
 			away,
 			FormatUtil.format_money(GameState.offline_gain),
@@ -1165,6 +1195,7 @@ func _offline_body_text(daily_only: bool) -> String:
 			GameState.return_rival_active,
 			GameState.return_rival_at_war,
 			rival_news,
+			_spin_grant_line(),
 		]
 	)
 
@@ -1229,6 +1260,15 @@ func _dismiss_offline() -> void:
 
 func _on_offline_watch_ad() -> void:
 	Monetization.show_rewarded(Monetization.PLACEMENT_OFFLINE_DOUBLE)
+
+
+func _on_offline_spin() -> void:
+	# Dismiss the whole return queue (offline → daily), then jump straight to the wheel.
+	while GameState.show_offline_overlay or GameState.show_daily_overlay:
+		GameState.dismiss_offline_overlay()
+	_refresh_overlays()
+	Telemetry.log_event("ui_luck_wheel_open", {"spins": GameState.gambling_free_spins(), "from": "return"})
+	_gambling.open()
 
 
 func _on_coin_watch_ad() -> void:
@@ -1298,6 +1338,10 @@ func _refresh_all() -> void:
 	_rank.text = GameTheme.truncate(rank_full, 18)
 	_buy_mult_chip.text = GameState.buy_mult_label()
 	_buy_mult_chip.tooltip_text = "Buy quantity: ×1, ×10, or Max affordable"
+	if _wheel_chip.visible:
+		var spins: int = GameState.gambling_free_spins()
+		_wheel_chip.text = "🎰%d" % spins if spins > 0 else "🎰"
+		_wheel_chip.tooltip_text = "Luck Wheel — %d free spin(s)" % spins
 	var hint := _GoalSystem.next_focus_hint(GameState)
 	if hint.is_empty():
 		hint = GameState.next_purchase_hint()
@@ -1836,6 +1880,11 @@ func _on_prestige() -> void:
 		_TutorialSystem.advance_tutorial(GameState)
 	Telemetry.log_event("ui_prestige_tree_open", {"eligible": GameState.can_prestige()})
 	_prestige_tree.open()
+
+
+func _on_wheel_chip() -> void:
+	Telemetry.log_event("ui_luck_wheel_open", {"spins": GameState.gambling_free_spins()})
+	_gambling.open()
 
 
 func _on_prestiged(_info: Dictionary) -> void:

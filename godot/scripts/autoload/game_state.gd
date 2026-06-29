@@ -15,6 +15,7 @@ const _GoalSystem = preload("res://scripts/systems/goal_system.gd")
 const _TutorialSystem = preload("res://scripts/systems/tutorial_system.gd")
 const _OfflineSystem = preload("res://scripts/systems/offline_system.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
+const _GamblingSystem = preload("res://scripts/systems/gambling_system.gd")
 
 signal stats_changed
 signal notification(message: String, color: Color)
@@ -56,6 +57,7 @@ var territories: Array = []
 var rivals: Array = []
 var crew: Dictionary = {}
 var operations: Array = []
+var gambling: Dictionary = {}  # Luck Wheel state (see gambling_system.gd)
 var perks_purchased: Array = []
 var prestige_branch: String = ""
 
@@ -176,6 +178,7 @@ var last_login_date: String = ""
 var daily_streak: int = 0
 var daily_reward: float = 0.0
 var show_daily_overlay: bool = false
+var gambling_spins_granted: int = 0  # runtime-only; spins banked on this daily return
 var return_territory_player: int = 0
 var return_territory_total: int = 0
 var return_rival_active: int = 0
@@ -241,6 +244,7 @@ func reset_new_game() -> void:
 	_RivalSystem.clear_activity_log(self)
 	crew = _WorldState.default_crew()
 	operations = _WorldState.make_operations()
+	gambling = _GamblingSystem.make_gambling()
 	perks_purchased = []
 	prestige_branch = ""
 	_reset_perk_runtime()
@@ -293,6 +297,7 @@ func reset_new_game() -> void:
 	daily_streak = 0
 	daily_reward = 0.0
 	show_daily_overlay = false
+	gambling_spins_granted = 0
 	dragon_patron = ""
 	dragon_xp = 0
 	dragon_ability_cooldowns = {}
@@ -845,13 +850,15 @@ func apply_save_data(data: Dictionary) -> void:
 	rivals = _WorldState.make_rivals(_rng)
 	crew = _WorldState.default_crew()
 	operations = _WorldState.make_operations()
+	gambling = _GamblingSystem.make_gambling()
 	perks_purchased = []
 	achievements = _AchievementSystem.make_achievements()
 	goals = _GoalSystem.make_goals()
 	var prev_timestamp: float = _f(data, "save_timestamp", 0.0)
 	balance = _f(data, "balance", 0.0)
 	lifetime_earnings = _f(data, "lifetime_earnings", 0.0)
-	prestige_route_earnings = _f(data, "prestige_route_earnings", lifetime_earnings)
+	# Missing field must default to 0 — not lifetime_earnings (instant prestige gate credit).
+	prestige_route_earnings = _f(data, "prestige_route_earnings", 0.0)
 	prestige_tokens = _i(data, "prestige_tokens", 0)
 	# Migration: old saves have no lifetime_tokens — seed from held balance so
 	# rank never reads lower than current Influence.
@@ -876,6 +883,8 @@ func apply_save_data(data: Dictionary) -> void:
 		_CrewSystem.merge_save_crew(crew, data["crew"])
 	if data.has("operations"):
 		_OperationSystem.merge_save_operations(operations, data["operations"])
+	if data.has("gambling"):
+		_GamblingSystem.merge_save_gambling(gambling, data["gambling"])
 	if data.has("perks_purchased"):
 		perks_purchased = data["perks_purchased"]
 	var branch_raw = data.get("prestige_branch", "")
@@ -995,6 +1004,9 @@ func _apply_daily_reward() -> void:
 	daily_reward = reward
 	balance += reward
 	lifetime_earnings += reward
+	# Engagement hook: bank free Luck Wheel spins on the same once-per-day gate.
+	if GameConfig.GAMBLING_ENABLED:
+		gambling_spins_granted = _GamblingSystem.grant_daily_spins(self, daily_streak)
 	# Queue behind offline return (pygame save_load parity).
 	show_daily_overlay = daily_reward > 0.0 and not show_offline_overlay
 
@@ -1042,6 +1054,7 @@ func to_save_data() -> Dictionary:
 		"rivals": _RivalSystem.rivals_to_save(rivals),
 		"crew": crew,
 		"operations": _OperationSystem.operations_to_save(operations),
+		"gambling": _GamblingSystem.gambling_to_save(gambling),
 		"perks_purchased": perks_purchased,
 		"prestige_branch": prestige_branch if not prestige_branch.is_empty() else null,
 		"collector_shield_cd": collector_shield_cd,
@@ -1171,6 +1184,60 @@ func collect_operation(index: int) -> String:
 	_mark_ips_dirty()
 	stats_changed.emit()
 	return outcome
+
+
+func gambling_free_spins() -> int:
+	return _GamblingSystem.free_spins(self)
+
+
+## Stage a Luck Wheel round; returns the shuffled segment layout for the overlay
+## to render. Consumes nothing — the spin is spent at resolve_gamble().
+func start_gamble_round() -> Array:
+	return _GamblingSystem.start_round(self, _rng)
+
+
+## Resolve a spin at the marker position [0,1). Returns a player-facing message.
+func resolve_gamble(position: float) -> String:
+	var res := _GamblingSystem.resolve(self, position)
+	if not res.get("ok", false):
+		return str(res.get("reason", "Cannot spin"))
+	_mark_ips_dirty()
+	stats_changed.emit()
+	var mult: float = float(res.get("multiplier", 0.0))
+	var payout: float = float(res.get("payout", 0.0))
+	var win_ratio := 0.0
+	if lifetime_earnings > 0.0:
+		win_ratio = float(gambling.get("lifetime_winnings", 0.0)) / lifetime_earnings
+	Telemetry.log_event("gamble_spin_resolve", {
+		"mult": mult,
+		"payout": payout,
+		"jackpot": bool(res.get("jackpot", false)),
+		"lifetime_plays": int(gambling.get("lifetime_plays", 0)),
+		"best_mult": float(gambling.get("best_mult", 0.0)),
+		"lifetime_winnings": float(gambling.get("lifetime_winnings", 0.0)),
+		"lifetime_earnings": lifetime_earnings,
+		"lifetime_winnings_ratio": win_ratio,
+	})
+	if res.get("jackpot", false):
+		_play_sfx("rankup")
+		notification.emit("JACKPOT ×%.0f  +%s" % [mult, FormatUtil.format_money(payout)], GameTheme.GOLD_BRIGHT)
+		return "JACKPOT ×%.0f\n+%s" % [mult, FormatUtil.format_money(payout)]
+	if payout > 0.0:
+		_play_sfx("coin")
+		notification.emit("Wheel ×%.1f  +%s" % [mult, FormatUtil.format_money(payout)], GameTheme.GREEN)
+		return "×%.1f\n+%s" % [mult, FormatUtil.format_money(payout)]
+	_play_sfx("click")
+	notification.emit("Wheel: no win", GameTheme.TEXT_MUTED)
+	return "No win\nBetter luck next spin"
+
+
+## Rewarded-ad → +1 spin. Returns true if banked (false at cap).
+func grant_gamble_ad_spin() -> bool:
+	if not _GamblingSystem.grant_ad_spin(self):
+		return false
+	Telemetry.log_event("gamble_ad_spin", {"spins": _GamblingSystem.free_spins(self)})
+	stats_changed.emit()
+	return true
 
 
 func activate_dragon_ability(key: String) -> bool:
