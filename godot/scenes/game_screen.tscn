@@ -104,10 +104,10 @@ layout_mode = 2
 text = "⚙"
 
 [node name="CityViewport" type="Control" parent="Root/VBox"]
-custom_minimum_size = Vector2(0, 168)
+custom_minimum_size = Vector2(0, 188)
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 0.34
+size_flags_stretch_ratio = 0.4
 
 [node name="CityView" parent="Root/VBox/CityViewport" instance=ExtResource("7")]
 layout_mode = 1
@@ -140,6 +140,52 @@ layout_mode = 2
 size_flags_horizontal = 3
 max_value = 100.0
 show_percentage = false
+
+[node name="PrestigeGateRow" type="Button" parent="Root/VBox/StatusStrip"]
+visible = false
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+flat = true
+theme_override_colors/font_color = Color(0.75, 0.7, 0.62, 1)
+theme_override_font_sizes/font_size = 10
+text = "Prestige 0%"
+
+[node name="HBox" type="HBoxContainer" parent="Root/VBox/StatusStrip/PrestigeGateRow"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="PrestigeGateLabel" type="Label" parent="Root/VBox/StatusStrip/PrestigeGateRow/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.75, 0.7, 0.62, 1)
+theme_override_font_sizes/font_size = 10
+clip_text = true
+text = "Prestige 0%"
+
+[node name="PrestigeGateBar" type="ProgressBar" parent="Root/VBox/StatusStrip/PrestigeGateRow/HBox"]
+custom_minimum_size = Vector2(80, 10)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 100.0
+show_percentage = false
+
+[node name="AutomationRow" type="HBoxContainer" parent="Root/VBox/StatusStrip"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AutomationLabel" type="Label" parent="Root/VBox/StatusStrip/AutomationRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.31, 0.78, 0.47, 1)
+theme_override_font_sizes/font_size = 11
+clip_text = true
+text = "AUTO"
 
 [node name="StatusRow" type="HBoxContainer" parent="Root/VBox/StatusStrip"]
 layout_mode = 2
@@ -181,6 +227,13 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "PRESTIGE"
+
+[node name="PrestigeBar" type="ProgressBar" parent="Root/VBox/StatusStrip/PrestigeRow"]
+custom_minimum_size = Vector2(64, 12)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 100.0
+show_percentage = false
 
 [node name="PrestigeInfo" type="Label" parent="Root/VBox/StatusStrip/PrestigeRow"]
 layout_mode = 2

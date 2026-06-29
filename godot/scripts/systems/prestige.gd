@@ -2,6 +2,8 @@ class_name Prestige
 extends RefCounted
 ## Prestige helpers — subset of src/prestige.py for the MVP port.
 
+const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
+
 const HIERARCHY: Array = [
 	[0, "Street Hustler"], [1, "Crew Member"], [5, "Associate"], [12, "Made Man"],
 	[25, "Capo"], [45, "Underboss"], [75, "Boss"], [115, "Crime Lord"],
@@ -34,8 +36,10 @@ static func income_mult(tokens: int) -> float:
 
 
 static func calc_influence_gain(lifetime_earnings: float) -> int:
-	var raw := sqrt(maxf(0.0, lifetime_earnings) / 1_000_000.0)
-	return maxi(1, int(raw))
+	if lifetime_earnings < GameConfig.FIRST_PRESTIGE_EARNINGS:
+		return 0
+	var log_val := log(maxf(1.0, lifetime_earnings)) / log(10.0)
+	return maxi(1, int(round(log_val * log_val / 5.0)))
 
 
 const PRESTIGE_MASTERY_MAX := 1.5
@@ -67,7 +71,7 @@ static func check_requirements(state) -> Dictionary:
 		var dealers: int = state.buildings[0].owned if state.buildings.size() > 0 else 0
 		var rackets: int = state.buildings[1].owned if state.buildings.size() > 1 else 0
 		var chops: int = state.buildings[2].owned if state.buildings.size() > 2 else 0
-		var rank := get_rank(state.prestige_tokens)
+		var rank := get_rank(state.lifetime_tokens)
 		reqs["dealers"] = {"current": dealers, "required": GameConfig.FIRST_PRESTIGE_DEALERS, "met": dealers >= GameConfig.FIRST_PRESTIGE_DEALERS}
 		reqs["rackets"] = {"current": rackets, "required": GameConfig.FIRST_PRESTIGE_RACKETS, "met": rackets >= GameConfig.FIRST_PRESTIGE_RACKETS}
 		reqs["chops"] = {"current": chops, "required": GameConfig.FIRST_PRESTIGE_CHOPS, "met": chops >= GameConfig.FIRST_PRESTIGE_CHOPS}
@@ -79,6 +83,18 @@ static func check_requirements(state) -> Dictionary:
 		reqs["dealers"] = {"current": dealers2, "required": GameConfig.POST_PRESTIGE_DEALERS, "met": dealers2 >= GameConfig.POST_PRESTIGE_DEALERS}
 		reqs["rackets"] = {"current": rackets2, "required": GameConfig.POST_PRESTIGE_RACKETS, "met": rackets2 >= GameConfig.POST_PRESTIGE_RACKETS}
 		reqs["chops"] = {"current": chops2, "required": GameConfig.POST_PRESTIGE_CHOPS, "met": chops2 >= GameConfig.POST_PRESTIGE_CHOPS}
+	if state.prestige_count >= 1:
+		var branch: String = str(state.prestige_branch)
+		var branch_met := not branch.is_empty()
+		reqs["branch"] = {
+			"current": branch if branch_met else "none",
+			"required": "path",
+			"met": branch_met,
+		}
+		var perk_count := 0
+		if branch_met:
+			perk_count = _PrestigeTree.branch_perk_count(state, branch)
+		reqs["branch_perk"] = {"current": perk_count, "required": 1, "met": branch_met and perk_count >= 1}
 	return reqs
 
 
@@ -87,6 +103,63 @@ static func can_prestige(state) -> bool:
 		if not check_requirements(state)[key]["met"]:
 			return false
 	return true
+
+
+static func gate_progress_pct(state) -> int:
+	var reqs: Dictionary = check_requirements(state)
+	var earn: Dictionary = reqs.get("earnings", {})
+	var required: float = float(earn.get("required", 0.0))
+	if required <= 0.0:
+		return 100
+	return mini(100, int(100.0 * float(earn.get("current", 0.0)) / required))
+
+
+static func compact_gate_label(state) -> String:
+	if can_prestige(state):
+		return "PRESTIGE"
+	return "P%d%%" % gate_progress_pct(state)
+
+
+static func gate_progress_summary(state) -> Dictionary:
+	var reqs: Dictionary = check_requirements(state)
+	var earn: Dictionary = reqs.get("earnings", {})
+	var ready := can_prestige(state)
+	var pct := gate_progress_pct(state)
+	var blockers: PackedStringArray = PackedStringArray()
+	for key in ["earnings", "dealers", "rackets", "chops", "rank", "branch", "branch_perk"]:
+		if not reqs.has(key):
+			continue
+		var r: Dictionary = reqs[key]
+		if bool(r.get("met", true)):
+			continue
+		blockers.append(_blocker_text(key, r))
+	return {
+		"ready": ready,
+		"pct": pct,
+		"route": float(earn.get("current", 0.0)),
+		"required": float(earn.get("required", 0.0)),
+		"blockers": blockers,
+		"influence_gain": calc_influence_gain(state.lifetime_earnings),
+	}
+
+
+static func _blocker_text(key: String, r: Dictionary) -> String:
+	match key:
+		"earnings":
+			return "Empire earnings"
+		"dealers":
+			return "Dealers %d/%d" % [int(r.get("current", 0)), int(r.get("required", 0))]
+		"rackets":
+			return "Rackets %d/%d" % [int(r.get("current", 0)), int(r.get("required", 0))]
+		"chops":
+			return "Chop shops %d/%d" % [int(r.get("current", 0)), int(r.get("required", 0))]
+		"rank":
+			return "Rank: need %s" % str(r.get("required", ""))
+		"branch":
+			return "Choose a prestige path"
+		"branch_perk":
+			return "Buy a tier-1 path perk"
+	return key.capitalize()
 
 
 static func _rank_index(label: String) -> int:

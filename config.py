@@ -59,6 +59,13 @@ UI_MODAL_PADDING   = 20   # inner padding for modal/popup panels
 # and the fresh run. Short and skippable — emotion, not spectacle.
 PRESTIGE_CLIMAX_DURATION = 3.0
 
+# ── Territory economy scaling ───────────────────────────────────────────────────
+# Turf income/click bonuses scale with empire-route progress toward next prestige.
+# Cubic curve + cap keeps early captures from snowballing first-prestige pacing.
+TERRITORY_ECONOMY_SCALE_EXPONENT = 3.0
+TERRITORY_ECONOMY_SCALE_MAX = 0.30
+TERRITORY_INCOME_BONUS_CAP = 0.18
+
 # ── Active play (Phase 94) ────────────────────────────────────────────────────
 # Keeps manual clicking relevant for the whole game WITHOUT making it required.
 # Idle stays the primary income source; these only add a supplemental active layer.

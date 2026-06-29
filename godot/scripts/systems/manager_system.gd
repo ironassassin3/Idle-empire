@@ -4,6 +4,8 @@ extends RefCounted
 
 const _CrewSystem = preload("res://scripts/systems/crew_system.gd")
 const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
+const _HeatSystem = preload("res://scripts/systems/heat_system.gd")
+const _OperationSystem = preload("res://scripts/systems/operation_system.gd")
 
 const COLLECTOR_SHIELD_CD := 300.0
 const MECHANIC_BUILDING_IDX := 2
@@ -22,6 +24,121 @@ static func manager_autobuy_unlocked(state) -> bool:
 	if not GameConfig.MANAGER_AUTOBUY_REQUIRES_PRESTIGE:
 		return true
 	return state.prestige_count >= GameConfig.MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT
+
+
+static func heat_forecast_delta(state, horizon_sec: float = 120.0) -> float:
+	return _HeatSystem.forecast_delta(state, horizon_sec)
+
+
+static func is_automation_notification(message: String) -> bool:
+	if message.is_empty():
+		return false
+	return (
+		message.contains("Mechanic")
+		or message.contains("Accountant")
+		or message.contains("Smuggler")
+		or message.contains("auto-buy")
+		or message.contains("Perk auto-buy")
+		or message.contains("Raid blocked")
+		or message.contains("Carl dumped")
+		or message.contains("Sal caught")
+		or message.contains("secured a new asset")
+		or message.contains("ordered another")
+	)
+
+
+static func hire_notification(display_name: String, state) -> String:
+	match display_name:
+		"Sticky Pete":
+			return "Pete's on the block — check Buildings for his pick"
+		"Lucky Sal":
+			return "Sal's collecting — golden coins auto-grab"
+		"The Collector":
+			return "Collector's shield is up — first raid bounces"
+		"The Mechanic":
+			if manager_autobuy_unlocked(state):
+				return "Mechanic's on night shift — Chop Shops auto-buy"
+			return "Mechanic hired — auto-buy unlocks after 1st prestige"
+		"Clean Carl":
+			return "Carl's watching heat — forecast + one emergency dump"
+		"The Accountant":
+			if manager_autobuy_unlocked(state):
+				return "The Accountant is on payroll — auto-buy active"
+			return "Accountant hired — auto-buy unlocks after 1st prestige"
+		"Maxine the Dealer":
+			return "Maxine boosts the family — behaviors scale with casinos"
+		"The Promoter":
+			return "Promoter autopilot — heat target ≤%.0f%%" % promoter_heat_target(state)
+		"The Smuggler":
+			return "Smuggler's queue running — ops auto-start & collect alerts"
+		"The Broker":
+			return "Broker intel live — best turf action highlighted"
+		"The Consigliere":
+			return "Consigliere sees the board — check Prestige advisory"
+		"Rudy Riches":
+			return "Rudy says it's time to make some real money"
+		"Rob Revenue":
+			return "Rob's balancing the books — see Stats dashboard"
+		_:
+			return "Hired %s" % display_name
+
+
+## Compact persistent summary for the status-strip automation row.
+static func automation_strip(state) -> Dictionary:
+	var tags: PackedStringArray = PackedStringArray()
+	if manager_active(state, "Lucky Sal"):
+		tags.append("Sal: coins")
+	if manager_active(state, "The Mechanic"):
+		if manager_autobuy_unlocked(state):
+			tags.append("Mech: shops")
+		else:
+			tags.append("Mech: gated")
+	if manager_active(state, "The Accountant"):
+		if manager_autobuy_unlocked(state):
+			tags.append("Acct: buy")
+		else:
+			tags.append("Acct: gated")
+	if manager_active(state, "The Smuggler"):
+		var ready := _count_ready_ops(state)
+		if ready > 0:
+			tags.append("Smuggler: %d ready" % ready)
+		else:
+			tags.append("Smuggler: queue")
+	if manager_active(state, "The Collector"):
+		var frac: float = collector_shield_fraction(state)
+		if frac >= 1.0:
+			tags.append("Shield ready")
+		else:
+			tags.append("Shield %d%%" % int(frac * 100.0))
+	if manager_active(state, "Clean Carl"):
+		var delta: float = heat_forecast_delta(state, 120.0)
+		var sign := "+" if delta >= 0.0 else ""
+		tags.append("Carl %s%.0f%%/2m" % [sign, delta])
+	if manager_active(state, "The Promoter"):
+		tags.append("Heat ≤%.0f%%" % promoter_heat_target(state))
+	if manager_active(state, "Sticky Pete"):
+		var pick := pete_recommends_index(state)
+		if pick >= 0 and pick < state.buildings.size():
+			tags.append("Pete: %s" % state.buildings[pick].display_name)
+	if state.perk_auto_buy and manager_autobuy_unlocked(state):
+		tags.append("Perk: auto-buy")
+	if state.perk_auto_upgrade:
+		tags.append("Perk: auto-upg")
+	if tags.is_empty():
+		return {"visible": false, "summary": "", "flash": ""}
+	var summary := "AUTO · " + " · ".join(tags)
+	var flash := ""
+	if float(state.automation_flash_timer) > 0.0 and not str(state.automation_flash).is_empty():
+		flash = str(state.automation_flash)
+	return {"visible": true, "summary": summary, "flash": flash}
+
+
+static func _count_ready_ops(state) -> int:
+	var n := 0
+	for op in state.operations:
+		if typeof(op) == TYPE_DICTIONARY and _OperationSystem.is_ready(state, op):
+			n += 1
+	return n
 
 
 static func purchase_autobuy_gate_text() -> String:
@@ -206,14 +323,13 @@ static func prestige_advice(state) -> Dictionary:
 		return {}
 	var ips: float = state.income_per_second()
 	var le: float = state.lifetime_earnings
-	var tokens: int = state.prestige_tokens
 	var gain_now: int = Prestige.calc_influence_gain(le)
 	var gain_5: int = Prestige.calc_influence_gain(le + ips * 300.0)
 	var gain_10: int = Prestige.calc_influence_gain(le + ips * 600.0)
 	var d5: int = gain_5 - gain_now
 	var d10: int = gain_10 - gain_now
 	var can_now: bool = Prestige.can_prestige(state)
-	var rank_after: String = Prestige.get_rank(tokens + gain_now)
+	var rank_after: String = Prestige.get_rank(state.lifetime_tokens + gain_now)
 	var income_pct: int = gain_now * 2
 	var need: float = Prestige.prestige_earnings_required(state.prestige_count, state.next_prestige_earnings)
 	var pct: int = int(minf(100.0, le / need * 100.0)) if need > 0.0 else 0
@@ -371,32 +487,40 @@ static func tick_manager_effects(state, dt: float) -> Array[String]:
 		state.mechanic_timer += dt
 		if state.mechanic_timer >= behavior_interval(MECHANIC_AUTOBUY_INTERVAL, state):
 			state.mechanic_timer = 0.0
-			if _auto_buy_chop_shop(state):
-				messages.append("Mechanic ordered another Chop Shop")
+			var bought: String = _auto_buy_chop_shop(state)
+			if not bought.is_empty():
+				state.mechanic_autobuys += 1
+				var n: int = int(state.mechanic_autobuys)
+				if n == 1 or n % 3 == 0:
+					messages.append("Mechanic bought %s" % bought)
 	if manager_active(state, "The Accountant") and manager_autobuy_unlocked(state):
 		state.autobuy_timer += dt
 		if state.autobuy_timer >= behavior_interval(AUTOBUY_INTERVAL, state):
 			state.autobuy_timer = 0.0
-			if _auto_buy_best(state):
-				messages.append("Accountant secured a new asset")
+			var bought_best: String = _auto_buy_best(state)
+			if not bought_best.is_empty():
+				state.accountant_autobuys += 1
+				var n: int = int(state.accountant_autobuys)
+				if n == 1 or n % 2 == 0:
+					messages.append("Accountant bought %s" % bought_best)
 	return messages
 
 
-static func _auto_buy_chop_shop(state) -> bool:
+static func _auto_buy_chop_shop(state) -> String:
 	if state.buildings.size() <= MECHANIC_BUILDING_IDX:
-		return false
+		return ""
 	var b: Building = state.buildings[MECHANIC_BUILDING_IDX]
 	var cost: float = b.current_cost()
 	if cost <= 0.0 or state.balance < cost * MECHANIC_BALANCE_MULT:
-		return false
+		return ""
 	state.balance -= cost
 	b.owned += 1
 	state.record_building_purchase(1)
 	BuildingDefs.sync_racket_multiplier(state.buildings)
-	return true
+	return b.display_name
 
 
-static func _auto_buy_best(state) -> bool:
+static func _auto_buy_best(state) -> String:
 	var best: Building = null
 	var best_ratio := 0.0
 	for b: Building in state.buildings:
@@ -408,12 +532,12 @@ static func _auto_buy_best(state) -> bool:
 			best_ratio = ratio
 			best = b
 	if best == null:
-		return false
+		return ""
 	state.balance -= best.current_cost()
 	best.owned += 1
 	state.record_building_purchase(1)
 	BuildingDefs.sync_racket_multiplier(state.buildings)
-	return true
+	return best.display_name
 
 
 static func reset_runtime(state) -> void:
@@ -421,10 +545,14 @@ static func reset_runtime(state) -> void:
 	state.carl_emergency_used = false
 	state.mechanic_timer = 0.0
 	state.autobuy_timer = 0.0
+	state.mechanic_autobuys = 0
+	state.accountant_autobuys = 0
 	state.broker_retry_cd = 0.0
 	state.smuggler_timer = 0.0
 	state.smuggler_notified.clear()
 	state.promoter_heat_target = 50.0
+	state.automation_flash = ""
+	state.automation_flash_timer = 0.0
 
 
 ## Phase 123 roster status — (text, color, badge_kind) for manager_row.gd.
@@ -446,7 +574,14 @@ static func employee_status(state, idx: int) -> Dictionary:
 					return {"text": "Shield ready", "color": GameTheme.BLUE_BRIGHT, "badge_kind": "ready"}
 				return {"text": "Shield charging (%d%%)" % int(shield * 100.0), "color": GameTheme.BLUE_BRIGHT, "badge_kind": "working"}
 			"Clean Carl":
-				return {"text": "Monitoring heat", "color": GameTheme.GOLD, "badge_kind": "working"}
+				var delta: float = heat_forecast_delta(state, 120.0)
+				var sign := "+" if delta >= 0.0 else ""
+				var emergency := "" if state.carl_emergency_used else " · rescue ready"
+				return {
+					"text": "Forecast %s%.0f%% / 2m%s" % [sign, delta, emergency],
+					"color": GameTheme.GOLD,
+					"badge_kind": "working",
+				}
 			"The Accountant":
 				if not manager_autobuy_unlocked(state):
 					return {"text": purchase_autobuy_gate_text(), "color": GameTheme.TEXT_MUTED, "badge_kind": "gated"}
@@ -455,7 +590,14 @@ static func employee_status(state, idx: int) -> Dictionary:
 				var tgt: int = int(promoter_heat_target(state))
 				return {"text": "Maintaining heat ≤ %d%%" % tgt, "color": GameTheme.RED, "badge_kind": "auto"}
 			"The Smuggler":
-				return {"text": "Monitoring operations", "color": GameTheme.TEXT_MUTED, "badge_kind": "working"}
+				var ready := _count_ready_ops(state)
+				if ready > 0:
+					return {
+						"text": "%d op%s ready to collect" % [ready, "" if ready == 1 else "s"],
+						"color": GameTheme.GOLD_BRIGHT,
+						"badge_kind": "ready",
+					}
+				return {"text": "Ops queue running", "color": GameTheme.GREEN, "badge_kind": "auto"}
 			"The Broker":
 				return {"text": "Turf intel active", "color": GameTheme.BLUE_BRIGHT, "badge_kind": "working"}
 			"Sticky Pete":

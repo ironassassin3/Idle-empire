@@ -16,15 +16,20 @@ const CLICK_HUSTLE_CLICKS := 8
 const CLICK_HUSTLE_DURATION := 6.0
 const CLICK_HUSTLE_MULT := 2.35
 
-const FIRST_PRESTIGE_EARNINGS := 20_000_000.0
-const FIRST_PRESTIGE_DEALERS := 20
-const FIRST_PRESTIGE_RACKETS := 8
-const FIRST_PRESTIGE_CHOPS := 4
+const FIRST_PRESTIGE_EARNINGS := 50_000_000.0
+const FIRST_PRESTIGE_DEALERS := 25
+const FIRST_PRESTIGE_RACKETS := 10
+const FIRST_PRESTIGE_CHOPS := 5
 const FIRST_PRESTIGE_RANK := "Made Man"
-const POST_PRESTIGE_DEALERS := 15
-const POST_PRESTIGE_RACKETS := 6
-const POST_PRESTIGE_CHOPS := 3
+const POST_PRESTIGE_DEALERS := 19
+const POST_PRESTIGE_RACKETS := 8
+const POST_PRESTIGE_CHOPS := 4
 const PRESTIGE_EARNINGS_GROWTH := 8.0
+
+# Turf bonuses ramp with empire-route progress; cubic + cap slows turf snowball.
+const TERRITORY_ECONOMY_SCALE_EXPONENT := 3.0
+const TERRITORY_ECONOMY_SCALE_MAX := 0.30
+const TERRITORY_INCOME_BONUS_CAP := 0.18
 
 const MANAGER_INCOME_MULT := 1.5
 # Purchase automation (Accountant, Mechanic, Talent Scout) unlocks after first prestige.

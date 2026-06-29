@@ -37,6 +37,9 @@ var _districts_owned: int = 0
 var _rank_idx: int = 0
 var _top_building_keys: Array = []
 var _district_slots: Array = []
+# Neon reflection anchors collected during the skyline pass, painted into the
+# wet street afterwards (street is drawn on top of the buildings).
+var _reflect_points: Array = []
 
 var _last_buildings: int = -1
 var _last_heat: float = -1.0
@@ -66,11 +69,11 @@ func refresh(
 	total_buildings: int,
 	heat: float,
 	districts_owned: int,
-	prestige_tokens: int,
+	career_tokens: int,
 	top_building_keys: Array = [],
 	district_slots: Array = []
 ) -> void:
-	var rank_name := PrestigeScript.get_rank(prestige_tokens)
+	var rank_name := PrestigeScript.get_rank(career_tokens)
 	var rank_idx := PrestigeScript.rank_index(rank_name)
 	var sig := _building_sig(top_building_keys)
 	var state_changed := (
@@ -138,15 +141,22 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, scale)
 	var tier := _tier(_total_buildings)
 	var ground_y := VIRTUAL_SIZE.y - 28.0
+	_reflect_points.clear()
 	_draw_frame()
 	_draw_back_parallax(_t, tier)
+	_draw_searchlights(_t, _rank_idx)
 	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _t, ground_y)
 	_draw_horizon_glow(ground_y)
 	if tier == 0:
 		_draw_tier0_street_detail(ground_y, _t)
 	_draw_front_street(ground_y, _t)
+	_draw_reflections(ground_y, _t)
+	_draw_pedestrians(ground_y, _t, tier)
+	_draw_traffic(ground_y, _t)
 	_draw_district_strip(ground_y, _district_slots)
 	_draw_atmosphere(_heat, _rank_idx, _t, tier)
+	_draw_rain(_t, _heat)
+	_draw_caption(tier, _total_buildings)
 	if not GameTheme.ui_reduced_motion():
 		_draw_scanlines()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -206,7 +216,6 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 
 func _draw_mid_skyline(total: int, tier: int, keys: Array, t: float, ground_y: float) -> void:
 	var sw := VIRTUAL_SIZE.x
-	var drift := t * 6.0 if not GameTheme.ui_reduced_motion() else 0.0
 	# Always show at least one facade so tier 0 is not an empty void.
 	var count := mini(maxi(keys.size(), 1), 3)
 	var slot_w := sw / maxf(1.0, float(count))
@@ -219,17 +228,10 @@ func _draw_mid_skyline(total: int, tier: int, keys: Array, t: float, ground_y: f
 			base_h += 40.0
 		elif total >= 35:
 			base_h += 24.0
+		# Dominant business (most owned) towers as the empire's hero landmark.
+		if i == 0 and not keys.is_empty():
+			base_h *= 1.35
 		_draw_building_signature(key, cx, ground_y, base_h, tier, i, t)
-	# Tier 2+ — vertical neon signs between facades.
-	if tier >= 2:
-		for i in count - 1:
-			var sx := slot_w * (float(i) + 1.0) + fmod(drift * 0.1, 4.0)
-			var sign_h := 28.0 + tier * 8.0
-			var pulse := 0.6 + 0.4 * sin(t * 2.5 + i * 1.3)
-			var col := NEON_WARM if i % 2 == 0 else NEON_COOL
-			draw_rect(Rect2(sx - 2.0, ground_y - sign_h - 8.0, 4.0, sign_h),
-					Color(col, pulse * 0.85))
-			draw_rect(Rect2(sx - 5.0, ground_y - sign_h - 12.0, 10.0, 4.0), Color(col, pulse * 0.5))
 	# Tier 3+ — bridge connector.
 	if tier >= 3 and count >= 2:
 		var bx0 := slot_w * 0.5
@@ -336,6 +338,28 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 	# Rim light — separates facades from haze band at small portrait sizes.
 	draw_line(Vector2(bx, by), Vector2(bx, ground_y - bh), Color(SILHOUETTE_RIM, 0.35), 1.0)
 	draw_rect(Rect2(bx, ground_y - bh - 5.0, bw, 4.0), Color(neon, 0.65 + 0.3 * sin(t * 2.0 + seed)))
+	# Remember this facade's neon so it can bleed into the wet street later.
+	_reflect_points.append([cx, neon])
+	# Neon marquee on the building's shoulder — a framed blade sign lit in the
+	# business's own colour. Static (no drift/flicker) so it reads as signage.
+	if tier >= 2:
+		_draw_marquee(bx + bw + 1.0, by + maxf(5.0, bh * 0.22), minf(18.0, bh * 0.4), neon, bx + bw)
+
+
+func _draw_marquee(mq_x: float, mq_y: float, mq_h: float, col: Color, wall_x: float) -> void:
+	var mq_w := 8.0
+	# Bracket arm tying the blade to the wall.
+	draw_line(Vector2(wall_x, mq_y + 3.0), Vector2(mq_x, mq_y + 3.0), Color(SILHOUETTE_RIM, 0.6), 1.0)
+	# Soft glow halo, dark sign panel, glowing neon frame.
+	draw_rect(Rect2(mq_x - 1.5, mq_y - 1.5, mq_w + 3.0, mq_h + 3.0), Color(col, 0.16))
+	draw_rect(Rect2(mq_x, mq_y, mq_w, mq_h), Color8(14, 16, 26))
+	draw_rect(Rect2(mq_x, mq_y, mq_w, mq_h), Color(col, 0.95), false, 1.0)
+	# Lit "letter" segments stacked down the blade.
+	var seg_n := maxi(1, int((mq_h - 3.0) / 5.0))
+	for s in seg_n:
+		var sy := mq_y + 3.0 + float(s) * 5.0
+		if sy + 2.0 <= mq_y + mq_h - 1.0:
+			draw_rect(Rect2(mq_x + 2.0, sy, mq_w - 4.0, 2.0), Color(col, 0.9))
 
 
 func _draw_crown_watermark(cx: float, cy: float, t: float, scale: float = 1.0) -> void:
@@ -369,10 +393,9 @@ func _draw_tier0_street_detail(ground_y: float, t: float) -> void:
 	var pool_a := 0.18 + 0.06 * sin(t * 1.6) if not GameTheme.ui_reduced_motion() else 0.2
 	draw_circle(Vector2(post_x, ground_y + 6.0), 22.0, Color(1.0, 0.82, 0.45, pool_a))
 	draw_rect(Rect2(post_x - 18.0, ground_y + 2.0, 36.0, 3.0), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.12))
-	# Lone figure silhouette.
-	var fig_x := sw * 0.62 + sin(t * 0.35) * 2.0 if not GameTheme.ui_reduced_motion() else sw * 0.62
-	draw_rect(Rect2(fig_x - 3.0, ground_y - 18.0, 6.0, 14.0), Color(SILHOUETTE, 0.9))
-	draw_circle(Vector2(fig_x, ground_y - 21.0), 3.0, Color(SILHOUETTE, 0.9))
+	# Lone figure loitering in the lamplight — fedora, hands in coat, barely shifting.
+	var sway := sin(t * 0.8) * 0.6 if not GameTheme.ui_reduced_motion() else 0.0
+	_draw_person(sw * 0.62, ground_y + 1.0, 1.05, 4, sway, true)
 
 
 func _draw_front_street(ground_y: float, t: float) -> void:
@@ -383,6 +406,125 @@ func _draw_front_street(ground_y: float, t: float) -> void:
 	if not GameTheme.ui_reduced_motion():
 		var shimmer_x := fmod(t * 30.0, sw + 60.0) - 30.0
 		draw_rect(Rect2(shimmer_x, ground_y + 8.0, 40.0, 2.0), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.15))
+
+
+func _draw_reflections(ground_y: float, t: float) -> void:
+	# Neon facades bleed down into the rain-slicked street.
+	var reduced := GameTheme.ui_reduced_motion()
+	for pt in _reflect_points:
+		var x: float = pt[0]
+		var col: Color = pt[1]
+		var shimmer: float = 1.0 if reduced else (0.65 + 0.35 * sin(t * 3.0 + x * 0.12))
+		for s in 3:
+			var a := (0.20 - s * 0.06) * shimmer
+			if a <= 0.0:
+				continue
+			draw_rect(Rect2(x - 1.5 - s * 0.5, ground_y + 6.0 + s * 4.0, 3.0 + s, 3.0), Color(col, a))
+
+
+func _draw_person(px: float, base_y: float, scale: float, seed: int, phase: float, standing: bool = false) -> void:
+	# Noir silhouette: fedora, long coat, walking stride. base_y is the feet line.
+	var h := (15.0 + float(seed % 3) * 2.5) * scale
+	var w := h * 0.32
+	var col := Color(SILHOUETTE.r * 0.78, SILHOUETTE.g * 0.78, SILHOUETTE.b * 0.9, 0.94)
+	var leg_w := maxf(1.5, w * 0.22)
+	var hip_y := base_y - h * 0.44
+	var stride := (w * 0.18) if standing else (sin(phase) * w * 0.55)
+	draw_line(Vector2(px, hip_y), Vector2(px - stride, base_y), col, leg_w)
+	draw_line(Vector2(px, hip_y), Vector2(px + stride, base_y), col, leg_w)
+	# Long coat — trapezoid flaring slightly to the hem.
+	var shoulder_y := base_y - h * 0.80
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(px - w * 0.5, shoulder_y), Vector2(px + w * 0.5, shoulder_y),
+		Vector2(px + w * 0.62, hip_y + 1.5), Vector2(px - w * 0.62, hip_y + 1.5),
+	]), col)
+	# Head + fedora (brim wider than the head, low crown).
+	var head_y := shoulder_y - h * 0.07
+	draw_circle(Vector2(px, head_y), w * 0.34, col)
+	var brim_y := head_y - w * 0.34
+	draw_rect(Rect2(px - w * 0.6, brim_y, w * 1.2, maxf(1.0, w * 0.16)), col)
+	draw_rect(Rect2(px - w * 0.3, brim_y - w * 0.34, w * 0.6, w * 0.36), col)
+
+
+func _draw_pedestrians(ground_y: float, t: float, tier: int) -> void:
+	# Street life — lonelier when small, bustling once the empire grows.
+	var sw := VIRTUAL_SIZE.x
+	var reduced := GameTheme.ui_reduced_motion()
+	var count := mini(1 + tier, 6)
+	for i in count:
+		var dir := 1.0 if i % 2 == 0 else -1.0
+		var speed := 9.0 + float(i % 3) * 4.0
+		var span := sw + 30.0
+		var move := 0.0 if reduced else t * speed
+		var prog := fmod(move + float(i) * 61.0, span)
+		var px: float = (prog - 15.0) if dir > 0.0 else (sw + 15.0 - prog)
+		var depth := float(i % 2)  # two sidewalk lanes for a little parallax
+		var feet := ground_y + 2.0 + depth * 4.0
+		var person_scale := 0.85 + depth * 0.3
+		var phase := 0.0 if reduced else (t * 7.0 + float(i) * 1.7) * dir
+		_draw_person(px, feet, person_scale, i * 5 + 1, phase, reduced)
+
+
+func _draw_traffic(ground_y: float, t: float) -> void:
+	# Headlight streaks crossing the foreground street — the city is awake.
+	if GameTheme.ui_reduced_motion():
+		return
+	var sw := VIRTUAL_SIZE.x
+	for i in 2:
+		var dir := 1.0 if i == 0 else -1.0
+		var speed := 64.0 + float(i) * 28.0
+		var span := sw + 48.0
+		var prog := fmod(t * speed + float(i) * 150.0, span)
+		var cx: float = (prog - 24.0) if dir > 0.0 else (sw + 24.0 - prog)
+		var cy := ground_y + 14.0 + float(i) * 6.0
+		draw_rect(Rect2(cx - 7.0, cy - 3.0, 14.0, 5.0), Color8(28, 30, 44))
+		var lead := cx + dir * 7.0
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(lead, cy - 1.0), Vector2(lead + dir * 20.0, cy - 3.5),
+			Vector2(lead + dir * 20.0, cy + 3.5),
+		]), Color(1.0, 0.92, 0.6, 0.10))
+		draw_circle(Vector2(lead, cy), 2.4, Color(1.0, 0.94, 0.66, 0.55))
+		draw_circle(Vector2(cx - dir * 7.0, cy), 1.5, Color(0.92, 0.22, 0.2, 0.6))
+
+
+func _draw_rain(t: float, heat: float) -> void:
+	# Light noir drizzle that thickens with heat — tension you can feel.
+	if GameTheme.ui_reduced_motion():
+		return
+	var sw := VIRTUAL_SIZE.x
+	var sh := VIRTUAL_SIZE.y
+	var drops := 12 + int(clampf(heat, 0.0, 100.0) / 100.0 * 28.0)
+	var col := Color(0.62, 0.68, 0.86, 0.09)
+	for i in drops:
+		var x := fmod(float(i * 71 + 17), sw)
+		var y := fmod(t * (150.0 + float(i % 5) * 32.0) + float(i) * 53.0, sh + 40.0) - 20.0
+		draw_line(Vector2(x, y), Vector2(x - 3.0, y + 10.0), col, 1.0)
+
+
+func _draw_searchlights(t: float, rank_idx: int) -> void:
+	# Triumphant sweeping beams once you command the city (Crime Lord+).
+	if rank_idx < PrestigeScript.rank_index("Crime Lord") or GameTheme.ui_reduced_motion():
+		return
+	var sw := VIRTUAL_SIZE.x
+	var base_y := VIRTUAL_SIZE.y * 0.56
+	for i in 2:
+		var ox := sw * (0.26 + 0.48 * float(i))
+		var ang := -PI * 0.5 + sin(t * 0.5 + float(i) * 2.1) * 0.55
+		var length := VIRTUAL_SIZE.y * 0.6
+		var tip := Vector2(ox + cos(ang) * length, base_y + sin(ang) * length)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(ox - 6.0, base_y), Vector2(ox + 6.0, base_y), tip,
+		]), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.06))
+		draw_circle(Vector2(ox, base_y), 3.0, Color(INK_GOLD_BRIGHT, 0.4))
+
+
+func _draw_caption(tier: int, total: int) -> void:
+	# At-a-glance empire state — readable over the busy skyline.
+	var font := ThemeDB.fallback_font
+	var txt := "TIER %d · %d SPOTS" % [tier, total]
+	var col := Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.6)
+	draw_string(font, Vector2(9.0, 16.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0, 0, 0, 0.55))
+	draw_string(font, Vector2(8.0, 15.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, col)
 
 
 func _draw_district_strip(ground_y: float, slots: Array) -> void:

@@ -228,7 +228,11 @@ static func territory_economy_scale(state) -> float:
 		int(state.prestige_count), float(state.next_prestige_earnings))
 	if required <= 0.0:
 		return 1.0
-	return minf(1.0, pow(float(state.prestige_route_earnings) / required, 2.0))
+	var ratio: float = float(state.prestige_route_earnings) / required
+	return minf(
+		GameConfig.TERRITORY_ECONOMY_SCALE_MAX,
+		pow(ratio, GameConfig.TERRITORY_ECONOMY_SCALE_EXPONENT),
+	)
 
 
 static func territory_income_mult(territories: Array, state = null) -> float:
@@ -236,7 +240,7 @@ static func territory_income_mult(territories: Array, state = null) -> float:
 	for t in territories:
 		if typeof(t) == TYPE_DICTIONARY and bool(t.get("unlocked", false)):
 			bonus += float(t.get("income_bonus", 0.0))
-	return 1.0 + minf(bonus, 0.25) * territory_economy_scale(state)
+	return 1.0 + minf(bonus, GameConfig.TERRITORY_INCOME_BONUS_CAP) * territory_economy_scale(state)
 
 
 static func territory_click_mult(territories: Array, state = null) -> float:
@@ -348,7 +352,7 @@ static func success_chance(state, territory: Dictionary, action: String) -> floa
 	crew_bonus += _PrestigeTree.territory_action_bonus(state)
 	crew_bonus += _DragonSystem.territory_action_modifier(state, action)
 	var inf_bonus: float = minf(float(state.prestige_tokens) * 0.01, 0.25)
-	inf_bonus += Prestige.rank_territory_bonus(state.prestige_tokens)
+	inf_bonus += Prestige.rank_territory_bonus(state.lifetime_tokens)
 	inf_bonus += state.bw_negotiate_bonus if action == "negotiate" else 0.0
 	var base: float = 0.5
 	match action:

@@ -1,0 +1,31 @@
+; Engine configuration file.
+
+config_version=5
+
+[application]
+
+config/name="Turf Autobattler"
+config/description="2.5D criminal turf auto-battler — sim-first Godot project"
+config/version="0.1.0"
+run/main_scene="res://presentation/scenes/main_menu/main_menu.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+RunBridge="*res://presentation/autoload/run_bridge.gd"
+AudioDirector="*res://presentation/autoload/audio_director.gd"
+SaveStore="*res://presentation/autoload/save_store.gd"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/handheld/orientation="portrait"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.08, 0.09, 0.12, 1)

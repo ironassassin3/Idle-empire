@@ -159,9 +159,16 @@ func is_autobuy_message(message: String) -> bool:
 	return (
 		message.contains("Mechanic")
 		or message.contains("Accountant")
-		or message.contains("Smuggler:")
+		or message.contains("Smuggler")
 		or message.contains("auto-buy")
+		or message.contains("Perk auto-buy")
+		or message.contains("Auto-upgrade")
+		or message.contains("Raid blocked")
+		or message.contains("Carl dumped")
+		or message.contains("Sal caught")
 		or message.contains("secured a new asset")
+		or message.contains("ordered another")
+		or message.contains("bought ")
 	)
 
 

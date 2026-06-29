@@ -34,18 +34,24 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _heat_bar: ProgressBar = $Root/VBox/StatusStrip/HeatRow/HeatBar
 @onready var _heat_label: Label = $Root/VBox/StatusStrip/HeatRow/HeatLabel
 @onready var _coin_btn: Button = $Root/VBox/StatusStrip/StatusRow/CoinBtn
+@onready var _heat_row: HBoxContainer = $Root/VBox/StatusStrip/HeatRow
+@onready var _automation_row: HBoxContainer = $Root/VBox/StatusStrip/AutomationRow
+@onready var _automation_label: Label = $Root/VBox/StatusStrip/AutomationRow/AutomationLabel
 @onready var _shield_label: Label = $Root/VBox/StatusStrip/StatusRow/ShieldLabel
 @onready var _city_view: Control = $Root/VBox/CityViewport/CityView
 @onready var _hustle_band: Control = $Root/VBox/HustleBand
 @onready var _click_info: Label = $Root/VBox/StatusStrip/StatusRow/ClickInfo
 @onready var _prestige_btn: Button = $Root/VBox/StatusStrip/PrestigeRow/PrestigeBtn
+@onready var _prestige_bar: ProgressBar = $Root/VBox/StatusStrip/PrestigeRow/PrestigeBar
 @onready var _prestige_info: Label = $Root/VBox/StatusStrip/PrestigeRow/PrestigeInfo
+@onready var _prestige_gate_btn: Button = $Root/VBox/StatusStrip/PrestigeGateRow
+@onready var _prestige_gate_label: Label = $Root/VBox/StatusStrip/PrestigeGateRow/HBox/PrestigeGateLabel
+@onready var _prestige_gate_bar: ProgressBar = $Root/VBox/StatusStrip/PrestigeGateRow/HBox/PrestigeGateBar
 @onready var _buff_label: Label = $Root/VBox/StatusStrip/StatusRow/BuffLabel
 @onready var _city_viewport: Control = $Root/VBox/CityViewport
 @onready var _status_strip: VBoxContainer = $Root/VBox/StatusStrip
 @onready var _status_row: HBoxContainer = $Root/VBox/StatusStrip/StatusRow
 @onready var _prestige_row: HBoxContainer = $Root/VBox/StatusStrip/PrestigeRow
-@onready var _heat_row: HBoxContainer = $Root/VBox/StatusStrip/HeatRow
 # Bottom nav bar (5 primary tabs) + Turf subtab bar + header gear.
 @onready var _bottom_bar: HBoxContainer = $Root/VBox/BottomBar
 @onready var _header: HBoxContainer = $Root/VBox/Header
@@ -145,6 +151,7 @@ var _notif_shell: PanelContainer
 var _tutorial_shell: PanelContainer
 var _overlay_kind: String = ""
 var _active_overlay_kind: String = ""
+var _fps_debug: Label
 var _overlay_shown_at: int = 0
 var _tab_badge_snapshot: Dictionary = {}
 var _tab_badge_impressions: Dictionary = {}
@@ -201,9 +208,16 @@ func _ready() -> void:
 	_set_tab(Tab.BLDGS)
 	GameState.stats_changed.connect(func(): _stats_dirty = true)
 	GameState.notification.connect(_on_notification)
+	# Prestige clears purchased upgrades, but the upgrade buy-list is only rebuilt
+	# on init / manual buy (it skips purchased rows). Without this, post-prestige
+	# the reset upgrades stay missing from the list and look "kept". Buildings /
+	# managers self-update by index, so only the upgrade list needs a rebuild.
+	GameState.prestiged.connect(_on_prestiged)
 	_hustle_band.hustle_pressed.connect(_on_hustle)
 	_coin_btn.pressed.connect(_on_coin)
 	_prestige_btn.pressed.connect(_on_prestige)
+	_prestige_gate_btn.pressed.connect(_on_prestige)
+	_setup_prestige_progress_bars()
 	_buy_mult_chip.pressed.connect(_on_buy_mult_chip)
 	_advice_chip.pressed.connect(_on_advice_chip)
 	_tab_bldgs.pressed.connect(func(): _open_tab(Tab.BLDGS))
@@ -237,6 +251,7 @@ func _ready() -> void:
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
 	_setup_tutorial_banner_dismiss()
+	_ensure_fps_debug_label()
 	_refresh_all()
 	Telemetry.log_event("ui_session_start", {"tab": _tab_name(_tab)})
 
@@ -422,6 +437,8 @@ func _apply_city_v2_status_strip() -> void:
 	_shield_label.add_theme_color_override("font_color", GameTheme.BLUE_BRIGHT)
 	_buff_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
 	_buff_label.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_automation_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_automation_label.add_theme_color_override("font_color", GameTheme.GREEN)
 	_status_strip.add_theme_constant_override("separation", 2)
 	var bar_bg := StyleBoxFlat.new()
 	bar_bg.bg_color = Color("1a1520")
@@ -447,6 +464,13 @@ func _apply_city_v2_status_strip() -> void:
 		_dragon_chip.add_theme_stylebox_override("pressed", GameTheme.make_chip_flat(true))
 		_dragon_chip.pressed.connect(_on_dragon_chip)
 		_heat_row.add_child(_dragon_chip)
+	_prestige_gate_btn.visible = true
+	_prestige_gate_btn.text = ""
+	_prestige_gate_btn.custom_minimum_size = Vector2(0, 30)
+	_prestige_gate_btn.add_theme_stylebox_override("normal", GameTheme.make_ink_chip_flat(false))
+	_prestige_gate_btn.add_theme_stylebox_override("hover", GameTheme.make_ink_chip_flat(true))
+	_prestige_gate_btn.add_theme_stylebox_override("pressed", GameTheme.make_ink_chip_flat(true))
+	_prestige_gate_btn.add_theme_stylebox_override("focus", GameTheme.make_ink_chip_flat(false))
 
 
 func _restore_status_strip() -> void:
@@ -473,6 +497,7 @@ func _restore_status_strip() -> void:
 		_heat_bar.remove_theme_stylebox_override(part)
 	if _dragon_chip:
 		_dragon_chip.visible = false
+	_prestige_gate_btn.visible = false
 
 
 func _on_dragon_chip() -> void:
@@ -803,7 +828,7 @@ func _refresh_city_view(overlay_blocking: bool) -> void:
 		total,
 		GameState.heat,
 		_districts_owned(),
-		GameState.prestige_tokens,
+		GameState.lifetime_tokens,
 		_city_top_building_keys(),
 		_city_district_slots(),
 	)
@@ -820,8 +845,10 @@ func _open_turf() -> void:
 
 func _set_turf_subtab(tab: Tab) -> void:
 	if tab == Tab.CREW and not _CrewSystem.is_unlocked(GameState):
+		GameState.notification.emit(_CrewSystem.unlock_requirement_text(GameState), GameTheme.TEXT_MUTED)
 		return
 	if tab == Tab.OPS and not _OperationSystem.is_unlocked(GameState):
+		GameState.notification.emit(_OperationSystem.unlock_requirement_text(GameState), GameTheme.TEXT_MUTED)
 		return
 	_set_tab(tab)
 
@@ -831,8 +858,8 @@ func _refresh_turf_subbar() -> void:
 	var ops_unlocked: bool = _OperationSystem.is_unlocked(GameState)
 	_sub_territory.disabled = _tab == Tab.TURF
 	_sub_rivals.disabled = _tab == Tab.RIVALS
-	_sub_crew.disabled = (_tab == Tab.CREW) or not crew_unlocked
-	_sub_ops.disabled = (_tab == Tab.OPS) or not ops_unlocked
+	_sub_crew.disabled = _tab == Tab.CREW
+	_sub_ops.disabled = _tab == Tab.OPS
 
 
 ## Toggle a tab's scroll visibility. Under the rustic theme each scroll is wrapped
@@ -937,6 +964,38 @@ func _process(delta: float) -> void:
 			AudioManager.update_music_context({"heat": GameState.heat, "tab": _tab})
 	if _click_scale < 1.0:
 		_click_scale = minf(1.0, _click_scale + _CLICK_SCALE_RATE * delta)
+	_refresh_fps_debug()
+
+
+func _ensure_fps_debug_label() -> void:
+	if _fps_debug != null:
+		return
+	_fps_debug = Label.new()
+	_fps_debug.name = "FpsDebug"
+	_fps_debug.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fps_debug.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_fps_debug.offset_left = -88.0
+	_fps_debug.offset_top = 2.0
+	_fps_debug.offset_right = -4.0
+	_fps_debug.offset_bottom = 18.0
+	_fps_debug.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_fps_debug.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	_fps_debug.add_theme_color_override("font_color", GameTheme.GREEN)
+	_header.add_child(_fps_debug)
+	_fps_debug.visible = false
+
+
+func _refresh_fps_debug() -> void:
+	if _fps_debug == null:
+		return
+	if not GameState.show_debug_fps:
+		_fps_debug.visible = false
+		return
+	_fps_debug.visible = true
+	var fps: float = Engine.get_frames_per_second()
+	var col := GameTheme.GREEN if fps >= 30.0 else GameTheme.RED
+	_fps_debug.add_theme_color_override("font_color", col)
+	_fps_debug.text = "%.0f FPS" % fps
 
 
 func _refresh_overlays() -> void:
@@ -959,7 +1018,7 @@ func _refresh_overlays() -> void:
 		if _tutorial_shell:
 			_tutorial_shell.visible = true
 		var tut: String = _TutorialSystem.current_text(GameState)
-		_tutorial_banner.text = tut + "\n(tap to dismiss)"
+		_tutorial_banner.text = tut + "\n(tap to continue)"
 	else:
 		_tutorial_banner.visible = false
 		if _tutorial_shell:
@@ -1238,12 +1297,15 @@ func _refresh_all() -> void:
 	var rank_full := "%s · %d Inf" % [GameState.rank_label(), GameState.prestige_tokens]
 	_rank.text = GameTheme.truncate(rank_full, 18)
 	_buy_mult_chip.text = GameState.buy_mult_label()
-	var hint := GameState.next_purchase_hint()
+	_buy_mult_chip.tooltip_text = "Buy quantity: ×1, ×10, or Max affordable"
+	var hint := _GoalSystem.next_focus_hint(GameState)
+	if hint.is_empty():
+		hint = GameState.next_purchase_hint()
 	if hint.is_empty():
 		_advice_chip.visible = false
 	else:
 		_advice_chip.visible = true
-		_advice_chip.text = GameTheme.truncate("▸ %s" % hint, 16)
+		_advice_chip.text = GameTheme.truncate("▸ %s" % hint, 24)
 	_heat_bar.value = GameState.heat
 	var heat_col := GameTheme.GREEN if GameState.heat < 60.0 else GameTheme.RED
 	if GameTheme.is_city_v2_active():
@@ -1255,32 +1317,144 @@ func _refresh_all() -> void:
 		heat_txt += "  ·  autopilot ≤%.0f%%" % _ManagerSystem.promoter_heat_target(GameState)
 	_heat_label.text = heat_txt
 	_heat_label.add_theme_color_override("font_color", heat_col)
+	_heat_label.tooltip_text = "Heat rises with income. Above 60% risks police raids that seize cash."
 	_click_info.text = "Click: %s" % FormatUtil.format_money(GameState.click_value())
 	if not GameTheme.is_city_v2_active():
 		_click_info.visible = true
-	_prestige_btn.disabled = not GameState.can_prestige()
-	if GameTheme.is_city_v2_active():
-		var pcol := GameTheme.GOLD_BRIGHT if GameState.can_prestige() else GameTheme.TEXT_MUTED
-		_prestige_btn.add_theme_color_override("font_color", pcol)
-	var req := Prestige.prestige_earnings_required(GameState.prestige_count, GameState.next_prestige_earnings)
-	var prestige_lines: PackedStringArray = PackedStringArray([
-		"Prestige: %s / %s lifetime" % [
-			FormatUtil.format_money(GameState.lifetime_earnings),
-			FormatUtil.format_money(req),
-		],
-	])
-	var adv: Dictionary = _ManagerSystem.prestige_advice(GameState)
-	if not adv.is_empty():
-		prestige_lines.append("%s — %s" % [adv.get("source", "Advisor"), adv.get("recommend", "")])
-		if adv.has("summary"):
-			prestige_lines.append(str(adv.get("summary")))
-	_prestige_info.text = "\n".join(prestige_lines)
+	var can_p: bool = GameState.can_prestige()
+	_refresh_prestige_progress(can_p)
 	_refresh_turf_header()
 	_refresh_rivals_tab()
 	_refresh_crew_tab()
 	_refresh_ops_tab()
 	_refresh_tab_badges()
 	_refresh_dragon_hud()
+	_refresh_automation_strip()
+
+
+func _setup_prestige_progress_bars() -> void:
+	for bar in [_prestige_bar, _prestige_gate_bar]:
+		bar.max_value = 100.0
+		bar.show_percentage = false
+		var bar_bg := StyleBoxFlat.new()
+		bar_bg.bg_color = Color("1a1520")
+		bar_bg.set_corner_radius_all(3)
+		bar.add_theme_stylebox_override("background", bar_bg)
+		var bar_fill := StyleBoxFlat.new()
+		bar_fill.bg_color = GameTheme.GOLD
+		bar_fill.set_corner_radius_all(3)
+		bar.add_theme_stylebox_override("fill", bar_fill)
+
+
+func _refresh_prestige_progress(can_p: bool = GameState.can_prestige()) -> void:
+	var summary: Dictionary = Prestige.gate_progress_summary(GameState)
+	var pct: int = int(summary.get("pct", 0))
+	var route: float = float(summary.get("route", 0.0))
+	var required: float = float(summary.get("required", 0.0))
+	var blockers: PackedStringArray = summary.get("blockers", PackedStringArray())
+	var gain: int = int(summary.get("influence_gain", 0))
+	var tooltip := _prestige_gate_tooltip()
+
+	_prestige_btn.disabled = false
+	_prestige_btn.tooltip_text = tooltip
+	var pcol := GameTheme.GOLD_BRIGHT if can_p else GameTheme.TEXT_MUTED
+	if GameTheme.is_city_v2_active():
+		_prestige_btn.add_theme_color_override("font_color", pcol)
+		_prestige_btn.text = Prestige.compact_gate_label(GameState)
+	else:
+		_prestige_btn.text = "PRESTIGE" if can_p else "PRESTIGE %d%%" % pct
+		_prestige_btn.add_theme_color_override("font_color", pcol)
+
+	var headline: String
+	if can_p:
+		headline = "READY — tap for prestige tree (+%d Inf)" % gain if gain > 0 else "READY — tap to prestige"
+	else:
+		headline = "Prestige %d%% · Empire %s / %s" % [
+			pct,
+			FormatUtil.format_money(route),
+			FormatUtil.format_money(required),
+		]
+		if not blockers.is_empty():
+			headline += " · " + ", ".join(blockers)
+
+	_prestige_gate_label.text = GameTheme.truncate(headline, 56)
+	_prestige_gate_btn.tooltip_text = tooltip
+	_prestige_gate_btn.visible = GameTheme.is_city_v2_active()
+	var gate_col := GameTheme.GOLD_BRIGHT if can_p else GameTheme.TEXT
+	_prestige_gate_label.add_theme_color_override("font_color", gate_col)
+	_prestige_gate_bar.value = float(pct)
+	_prestige_bar.value = float(pct)
+	_prestige_bar.visible = not GameTheme.is_city_v2_active()
+	var gate_fill := _prestige_gate_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if gate_fill != null:
+		gate_fill.bg_color = GameTheme.GOLD_BRIGHT if can_p else GameTheme.GOLD
+	var legacy_fill := _prestige_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if legacy_fill != null:
+		legacy_fill.bg_color = GameTheme.GOLD_BRIGHT if can_p else GameTheme.GOLD
+
+	var prestige_lines: PackedStringArray = PackedStringArray([
+		"Empire route: %s / %s (%d%%)" % [
+			FormatUtil.format_money(route),
+			FormatUtil.format_money(required),
+			pct,
+		],
+	])
+	if can_p and gain > 0:
+		prestige_lines.append("Ready — +%d Influence at prestige" % gain)
+	elif not blockers.is_empty():
+		prestige_lines.append("Still need: " + ", ".join(blockers))
+	var adv: Dictionary = _ManagerSystem.prestige_advice(GameState)
+	if not adv.is_empty():
+		prestige_lines.append("%s — %s" % [adv.get("source", "Advisor"), adv.get("recommend", "")])
+		if adv.has("summary"):
+			prestige_lines.append(str(adv.get("summary")))
+	_prestige_info.text = "\n".join(prestige_lines)
+
+
+func _prestige_gate_tooltip() -> String:
+	var reqs: Dictionary = Prestige.check_requirements(GameState)
+	var earn: Dictionary = reqs.get("earnings", {})
+	var lines: PackedStringArray = PackedStringArray([
+		"Empire route income (buildings + clicks only): %s / %s" % [
+			FormatUtil.format_money(float(earn.get("current", 0.0))),
+			FormatUtil.format_money(float(earn.get("required", 0.0))),
+		],
+	])
+	for key in ["dealers", "rackets", "chops"]:
+		if reqs.has(key):
+			var r: Dictionary = reqs[key]
+			if not bool(r.get("met", true)):
+				lines.append("%s: %d / %d" % [key.capitalize(), int(r.get("current", 0)), int(r.get("required", 0))])
+	if reqs.has("rank") and not bool(reqs["rank"].get("met", true)):
+		lines.append("Rank: need %s" % str(reqs["rank"].get("required", "")))
+	if reqs.has("branch") and not bool(reqs["branch"].get("met", true)):
+		lines.append("Choose a prestige path")
+	elif reqs.has("branch_perk") and not bool(reqs["branch_perk"].get("met", true)):
+		lines.append("Buy a tier-1 perk in your path")
+	var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
+	if gain > 0:
+		lines.append("+%d Influence at prestige" % gain)
+	return "\n".join(lines)
+
+
+func _refresh_automation_strip() -> void:
+	var info: Dictionary = _ManagerSystem.automation_strip(GameState)
+	var visible: bool = bool(info.get("visible", false))
+	_automation_row.visible = visible
+	if not visible:
+		return
+	var flash: String = str(info.get("flash", ""))
+	var summary: String = str(info.get("summary", ""))
+	if not flash.is_empty():
+		_automation_label.text = GameTheme.truncate("▸ %s" % flash, 52)
+		_automation_label.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+		if not GameTheme.ui_reduced_motion():
+			var pulse: float = 0.75 + 0.25 * sin(_ui_time * 4.0)
+			_automation_label.modulate = Color(1.0, 1.0, 1.0, pulse)
+	else:
+		_automation_label.text = GameTheme.truncate(summary, 56)
+		_automation_label.add_theme_color_override("font_color", GameTheme.GREEN)
+		_automation_label.modulate = Color.WHITE
 
 
 func _refresh_dragon_hud() -> void:
@@ -1565,6 +1739,13 @@ func _on_coin() -> void:
 func _on_buy(index: int, qty: int) -> void:
 	var before: int = GameState.total_buildings_owned()
 	if not GameState.buy_building(index, qty):
+		if index >= 0 and index < GameState.buildings.size():
+			var b = GameState.buildings[index]
+			var cost: float = b.cost_for_n(qty)
+			GameState.notification.emit(
+				"Need %s for %s ×%d" % [FormatUtil.format_money(cost), b.display_name, qty],
+				GameTheme.TEXT_MUTED,
+			)
 		return
 	var ms := GameState.record_first_building_buy_ms()
 	if ms >= 0:
@@ -1580,8 +1761,22 @@ func _on_buy_mult_chip() -> void:
 
 
 func _on_advice_chip() -> void:
-	var hint := GameState.next_purchase_hint()
+	if GameState.can_prestige():
+		_on_prestige()
+		return
+	var hint := _GoalSystem.next_focus_hint(GameState)
 	if hint.is_empty():
+		hint = GameState.next_purchase_hint()
+	if hint.is_empty():
+		return
+	if "Upgrades" in hint:
+		_open_tab(Tab.UPGRS)
+		return
+	if "Manager" in hint:
+		_open_tab(Tab.MGRS)
+		return
+	if "Turf" in hint or "district" in hint:
+		_open_tab(Tab.TURF)
 		return
 	for i in GameState.upgrades.size():
 		if GameState.can_buy_upgrade(i) and GameState.upgrades[i].display_name == hint:
@@ -1643,6 +1838,12 @@ func _on_prestige() -> void:
 	_prestige_tree.open()
 
 
+func _on_prestiged(_info: Dictionary) -> void:
+	# Rebuild the upgrade buy-list so reset upgrades reappear (see _ready connect).
+	_refresh_upgrade_list()
+	_stats_dirty = true
+
+
 func _exit_tree() -> void:
 	GameState.set_simulation_active(false)
 
@@ -1661,9 +1862,10 @@ func _on_notification(message: String, color: Color) -> void:
 	var is_autobuy: bool = AudioManager.is_autobuy_message(message)
 	if is_goal or is_autobuy:
 		_notif.add_theme_font_size_override("font_size", maxi(_notif_default_font_size + 2, 15))
-		_notif_timer = 4.0 if is_goal else 3.5
+		_notif_timer = 4.0 if is_goal else 4.0
 		if is_autobuy:
 			_notif.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+			_refresh_automation_strip()
 	else:
 		_notif.add_theme_font_size_override("font_size", _notif_default_font_size)
 		_notif_timer = 2.5
@@ -1757,6 +1959,11 @@ func _build_config_tab() -> void:
 		SaveManager.save_game()
 	)
 	_add_cycle_row("FPS Cap", ["30", "60", "120"], [30, 60, 120].find(GameState.fps_cap), func(i): _set_fps_cap(i))
+	_add_cycle_row("Show FPS", ["OFF", "ON"], 1 if GameState.show_debug_fps else 0, func(i):
+		GameState.show_debug_fps = i == 1
+		_refresh_fps_debug()
+		SaveManager.save_game()
+	)
 	_add_cycle_row("Particles / motion", ["ON", "OFF"], 0 if GameState.show_particles else 1, func(i):
 		GameState.show_particles = i == 0
 		SaveManager.save_game()

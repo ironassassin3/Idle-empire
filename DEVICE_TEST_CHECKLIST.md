@@ -4,6 +4,21 @@ Everything below was implemented + verified headless, but needs a **rendered** r
 (desktop windowed) or a **real phone** to confirm. Grouped by where it's checkable.
 Tick items off; each notes which phase criterion it closes.
 
+## Quick start
+
+```powershell
+cd d:\2d_game
+.\device_pass.ps1 check      # toolchain status
+.\device_pass.ps1 smoke      # headless soak (no phone)
+.\device_pass.ps1 run          # export APK + install on Moto G (after toolchain green)
+```
+
+**Godot path:** `E:\Downloads\Godot_v4.6.3-stable_win64.exe` (or set `$env:GODOT_BIN`).
+
+**On device FPS gate:** Config → **Show FPS → ON** (green ≥30, red below). Walk section B below.
+
+Full Android setup: [`ANDROID_SETUP.md`](ANDROID_SETUP.md).
+
 **Launch (desktop windowed):**
 - Godot editor → open `d:\2d_game\godot\project.godot` → F5 (runs `main_menu.tscn`), or
 - CLI: `"E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path godot`

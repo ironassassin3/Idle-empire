@@ -301,8 +301,9 @@ static func tick_perk_effects(state, dt: float) -> Array[String]:
 		state.perk_autobuy_timer += dt
 		if state.perk_autobuy_timer >= PERK_AUTO_INTERVAL:
 			state.perk_autobuy_timer = 0.0
-			if _ManagerSystem._auto_buy_best(state):
-				messages.append("Perk auto-buy secured an asset")
+			var bought: String = _ManagerSystem._auto_buy_best(state)
+			if not bought.is_empty():
+				messages.append("Perk auto-buy: %s" % bought)
 	if state.perk_auto_upgrade:
 		state.perk_autoupg_timer += dt
 		if state.perk_autoupg_timer >= PERK_AUTO_INTERVAL:

@@ -284,35 +284,37 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 
 
 func _refresh_lock_strip() -> void:
+	var summary: Dictionary = Prestige.gate_progress_summary(GameState)
+	var pct: int = int(summary.get("pct", 0))
+	var route: float = float(summary.get("route", 0.0))
+	var required: float = float(summary.get("required", 0.0))
+	var gain: int = int(summary.get("influence_gain", 0))
+	var blockers: PackedStringArray = summary.get("blockers", PackedStringArray())
 	if GameState.can_prestige():
-		_lock_label.text = ""
+		var line := "PRESTIGE READY — Empire %s / %s" % [
+			FormatUtil.format_money(route),
+			FormatUtil.format_money(required),
+		]
+		if gain > 0:
+			line += "  (+ %d Influence)" % gain
+		_lock_label.text = line
 		return
-	var reqs: Dictionary = Prestige.check_requirements(GameState)
-	var earn: Dictionary = reqs["earnings"]
-	var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
-	var line := "PRESTIGE LOCKED — Empire %s / %s" % [
-		FormatUtil.format_money(float(earn.get("current", 0.0))),
-		FormatUtil.format_money(float(earn.get("required", 0.0))),
+	var line := "PRESTIGE %d%% — Empire %s / %s" % [
+		pct,
+		FormatUtil.format_money(route),
+		FormatUtil.format_money(required),
 	]
 	if gain > 0:
 		line += "  (+ %d Influence at prestige)" % gain
-	var parts: PackedStringArray = PackedStringArray()
-	for key in ["dealers", "rackets", "chops"]:
-		if reqs.has(key):
-			var r: Dictionary = reqs[key]
-			parts.append("%s %d/%d" % [key.capitalize(), int(r.get("current", 0)), int(r.get("required", 0))])
-	if reqs.has("rank"):
-		var r: Dictionary = reqs["rank"]
-		parts.append("Rank: %s" % r.get("required", ""))
-	if not parts.is_empty():
-		line += "\n" + "  ·  ".join(parts)
+	if not blockers.is_empty():
+		line += "\nStill need: " + ", ".join(blockers)
 	_lock_label.text = line
 
 
 func _refresh_prestige_button() -> void:
 	var can: bool = GameState.can_prestige()
 	_prestige_btn.disabled = not can
-	_prestige_btn.text = "PRESTIGE" if can else "PRESTIGE (locked)"
+	_prestige_btn.text = "PRESTIGE NOW" if can else "PRESTIGE %d%%" % Prestige.gate_progress_pct(GameState)
 
 
 func _on_branch_pressed(branch: String) -> void:
@@ -355,7 +357,7 @@ func _on_prestige_pressed() -> void:
 	_prestige_gain.text = "Influence gain: +%d  ·  Income after: ×%.2f" % [
 		gain, Prestige.income_mult(tokens_after),
 	]
-	_prestige_rank.text = "New rank: %s" % Prestige.get_rank(tokens_after)
+	_prestige_rank.text = "New rank: %s" % Prestige.get_rank(GameState.lifetime_tokens + gain)
 	_prestige_dialog.visible = true
 
 

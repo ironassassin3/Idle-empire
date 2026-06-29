@@ -121,7 +121,9 @@ for k in ['ct_supply', 'ct_fast']:
 pt.apply_perks(ps4)
 check("Cartel op reward active (x1.30)", abs(pt.operation_reward_mult(ps4) - 1.30) < 1e-6)
 # Force prestige eligibility and execute.
-ps4.lifetime_earnings = max(ps4.lifetime_earnings, prestige.prestige_earnings_required(ps4) + 1)
+req = prestige.prestige_earnings_required(ps4) + 1
+ps4.lifetime_earnings = max(ps4.lifetime_earnings, req)
+ps4._prestige_route_earnings = max(float(getattr(ps4, '_prestige_route_earnings', 0.0)), req)
 ps4.buildings[0].owned = 25; ps4.buildings[1].owned = 10; ps4.buildings[2].owned = 5
 ps4.prestige_tokens = max(ps4.prestige_tokens, 12)  # Made Man rank gate
 ok_p = prestige.PrestigeManager.execute(ps4)
@@ -149,6 +151,25 @@ pt.select_branch(ps4, pt.CARTEL)
 pt.apply_perks(ps4)
 check("re-picking Cartel reactivates owned perks", abs(pt.operation_reward_mult(ps4) - 1.30) < 1e-6)
 check("Warlord now inactive", abs(ps4._perk_click_mult - 1.0) < 1e-6)
+
+# ── 9. Branch + perk required before 2nd+ prestige ──
+print("\n[9] BRANCH GATE ON REPEAT PRESTIGE")
+ps5 = fresh()
+ps5._prestige_count = 1
+ps5._next_prestige_earnings = prestige.FIRST_PRESTIGE_EARNINGS * prestige.PRESTIGE_EARNINGS_GROWTH
+req2 = prestige.prestige_earnings_required(ps5) + 1
+ps5.lifetime_earnings = req2
+ps5._prestige_route_earnings = req2
+ps5.buildings[0].owned = prestige.POST_PRESTIGE_DEALERS
+ps5.buildings[1].owned = prestige.POST_PRESTIGE_RACKETS
+ps5.buildings[2].owned = prestige.POST_PRESTIGE_CHOPS
+check("2nd prestige blocked with no branch", not prestige.can_prestige(ps5))
+pt.select_branch(ps5, pt.KINGPIN)
+check("still blocked: branch chosen but no perk bought", not prestige.can_prestige(ps5))
+ps5.prestige_tokens = 10
+ps5.perks_purchased.append('kp_cashflow')
+pt.apply_perks(ps5)
+check("2nd prestige allowed after path + tier-1 perk", prestige.can_prestige(ps5))
 
 print("\n" + "=" * 64)
 print(f"RESULT: {len(PASS)} passed, {len(FAIL)} failed")

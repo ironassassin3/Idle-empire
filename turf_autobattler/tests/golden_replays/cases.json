@@ -1,0 +1,23 @@
+[
+  {
+    "name": "corner_vs_lookout",
+    "seed": 1001,
+    "expected_hash": 1098461159,
+    "player": [{"def_id": "corner_boy", "pos": [0, 0]}],
+    "enemy": [{"def_id": "lookout", "pos": [1, 0]}]
+  },
+  {
+    "name": "enforcer_fixer_vs_two_boys",
+    "seed": 1002,
+    "expected_hash": 1264905868,
+    "player": [{"def_id": "enforcer", "pos": [1, 0]}, {"def_id": "fixer", "pos": [2, 1]}],
+    "enemy": [{"def_id": "corner_boy", "pos": [0, 0]}, {"def_id": "corner_boy", "pos": [2, 0]}]
+  },
+  {
+    "name": "heavy_vs_medic_runner",
+    "seed": 1003,
+    "expected_hash": 1577338804,
+    "player": [{"def_id": "heavy", "pos": [1, 0]}],
+    "enemy": [{"def_id": "medic", "pos": [2, 1]}, {"def_id": "runner", "pos": [0, 1]}]
+  }
+]

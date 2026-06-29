@@ -5,6 +5,7 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 const _PrestigeTree = preload("res://scripts/systems/prestige_tree.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
+const _CrewSystem = preload("res://scripts/systems/crew_system.gd")
 const HEAT_MIN := 0.0
 const HEAT_MAX := 100.0
 const RAID_THRESHOLD := 60.0
@@ -30,6 +31,40 @@ static func heat_click_mult(heat: float) -> float:
 	return 1.0 + bonus
 
 
+## Net heat change per second (rise − decay − crew − promoter), for Carl forecast UI.
+static func net_rate_per_sec(state) -> float:
+	var total_bld := 0
+	for b in state.buildings:
+		total_bld += b.owned
+	var rise := (_PASSIVE_RISE + total_bld * _RISE_PER_BLD)
+	rise *= maxf(0.0, 1.0 - _TerritorySystem.territory_heat_resistance(state.territories))
+	rise *= _TerritorySystem.milestone_heat_mult(state)
+	rise *= _ManagerSystem.heat_gain_mult(state)
+	if state.buildings.size() > 7:
+		var clubs: int = state.buildings[7].owned
+		if clubs > 0:
+			rise -= 0.5 * float(clubs)
+	var decay := (
+		_NATURAL_DECAY
+		+ Prestige.rank_heat_decay_bonus(state.lifetime_tokens)
+		+ _PrestigeTree.heat_decay_bonus(state)
+		+ _DragonSystem.heat_decay_bonus(state)
+		- _DragonSystem.heat_decay_penalty(state)
+	)
+	if _ManagerSystem.manager_active(state, "The Promoter"):
+		var target: float = _ManagerSystem.promoter_heat_target(state)
+		if state.heat > target:
+			decay += minf(state.heat - target, 20.0) * 0.06
+	decay += _CrewSystem.heat_reduction_per_sec(state.crew)
+	return rise - decay
+
+
+static func forecast_delta(state, horizon_sec: float = 120.0) -> float:
+	var current: float = float(state.heat)
+	var end: float = clampf(current + net_rate_per_sec(state) * horizon_sec, HEAT_MIN, HEAT_MAX)
+	return end - current
+
+
 static func update(state, dt: float, rng: RandomNumberGenerator) -> Array[String]:
 	var events: Array[String] = []
 	var heat_before: float = state.heat
@@ -46,7 +81,7 @@ static func update(state, dt: float, rng: RandomNumberGenerator) -> Array[String
 			rise -= 0.5 * float(clubs) * dt
 	var decay := (
 		_NATURAL_DECAY
-		+ Prestige.rank_heat_decay_bonus(state.prestige_tokens)
+		+ Prestige.rank_heat_decay_bonus(state.lifetime_tokens)
 		+ _PrestigeTree.heat_decay_bonus(state)
 		+ _DragonSystem.heat_decay_bonus(state)
 		- _DragonSystem.heat_decay_penalty(state)

@@ -26,10 +26,15 @@ signal ranked_up(rank: String)
 signal run_started(info: Dictionary)
 signal tutorial_advanced(step: int)
 
+# Core economy / prestige currency
 var balance: float = 0.0
 var lifetime_earnings: float = 0.0
 var prestige_route_earnings: float = 0.0  # passive + clicks only — prestige gate
 var prestige_tokens: int = 0
+# Total Influence ever earned (monotonic high-water mark). Rank is derived from
+# THIS, not the spendable balance, so spending Influence on perks/dragons never
+# lowers your rank (which previously could re-lock the first-prestige rank gate).
+var lifetime_tokens: int = 0
 var prestige_count: int = 0
 var next_prestige_earnings: float = 0.0
 var arms_influence_frac: float = 0.0  # Arms Broker special: fractional Influence accrual
@@ -92,6 +97,10 @@ var autobuy_timer: float = 0.0
 var broker_retry_cd: float = 0.0
 var smuggler_timer: float = 0.0
 var smuggler_notified: Array = []
+var mechanic_autobuys: int = 0
+var accountant_autobuys: int = 0
+var automation_flash: String = ""
+var automation_flash_timer: float = 0.0
 
 # Events / goals / tutorial (P4)
 var buffs: Array = []
@@ -112,15 +121,23 @@ var shown_crew_tutorial: bool = false
 var shown_territory_tutorial: bool = false
 var shown_rivals_tutorial: bool = false
 var shown_heat_warning: bool = false
+
+# Blackwater (rival) action bonuses
 var bw_attack_bonus: float = 0.0
 var bw_negotiate_bonus: float = 0.0
+
+# Rival elimination overlay
 var elim_overlay_active: bool = false
 var elim_overlay_name: String = ""
 var elim_overlay_flavor: String = ""
 var elim_overlay_rewards: String = ""
 var elim_overlay_timer: float = 0.0
+
+# Active-click runtime (Hustle window + last-crit flag)
 var recent_clicks: Array = []
 var last_click_crit: bool = false
+
+# Rank-up tracking
 var _last_rank: String = ""
 var _rank_tracking_ready: bool = false
 
@@ -131,6 +148,7 @@ var music_volume: float = 0.5
 var mute_all: bool = false
 var fps_cap: int = 60
 var show_particles: bool = true
+var show_debug_fps: bool = false
 var notifications_enabled: bool = false
 var telemetry_consent: bool = true
 var ui_text_scale: int = 0  # 0=100%, 1=125% (P14.6 a11y)
@@ -297,6 +315,7 @@ func reset_new_game() -> void:
 	lifetime_earnings = 0.0
 	prestige_route_earnings = 0.0
 	prestige_tokens = 0
+	lifetime_tokens = 0
 	arms_influence_frac = 0.0
 	prestige_count = 0
 	next_prestige_earnings = 0.0
@@ -334,14 +353,15 @@ func _apply_audio_settings() -> void:
 
 
 func _sync_rank_tracking() -> void:
-	_last_rank = Prestige.get_rank(prestige_tokens)
+	lifetime_tokens = maxi(lifetime_tokens, prestige_tokens)
+	_last_rank = Prestige.get_rank(lifetime_tokens)
 	_rank_tracking_ready = true
 
 
 func _check_rank_up() -> void:
 	if not _rank_tracking_ready or not simulation_active:
 		return
-	var current := Prestige.get_rank(prestige_tokens)
+	var current := Prestige.get_rank(lifetime_tokens)
 	if current == _last_rank:
 		return
 	_last_rank = current
@@ -367,6 +387,10 @@ func _process(delta: float) -> void:
 	_EventSystem.update_events(self, delta, _rng)
 	_TutorialSystem.tick_milestones(self, delta)
 	_TutorialSystem.tick_contextual(self)
+	if automation_flash_timer > 0.0:
+		automation_flash_timer = maxf(0.0, automation_flash_timer - delta)
+		if automation_flash_timer <= 0.0:
+			automation_flash = ""
 	if elim_overlay_active:
 		elim_overlay_timer -= delta
 		if elim_overlay_timer <= 0.0:
@@ -374,14 +398,18 @@ func _process(delta: float) -> void:
 	for msg in _TerritorySystem.tick_milestones(self):
 		_TutorialSystem.push_milestone(self, msg, 6.0)
 	for msg in _ManagerSystem.tick_manager_effects(self, delta):
+		push_automation_flash(msg)
 		notification.emit(msg, GameTheme.GREEN)
 	for msg in _OperationSystem.tick_smuggler_ops(self, delta):
 		var smug_col := GameTheme.GOLD_BRIGHT if msg.begins_with("Smuggler:") else GameTheme.GREEN
+		push_automation_flash(msg)
 		notification.emit(msg, smug_col)
 	for msg in HeatSystem.update(self, delta, _rng):
 		if msg.begins_with("Police raid") or msg.begins_with("Raid blocked"):
 			_TutorialSystem.on_police_raid(self)
 		var raid_col := GameTheme.GREEN if msg.begins_with("Raid blocked") else GameTheme.RED
+		if msg.begins_with("Raid blocked") or msg.begins_with("Carl dumped"):
+			push_automation_flash(msg)
 		notification.emit(msg, raid_col)
 	var crew_heat_decay: float = _CrewSystem.heat_reduction_per_sec(crew) * delta
 	if crew_heat_decay > 0.0:
@@ -393,6 +421,7 @@ func _process(delta: float) -> void:
 		var col := GameTheme.RED if msg.begins_with("RAID:") else GameTheme.TEXT_MUTED
 		notification.emit(msg, col)
 	for msg in _PrestigeTree.tick_perk_effects(self, delta):
+		push_automation_flash(msg)
 		notification.emit(msg, GameTheme.GREEN)
 	var ips := income_per_second()
 	if ips > peak_income:
@@ -415,9 +444,17 @@ func _process(delta: float) -> void:
 	if _autosave_timer >= GameConfig.AUTOSAVE_INTERVAL:
 		_autosave_timer = 0.0
 		SaveManager.save_game()
+	lifetime_tokens = maxi(lifetime_tokens, prestige_tokens)
 	_check_rank_up()
 	_mark_ips_dirty()
 	stats_changed.emit()
+
+
+func push_automation_flash(message: String, duration: float = 5.0) -> void:
+	if message.is_empty() or not _ManagerSystem.is_automation_notification(message):
+		return
+	automation_flash = message
+	automation_flash_timer = duration
 
 
 func _mark_ips_dirty() -> void:
@@ -447,7 +484,7 @@ func income_per_second() -> float:
 	mult *= _DragonSystem.eliminated_rival_income_mult(self)
 	mult *= 1.0 + _DragonSystem.active_ops_income_bonus(self)
 	mult *= 1.0 + Prestige.respect_income_bonus(influence) * _PrestigeTree.respect_income_mult(self)
-	mult *= 1.0 + Prestige.rank_income_bonus(prestige_tokens)
+	mult *= 1.0 + Prestige.rank_income_bonus(lifetime_tokens)
 	mult *= iap_income_mult
 	_ips_cached = base * mult
 	_ips_dirty = false
@@ -654,7 +691,7 @@ func hire_manager(index: int) -> bool:
 	var m := managers[index]
 	balance -= m.cost
 	m.hired = true
-	notification.emit("Hired %s" % m.display_name, GameTheme.GOLD)
+	notification.emit(_ManagerSystem.hire_notification(m.display_name, self), GameTheme.GOLD_BRIGHT)
 	_mark_ips_dirty()
 	stats_changed.emit()
 	return true
@@ -673,21 +710,17 @@ func do_prestige() -> bool:
 	raw_gain *= _DragonSystem.prestige_influence_mult(self)
 	var gain := maxi(1, int(round(raw_gain)))
 	prestige_tokens += gain
+	lifetime_tokens += gain
 	influence += gain
 	prestige_count += 1
-	if prestige_count == 1:
-		next_prestige_earnings = GameConfig.FIRST_PRESTIGE_EARNINGS * GameConfig.PRESTIGE_EARNINGS_GROWTH
-	else:
-		next_prestige_earnings = maxf(
-			next_prestige_earnings * GameConfig.PRESTIGE_EARNINGS_GROWTH,
-			prestige_route_earnings * 0.5,
-		)
+	next_prestige_earnings = prestige_route_earnings * GameConfig.PRESTIGE_EARNINGS_GROWTH
 	var _tele_cycle: float = play_time - _last_prestige_play_time
 	var _tele_route: float = float(prestige_route_earnings)
 	var _tele_branch: String = str(prestige_branch)
 	balance = 0.0
-	lifetime_earnings = 0.0
+	# lifetime_earnings accumulates across prestiges (pygame parity — drives Influence gain).
 	prestige_route_earnings = 0.0
+	heat = 0.0
 	for b in buildings:
 		b.owned = 0
 		b.income_multiplier = 1.0
@@ -707,6 +740,7 @@ func do_prestige() -> bool:
 	city_control_milestones = []
 	crew = _CrewSystem.default_crew()
 	operations = _OperationSystem.make_operations()
+	_GoalSystem.reset_for_prestige(goals)
 	_buildings_reset_specials()
 	peak_income = 0.0
 	_PrestigeTree.reset_branch(self)
@@ -734,7 +768,7 @@ func do_prestige() -> bool:
 
 
 func rank_label() -> String:
-	return Prestige.get_rank(prestige_tokens)
+	return Prestige.get_rank(lifetime_tokens)
 
 
 func total_buildings_owned() -> int:
@@ -819,6 +853,9 @@ func apply_save_data(data: Dictionary) -> void:
 	lifetime_earnings = _f(data, "lifetime_earnings", 0.0)
 	prestige_route_earnings = _f(data, "prestige_route_earnings", lifetime_earnings)
 	prestige_tokens = _i(data, "prestige_tokens", 0)
+	# Migration: old saves have no lifetime_tokens — seed from held balance so
+	# rank never reads lower than current Influence.
+	lifetime_tokens = maxi(prestige_tokens, _i(data, "lifetime_tokens", prestige_tokens))
 	arms_influence_frac = _f(data, "arms_influence_frac", 0.0)
 	prestige_count = _i(data, "prestige_count", 0)
 	next_prestige_earnings = _f(data, "next_prestige_earnings", 0.0)
@@ -878,6 +915,7 @@ func apply_save_data(data: Dictionary) -> void:
 	mute_all = _b(data, "mute_all", false)
 	fps_cap = _i(data, "fps_cap", 60)
 	show_particles = _b(data, "show_particles", true)
+	show_debug_fps = _b(data, "show_debug_fps", false)
 	ui_text_scale = clampi(_i(data, "ui_text_scale", 0), 0, 1)
 	notifications_enabled = _b(data, "notifications_enabled", false)
 	telemetry_consent = _b(data, "telemetry_consent", true)
@@ -976,6 +1014,7 @@ func to_save_data() -> Dictionary:
 		"lifetime_earnings": lifetime_earnings,
 		"prestige_route_earnings": prestige_route_earnings,
 		"prestige_tokens": prestige_tokens,
+		"lifetime_tokens": lifetime_tokens,
 		"arms_influence_frac": arms_influence_frac,
 		"prestige_count": prestige_count,
 		"next_prestige_earnings": next_prestige_earnings,
@@ -1027,6 +1066,7 @@ func to_save_data() -> Dictionary:
 		"mute_all": mute_all,
 		"fps_cap": fps_cap,
 		"show_particles": show_particles,
+		"show_debug_fps": show_debug_fps,
 		"ui_text_scale": ui_text_scale,
 		"notifications_enabled": notifications_enabled,
 		"telemetry_consent": telemetry_consent,
@@ -1185,6 +1225,7 @@ func collect_golden_coin(auto: bool = false) -> void:
 	coins_caught += 1
 	_play_sfx("coin")
 	if auto:
+		push_automation_flash("Sal caught a golden coin!")
 		notification.emit("Sal caught a golden coin!", GameTheme.GOLD)
 	var effects: Array[String] = ["frenzy", "lucky", "click_storm"]
 	var effect: String = effects[_rng.randi() % effects.size()]

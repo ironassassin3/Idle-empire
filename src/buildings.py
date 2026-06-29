@@ -130,40 +130,44 @@ class Building:
 # Corner Dealer keeps a slightly elevated 0.10 income (good first-impression feel
 # + it carries the click bonus); from Racket onward the curve follows
 #   inc = cost * 0.002 * 1.45^tier   (validated in sim_curve2.py / sim_econ.py).
-# Magnitude tuned (divisor 5 of the steeper draft) so first prestige lands in the
-# ~30-45 min window and all 11 tiers are reachable within a first session.
+# Magnitude tuned so first prestige lands in the ~45-60 min window and all 11
+# tiers are reachable within a first session. base_income was globally scaled by
+# 0.22 (from the original draft) after sim_pacing showed the prior values
+# exploded reinvestment and put first prestige at ~10 min; 0.22 lands first
+# prestige at ~47-51 min across casual→masher play (sim_pacing sweep). Keep the
+# relative inc/$ curve (rises per tier) intact — only the global magnitude moved.
 _DEFS = [
-    ("Corner Dealer",       10.0,          0.11,  1.15,
+    ("Corner Dealer",       10.0,          0.024,  1.15,
      "Moves product on the block",          "dealer",
      "Click bonus: +0.10 cash per dealer owned"),
-    ("Protection Racket",   150.0,          0.48,   1.18,
+    ("Protection Racket",   150.0,          0.106,   1.18,
      "Businesses pay for 'insurance'",      "racket",
      "Multiplies Corner Dealer income ×1.05 per racket"),
-    ("Chop Shop",           2_000.0,        9.24,   1.18,
+    ("Chop Shop",           2_000.0,        2.03,   1.18,
      "Cars in, parts out, no questions",    "chop",
      "10% chance each sec for a bonus payout (3× income)"),
-    ("Sports Betting Ring", 20_000.0,       134.2,  1.18,
+    ("Sports Betting Ring", 20_000.0,       29.5,  1.18,
      "The house always wins",               "betting",
      "Random jackpot every 30–90s: 60s of income instantly"),
-    ("Pawn Shop",           150_000.0,      1_330.0, 1.18,
+    ("Pawn Shop",           150_000.0,      293.0, 1.18,
      "No serial numbers, no problems",      "pawn",
      "Reduces all upgrade costs by 2% per pawn shop"),
-    ("Loan Shark Office",   1_200_000.0,    15_400.0, 1.20,
+    ("Loan Shark Office",   1_200_000.0,    3_390.0, 1.20,
      "Generous terms. Very generous.",      "loan",
      "Passive interest: +0.5% of balance per minute"),
-    ("Underground Casino",  10_000_000.0,   186_000.0, 1.20,
+    ("Underground Casino",  10_000_000.0,   40_900.0, 1.20,
      "High stakes, no tax man",             "casino",
      "Boosts manager effectiveness by +10% per casino"),
-    ("Nightclub",           80_000_000.0,   2_160_000.0, 1.20,
+    ("Nightclub",           80_000_000.0,   475_000.0, 1.20,
      "Laundromat with a dance floor",       "club",
      "Launders heat: -0.5 heat per second per nightclub"),
-    ("Dock Smuggling Op",   600_000_000.0,  23_400_000.0, 1.20,
+    ("Dock Smuggling Op",   600_000_000.0,  5_150_000.0, 1.20,
      "Containers of plausible deniability", "dock",
      "Multiplies all passive income by ×1.015 per dock"),
-    ("Arms Broker",         5_000_000_000.0, 283_000_000.0, 1.20,
+    ("Arms Broker",         5_000_000_000.0, 62_300_000.0, 1.20,
      "Supply and demand, emphasis supply",  "arms",
      "Generates 0.1 Influence fragments per hour per broker"),
-    ("Crime Syndicate HQ",  40_000_000_000.0, 3_290_000_000.0, 1.20,
+    ("Crime Syndicate HQ",  40_000_000_000.0, 724_000_000.0, 1.20,
      "The whole city answers to you",       "hq",
      "Global multiplier: ×1.1 all income per HQ owned"),
 ]
