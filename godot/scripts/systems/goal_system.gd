@@ -5,12 +5,12 @@ extends RefCounted
 const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 
 const _GOAL_DEFS: Array = [
-	["start_cash_5k", "First Real Money ($5K)", "", "early", "route", 5000.0, 500.0, 0, 2],
-	["start_cash_25k", "Getting Noticed ($25K)", "", "early", "route", 25000.0, 2000.0, 0, 1],
-	["start_cash_100k", "Six Figures ($100K)", "", "early", "route", 100000.0, 8000.0, 0, 2],
-	["start_cash_250k", "Connected ($250K)", "", "early", "route", 250000.0, 20000.0, 0, 2],
-	["start_cash_500k", "Respected ($500K)", "", "early", "route", 500000.0, 40000.0, 0, 3],
-	["start_cash_1m_inf", "Made (empire $1M)", "", "early", "route", 1000000.0, 80000.0, 0, 3],
+	["start_cash_5k", "First Real Money ($5K)", "", "early", "route", 8000.0, 500.0, 0, 2],
+	["start_cash_25k", "Getting Noticed ($25K)", "", "early", "route", 40000.0, 2000.0, 0, 1],
+	["start_cash_100k", "Six Figures ($100K)", "", "early", "route", 150000.0, 8000.0, 0, 2],
+	["start_cash_250k", "Connected ($250K)", "", "early", "route", 400000.0, 20000.0, 0, 2],
+	["start_cash_500k", "Respected ($500K)", "", "early", "route", 800000.0, 40000.0, 0, 3],
+	["start_cash_1m_inf", "Made (empire $1M)", "", "early", "route", 2000000.0, 80000.0, 0, 3],
 	["cash_1m", "Reach $1M", "", "early", "balance", 1000000.0, 5000.0, 5, 0],
 	["buy_pawn", "Own a Pawn Shop", "", "early", "bld_4", 1.0, 3000.0, 3, 0],
 	["crew_50", "Hire 50 Crew", "", "early", "crew", 50.0, 15000.0, 8, 0],
@@ -143,6 +143,12 @@ static func progress_for(state, g: Dictionary) -> Dictionary:
 	return {"current": _progress(state, kind, target), "target": target}
 
 
+static func reset_for_prestige(goals: Array) -> void:
+	for g in goals:
+		if typeof(g) == TYPE_DICTIONARY:
+			g["completed"] = false
+
+
 static func current_goals(state, max_count: int = 4) -> Array:
 	var phase_order := {"early": 0, "mid": 1, "late": 2}
 	var incomplete: Array = []
@@ -151,3 +157,47 @@ static func current_goals(state, max_count: int = 4) -> Array:
 			incomplete.append(g)
 	incomplete.sort_custom(func(a, b): return int(phase_order.get(str(a.get("phase", "")), 9)) < int(phase_order.get(str(b.get("phase", "")), 9)))
 	return incomplete.slice(0, max_count)
+
+
+static func next_focus_hint(state) -> String:
+	var influence: int = int(state.prestige_tokens)
+	var route: float = float(state.prestige_route_earnings)
+	var heat: float = float(state.heat)
+	var total_bld: int = state.total_buildings_owned()
+	var player_t: int = _TerritorySystem.player_district_count(state.territories)
+	var any_bought := false
+	for u in state.upgrades:
+		if typeof(u) != TYPE_OBJECT:
+			continue
+		if u.purchased:
+			any_bought = true
+			break
+	var any_hired := false
+	for m in state.managers:
+		if typeof(m) != TYPE_OBJECT:
+			continue
+		if m.hired:
+			any_hired = true
+			break
+	if Prestige.can_prestige(state):
+		return "Ready to PRESTIGE — tap prestige chip"
+	var near_prestige := route >= GameConfig.FIRST_PRESTIGE_EARNINGS * 0.7 if influence == 0 else false
+	if near_prestige:
+		return "Almost at prestige — keep buying buildings"
+	if influence == 0 and route < 1_000_000.0:
+		if total_bld < 5:
+			return "Buy buildings — reach 5 to unlock Crew"
+		if not any_bought:
+			return "Open Upgrades — multiply income"
+		if not any_hired:
+			return "Hire a Manager — automates a building"
+		if total_bld < 10:
+			return "Keep expanding → earn Influence to Prestige"
+		return "Grow income → capture Turf for bonuses"
+	if influence > 0 and player_t == 0:
+		return "Capture a district in Turf — opens Ops"
+	if heat >= 60.0:
+		return "Heat critical — lower it before raids"
+	if influence >= 12 and player_t == 0:
+		return "Made Man — capture your first district"
+	return ""

@@ -802,6 +802,10 @@ class PrestigeTreeState:
         if 'rank' in reqs:
             _, rr, _ = reqs['rank']
             parts2.append(f"Rank: {rr}")
+        if 'branch' in reqs and not reqs['branch'][2]:
+            parts2.append("Choose a path")
+        elif 'branch_perk' in reqs and not reqs['branch_perk'][2]:
+            parts2.append("Buy a perk in your path")
         y = self._back_r.top - 16
         s1 = self._fonts['xs'].render(line1, True, (200, 120, 255))
         surface.blit(s1, s1.get_rect(center=(p.centerx, y)))

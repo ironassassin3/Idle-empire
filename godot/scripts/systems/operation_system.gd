@@ -75,7 +75,7 @@ static func is_unlocked(state) -> bool:
 	var terr: int = _TerritorySystem.player_district_count(state.territories)
 	if terr >= UNLOCK_TERRITORIES:
 		return true
-	return Prestige.rank_index(Prestige.get_rank(state.prestige_tokens)) >= Prestige.rank_index("Made Man")
+	return Prestige.rank_index(Prestige.get_rank(state.lifetime_tokens)) >= Prestige.rank_index("Made Man")
 
 
 static func unlock_requirement_text(state) -> String:
@@ -151,7 +151,7 @@ static func operation_reward_mult(state) -> float:
 			mult *= 1.02
 	mult *= _BuffSystem.operation_reward_mult(state)
 	mult *= _DragonSystem.op_reward_mult(state)
-	mult *= 1.0 + Prestige.rank_operation_reward_bonus(state.prestige_tokens)
+	mult *= 1.0 + Prestige.rank_operation_reward_bonus(state.lifetime_tokens)
 	return mult
 
 

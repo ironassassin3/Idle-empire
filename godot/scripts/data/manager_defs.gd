@@ -113,4 +113,4 @@ static func _building_types(state) -> int:
 
 
 static func _rank_meets(state, required: String) -> bool:
-	return Prestige.rank_index(Prestige.get_rank(state.prestige_tokens)) >= Prestige.rank_index(required)
+	return Prestige.rank_index(Prestige.get_rank(state.lifetime_tokens)) >= Prestige.rank_index(required)

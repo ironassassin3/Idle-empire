@@ -3,15 +3,18 @@
 Step-by-step guide to export a debug APK to a physical device (e.g. Moto G) from Godot **4.6.3**.  
 Prerequisite: mock-first autoloads are already in the repo (`Monetization`, `Notifications`, `CloudSave`).
 
-**Toolchain check (2026-06-19 on this machine):**
+**Toolchain check (2026-06-23 on this machine):**
 
 | Component | Status |
 |-----------|--------|
-| Godot 4.6.3 on PATH | ❌ Not found |
+| Godot 4.6.3 | ✅ `E:\Downloads\Godot_v4.6.3-stable_win64.exe` (or set `GODOT_BIN`) |
 | Export templates (`%APPDATA%\Godot\export_templates\4.6.3.stable\`) | ❌ Not found |
 | Android SDK (`%LOCALAPPDATA%\Android\Sdk`) | ❌ Not found |
-| JDK (`java` on PATH) | ❌ Not found |
+| JDK 17 (`java` on PATH) | ❌ Not found |
 | `adb` on PATH | ❌ Not found |
+| Android build template (`godot/android/build/`) | ❌ Not generated yet |
+
+Run `.\device_pass.ps1 check` for live status. Until SDK/JDK/templates are green, use **desktop F5** + checklist §A; phone pass needs §1–7 below.
 
 Until the rows above are green, CLI export will fail. Editor export has the same requirements.
 

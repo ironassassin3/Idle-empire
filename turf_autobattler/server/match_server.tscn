@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://turf_match_server"]
+
+[ext_resource type="Script" path="res://server/match_server.gd" id="1"]
+
+[node name="MatchServer" type="Node"]
+script = ExtResource("1")

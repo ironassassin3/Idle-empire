@@ -115,7 +115,7 @@ static func _add_rank_section(parent: Control, state) -> void:
 	rank_lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	parent.add_child(rank_lbl)
 
-	var perks: Dictionary = Prestige.get_cumulative_rank_perks(state.prestige_tokens)
+	var perks: Dictionary = Prestige.get_cumulative_rank_perks(state.lifetime_tokens)
 	var perk_parts: PackedStringArray = PackedStringArray()
 	if perks.get("territory_success", 0.0) > 0.0:
 		perk_parts.append("+%.0f%% turf" % (float(perks["territory_success"]) * 100.0))

@@ -34,10 +34,10 @@ def _env_int(key: str, default: int) -> int:
 # Set any of these before launching to test a variant without changing code:
 #   IDLE_PRESTIGE_EARNINGS=10000000 python main.py   ← easier first prestige
 #   IDLE_PRESTIGE_GROWTH=6 python main.py            ← softer escalation
-FIRST_PRESTIGE_EARNINGS  = _env_float("IDLE_PRESTIGE_EARNINGS", 20_000_000.0)
-FIRST_PRESTIGE_DEALERS   = _env_int("IDLE_PRESTIGE_DEALERS",   20)
-FIRST_PRESTIGE_RACKETS   = _env_int("IDLE_PRESTIGE_RACKETS",   8)
-FIRST_PRESTIGE_CHOPS     = _env_int("IDLE_PRESTIGE_CHOPS",     4)
+FIRST_PRESTIGE_EARNINGS  = _env_float("IDLE_PRESTIGE_EARNINGS", 50_000_000.0)
+FIRST_PRESTIGE_DEALERS   = _env_int("IDLE_PRESTIGE_DEALERS",   25)
+FIRST_PRESTIGE_RACKETS   = _env_int("IDLE_PRESTIGE_RACKETS",   10)
+FIRST_PRESTIGE_CHOPS     = _env_int("IDLE_PRESTIGE_CHOPS",     5)
 FIRST_PRESTIGE_RANK      = _os.environ.get("IDLE_PRESTIGE_RANK", "Made Man")
 
 # Soft rebuild gates for 2nd+ prestige — prevents route-only snowball after P1.
@@ -107,6 +107,16 @@ def check_requirements(state) -> dict:
             'rackets': (rackets, POST_PRESTIGE_RACKETS, rackets >= POST_PRESTIGE_RACKETS),
             'chops':   (chops, POST_PRESTIGE_CHOPS, chops >= POST_PRESTIGE_CHOPS),
         })
+    if n >= 1:
+        import src.prestige_tree as _ptree
+        branch = getattr(state, 'prestige_branch', None)
+        branch_met = branch is not None and branch in _ptree.BRANCH_PERKS
+        reqs['branch'] = (branch or 'none', 'path', branch_met)
+        if branch_met:
+            count = _ptree.branch_perk_count(state, branch)
+            reqs['branch_perk'] = (count, 1, count >= 1)
+        else:
+            reqs['branch_perk'] = (0, 1, False)
     return reqs
 
 

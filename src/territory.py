@@ -296,14 +296,16 @@ def territory_economy_scale(state) -> float:
         return 1.0
     if required <= 0:
         return 1.0
-    return min(1.0, (route / required) ** 2)
+    ratio = route / required
+    return min(config.TERRITORY_ECONOMY_SCALE_MAX,
+               ratio ** config.TERRITORY_ECONOMY_SCALE_EXPONENT)
 
 
 def territory_income_mult(territories: List[Territory], state=None) -> float:
     """Per-district income_bonus from owned territories (existing strategic bonuses)."""
     bonus = sum(t.income_bonus for t in territories if t.unlocked)
     scale = territory_economy_scale(state)
-    return 1.0 + min(bonus, 0.25) * scale
+    return 1.0 + min(bonus, config.TERRITORY_INCOME_BONUS_CAP) * scale
 
 
 def territory_click_mult(territories: List[Territory], state=None) -> float:
