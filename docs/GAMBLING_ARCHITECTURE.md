@@ -73,16 +73,25 @@ rate-limited. The whole safety model rests on supply scarcity.
 *feel* generous (income-scaled + a visible 10× jackpot band); scarcity comes from supply,
 not from stingy payouts.
 
-## 4. View contract (TODO — `gambling_overlay.gd`)
+## 4. View (as built — `gambling_overlay.tscn` + `gambling_overlay.gd`)
 
-A modal `Control` following Phase 92 rules (`modal_panel_rect`, `blit_fit_center`,
-clamp at small/large res). Responsibilities:
+A `CanvasLayer` overlay (layer 11) matching the shipped `prestige_tree_overlay` /
+`dragon_patron_overlay` pattern: a full-screen `Dim` + a centred `PanelContainer`.
 
-- On open: `var segs = GameState.start_gamble_round()`; if `segs.is_empty()`, show
-  "No spins — come back tomorrow" + (optional) watch-ad-for-spin button.
-- Drive marker sweep in `_process` (normalized position 0→1 looping). Faster sweep = harder.
-- On tap: capture position, call `GameState.resolve_gamble(position)`, display the returned
-  result string, then offer "Spin again" if `GameState.gambling_free_spins() > 0`.
-- Entry points: (a) the daily/offline **return overlay** ("You earned a free spin!"),
-  using `GameState.gambling_spins_granted`; (b) a persistent HUD chip / Turf subtab that
-  shows the banked-spin count and is dimmed at 0.
+- On open: `start_round` is staged; the `Wheel` (`gambling_wheel.gd`) renders the
+  shuffled segment ring. SPIN starts the marker sweep (button → STOP); STOP freezes the
+  marker and calls `resolve_gamble(position)`. "Spin again" is offered while
+  `gambling_free_spins() > 0`; at 0 the CTA disables and a capped watch-ad-for-spin button
+  shows (`grant_gamble_ad_spin`).
+- `gambling_wheel.gd` reads `GamblingSystem.SWEEP_SPEED` and animates a normalised
+  position 0→1 in `_process`; the segment under the needle is exactly what `resolve_gamble`
+  scores (WYSIWYG, no hidden RNG).
+- Entry points: (a) a **header 🎰 chip** with a live banked-spin badge in `game_screen.gd`
+  (hidden when `GAMBLING_ENABLED` is false); (b) a **"Spin now" CTA on the daily/offline
+  return overlay**, shown when `gambling_spins_granted > 0`.
+
+**Resolution safety:** no clamp/scroll code is needed. The project's `canvas_items` stretch
++ `expand` aspect (720×1280 base) keeps the logical viewport ≥ the base size, so the 680×520
+panel can never clip; `grow_vertical = 2` lets it expand from centre if the 125% accessibility
+text scale grows content past the design height. (The pygame `modal_panel_rect`/`blit_fit_center`
+helpers from the Phase 92 prototype work do **not** exist — and are not needed — in the Godot port.)
