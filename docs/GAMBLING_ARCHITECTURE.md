@@ -13,6 +13,7 @@
 | make / merge / to_save | `GamblingSystem.*` | `OperationSystem.*_save` |
 | Daily grant | `GameState._apply_daily_reward()` → `grant_daily_spins()` | single once/day date gate |
 | Player actions | `GameState.start_gamble_round()` / `resolve_gamble()` / `grant_gamble_ad_spin()` | `start/collect_operation` |
+| Rewarded-ad spin | `gambling_overlay` → `Monetization.show_rewarded(PLACEMENT_GAMBLE_SPIN)` → `_on_ad_rewarded` → `grant_gamble_ad_spin()` | `PLACEMENT_OFFLINE_DOUBLE` / `PLACEMENT_FREE_COIN` |
 | `SWEEP_SPEED` + all economy knobs | `gambling_system.gd` (single source) | `gambling_wheel.gd` reads `SWEEP_SPEED` |
 | View | `scenes/gambling_overlay.tscn` + `scripts/ui/gambling_overlay.gd` | `prestige_tree_overlay`, Phase 92 modal rules |
 
@@ -38,7 +39,7 @@ games. Six structural defenses, most already enforced in code:
 
 | # | Lever | Status | Mechanism |
 |---|---|---|---|
-| 1 | **Rate-limited faucet** | ✅ enforced | Spins come *only* from the daily login (1–2/day, cap 5). It is not grindable — you physically cannot play more than your banked spins. This is the #1 defense. |
+| 1 | **Rate-limited faucet** | ✅ enforced | Spins come from the daily login (1–2/day) plus an optional rewarded-ad +1, all clamped to `FREE_SPIN_CAP` (5). It is not grindable — you physically cannot play more than your banked spins, and the ad spin is capped at the same ceiling. This is the #1 defense. |
 | 2 | **Income-scaled payout** | ✅ enforced | `base_stake ∝ income_per_second`. Gambling is a *multiplier on progress you already made*, never an alternative income source. A neglected empire gets tiny spins, so you must play the core loop to make gambling worth anything. |
 | 3 | **Insulated from the prestige gate** | ✅ enforced | Winnings add to `balance`/`lifetime_earnings` but **not** `prestige_route_earnings`. You cannot gamble your way to prestige faster. |
 | 4 | **No wager, no loss** | ✅ by design | Worst outcome is 0× (a spent free spin), never a cash loss. Removes loss-chasing — the engine of compulsive gambling. No sunk cost, no tilt. |
@@ -65,9 +66,21 @@ python sim_gambling.py --sweep-speed 2.0
 (`lifetime_winnings / lifetime_earnings`). Tripwire: ratio > **8%** over 7 days →
 lower `BASE_INCOME_SECONDS` by 10–15. Also watch `best_mult` and spins/session.
 
-**Monetization caution:** the rewarded-ad `+1 spin` hook is capped at `FREE_SPIN_CAP`.
-Selling *uncapped* spins would break levers 1 and 6 — keep any ad/IAP spin source
-rate-limited. The whole safety model rests on supply scarcity.
+**Guardrail decision (G-TUNE-2):** the login+ad **6.25% bot worst case** is
+**accepted as-shipped** — no `BASE_INCOME_SECONDS` cut. Rationale: it requires 0ms-perfect
+timing (physically impossible; human expert at 60ms jitter = **1.88%**), the ad spin is
+already clamped to `FREE_SPIN_CAP`, and the "inverse failure mode" below warns that
+scarcity must come from *supply*, not stingy payouts — trimming would tax every real
+player to defend against a supply-capped theoretical bot. The live `lifetime_winnings_ratio`
+tripwire (>8% / 7 days) is the governor: only real-world data reopens this, not the paper bot.
+
+**Monetization caution:** the rewarded-ad `+1 spin` hook routes through the
+`Monetization` autoload (`PLACEMENT_GAMBLE_SPIN`), which grants via
+`grant_gamble_ad_spin()` — capped at `FREE_SPIN_CAP`. Selling *uncapped* spins would
+break levers 1 and 6 — keep any ad/IAP spin source rate-limited. The whole safety
+model rests on supply scarcity. The `sim_gambling.py` login+ad (3 spins/day) scenario
+shows a **6.25% bot worst case** (over the 5% guardrail on paper); the cap + human
+timing keep it safe in practice, but the tripwire in **Telemetry** below governs it.
 
 **Inverse failure mode:** don't starve it so hard nobody engages. Per-spin payout should
 *feel* generous (income-scaled + a visible 10× jackpot band); scarcity comes from supply,
@@ -82,7 +95,10 @@ A `CanvasLayer` overlay (layer 11) matching the shipped `prestige_tree_overlay` 
   shuffled segment ring. SPIN starts the marker sweep (button → STOP); STOP freezes the
   marker and calls `resolve_gamble(position)`. "Spin again" is offered while
   `gambling_free_spins() > 0`; at 0 the CTA disables and a capped watch-ad-for-spin button
-  shows (`grant_gamble_ad_spin`).
+  shows (hidden when `remove_ads` is owned or already at `FREE_SPIN_CAP`). It calls
+  `Monetization.show_rewarded(PLACEMENT_GAMBLE_SPIN)`; the reward returns via the
+  `ad_reward_granted` signal → `_on_ad_reward()` re-stages the round. The MockBackend
+  grants instantly in editor/headless, so the flow is fully testable without a device.
 - `gambling_wheel.gd` reads `GamblingSystem.SWEEP_SPEED` and animates a normalised
   position 0→1 in `_process`; the segment under the needle is exactly what `resolve_gamble`
   scores (WYSIWYG, no hidden RNG).

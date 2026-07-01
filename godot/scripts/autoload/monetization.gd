@@ -15,6 +15,7 @@ const PRODUCT_IDS := [PRODUCT_REMOVE_ADS, PRODUCT_STARTER, PRODUCT_INCOME_X2]
 const PLACEMENT_OFFLINE_DOUBLE := "offline_double"
 const PLACEMENT_FREE_COIN := "free_coin"
 const PLACEMENT_TIME_SKIP := "time_skip"
+const PLACEMENT_GAMBLE_SPIN := "gamble_spin"
 
 const INTERSTITIAL_MIN_SECS := 180.0
 const INTERSTITIAL_SESSION_CAP := 3
@@ -142,6 +143,10 @@ func _on_ad_rewarded(placement: String) -> void:
 		PLACEMENT_TIME_SKIP:
 			BuffSystem.add_buff(GameState, "syndicate_income", 300.0, 2.0)
 			GameState.notification.emit("Time skip! 2× income for 5 min", GameTheme.GOLD)
+		PLACEMENT_GAMBLE_SPIN:
+			# Stays capped at FREE_SPIN_CAP inside GamblingSystem — ad supply is
+			# the last lever keeping the Luck Wheel scarce (see GAMBLING_ARCHITECTURE §3).
+			GameState.grant_gamble_ad_spin()
 
 
 func _on_ad_failed(placement: String, reason: String) -> void:

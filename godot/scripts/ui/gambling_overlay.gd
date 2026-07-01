@@ -33,6 +33,7 @@ func _ready() -> void:
 	_ad_btn.pressed.connect(_on_ad_pressed)
 	_back_btn.pressed.connect(close)
 	_wheel.stopped.connect(_on_wheel_stopped)
+	Monetization.ad_reward_granted.connect(_on_ad_reward)
 
 
 func _apply_theme() -> void:
@@ -125,10 +126,17 @@ func _on_wheel_stopped(position: float) -> void:
 
 
 func _on_ad_pressed() -> void:
-	# Rewarded-ad hook. A real build routes through the Monetization autoload's
-	# rewarded-ad callback; granting directly here keeps the flow testable and the
-	# +1 stays capped at FREE_SPIN_CAP inside GamblingSystem.
-	if GameState.grant_gamble_ad_spin():
-		_status.text = "+1 spin"
-		_stage_round()
-		_refresh()
+	# Rewarded +1 spin, routed through the Monetization autoload. On device this
+	# shows a real rewarded ad; the mock backend grants instantly in editor/headless.
+	# The reward lands in _on_ad_reward via Monetization.ad_reward_granted.
+	Monetization.show_rewarded(Monetization.PLACEMENT_GAMBLE_SPIN)
+
+
+func _on_ad_reward(placement: String) -> void:
+	if placement != Monetization.PLACEMENT_GAMBLE_SPIN or not visible:
+		return
+	# grant_gamble_ad_spin() already banked the spin + emitted stats_changed;
+	# just surface the confirmation and re-stage so SPIN AGAIN is live.
+	_status.text = "+1 spin"
+	_stage_round()
+	_refresh()

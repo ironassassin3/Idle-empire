@@ -1,139 +1,172 @@
-# Device / Windowed Test Checklist (P7–P9 close-out, P15 validation)
+# Device pass — 15-minute gate
 
-Everything below was implemented + verified headless, but needs a **rendered** run
-(desktop windowed) or a **real phone** to confirm. Grouped by where it's checkable.
-Tick items off; each notes which phase criterion it closes.
-
-## Quick start
+One pass closes P7/P8/P15 ship smoke. **Desktop F5** or **Moto G APK** — same script, tick boxes in order.
 
 ```powershell
 cd d:\2d_game
-.\device_pass.ps1 check      # toolchain status
-.\device_pass.ps1 smoke      # headless soak (no phone)
-.\device_pass.ps1 run          # export APK + install on Moto G (after toolchain green)
+.\device_pass.ps1 check    # once — all green before device
+.\device_pass.ps1 smoke    # automated — run before every pass
+.\device_pass.ps1 run      # device only: export + install + launch
 ```
 
-**Godot path:** `E:\Downloads\Godot_v4.6.3-stable_win64.exe` (or set `$env:GODOT_BIN`).
-
-**On device FPS gate:** Config → **Show FPS → ON** (green ≥30, red below). Walk section B below.
-
-Full Android setup: [`ANDROID_SETUP.md`](ANDROID_SETUP.md).
-
-**Launch (desktop windowed):**
-- Godot editor → open `d:\2d_game\godot\project.godot` → F5 (runs `main_menu.tscn`), or
-- CLI: `"E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path godot`
-
-The window now opens **portrait (720×1280)**. Resize the window to test responsiveness.
-
-**P8 reference device (physical):** Motorola Moto G (2026).
+**Godot:** `E:\Downloads\Godot_v4.6.3-stable_win64.exe` (or `$env:GODOT_BIN`).  
+**Full setup:** [`ANDROID_SETUP.md`](ANDROID_SETUP.md). **Deep reference:** [§Extended](#extended-reference) below.
 
 ---
 
-## P15 — City-first ink validation (closes P15 taste + device gates)
+## Before you start (2 min)
 
-### Desktop windowed (F5) — P15-specific
-- [ ] **City viewport** visible at top on game screen (skyline strip, not blank bar).
-- [ ] **Hustle band** tappable on city street row; click floats on glass overlay (no duplicate HUSTLE btn when city v2).
-- [ ] **Main menu ink:** `#0c0c14` background; preview card + buttons ink-styled; no ledger corner brackets.
-- [ ] **Offline overlay:** city still visible but dimmed behind scrim (not removed); ink modal panel.
-- [ ] **Prestige tree:** ink modal + branch chips; no ledger brackets on commit/prestige dialogs.
-- [ ] **Config / Stats tabs:** ink row cards and chip toggles (not warm parchment `BG_CARD`).
-- [ ] Run **Owner Taste Gate** 15s script in [`P15_REPORT.md`](P15_REPORT.md) — sign-off checkbox.
+- [ ] `.\device_pass.ps1 smoke` → **Smoke PASS**
+- [ ] **New Game** (not Continue) — old saves may have bad prestige progress
+- [ ] Device only: USB debugging on, phone unlocked, `adb devices` shows one device
+- [ ] Config → **Show FPS → ON** (device pass; optional on desktop)
 
-### Physical device — P15 FPS + touch
-- [ ] **Moto G (2026):** holds **≥30 FPS** through city view + tab scroll + one overlay (offline or prestige tree).
-- [ ] Safe area: city header and bottom nav clear notch/home bar.
-- [ ] Hustle band + bottom tabs tappable one-handed (48px+ targets).
+**Fail fast:** If smoke fails, fix before rendering. If Continue shows prestige bar already half full on a “fresh” run, delete save and New Game.
 
 ---
 
-## A. Desktop windowed run (F5) — no phone needed
-Catches most visual/nav/renderer items.
+## 0:00–0:15 — Silent fantasy (P15 taste)
 
-### Renderer — Compatibility vs Forward+ (closes P8)
-- [ ] Game launches with no renderer errors in the Godot output log.
-- [ ] Noir theme looks correct: panel backgrounds, borders, fonts, gold/green accents.
-- [ ] Overlays render correctly: offline/daily return, syndicate event, milestone, rival
-      elimination, prestige tree, dragon patron, prestige climax.
-- [ ] Particle/motion cues OK: click floats (`+$X` / `CRIT +$X`), HUSTLE squash, shield/heat
-      pulse, coin pulse, prestige-confirm gold pulse.
-- _If anything looks wrong:_ revert in `godot/project.godot` →
-  `rendering/renderer/rendering_method="forward_plus"` (and `.mobile`), `config/features` "Forward Plus".
+Watch the game screen **without reading numbers**.
 
-### Portrait layout + nav (closes P7)
-- [ ] Portrait is playable end-to-end — nothing clipped or off-screen at 720×1280.
-- [ ] **Film grain** (P14.8): faint ledger texture over gameplay; off when Particles OFF in Config.
-- [ ] Bottom bar: Buildings / Upgrades / Mgrs / Turf / Stats all switch correctly.
-- [ ] Turf button shows the subtab bar (Territory / Rivals / Crew / Ops); Crew/Ops show
-      `n/5` · `n/2` lock progress until unlocked, then enable.
-- [ ] Header gear (⚙) opens Config; Menu still works.
-- [ ] Left column (clicker / dragon HUD / heat / prestige) stacks above the tab content, readable.
-- [ ] Resize the window narrow/short → content stays usable (scrolls, no overlap).
-- [ ] Turf "★"/"•" roll-up badge appears (Broker active / ops ready).
+- [ ] Reads as **noir city under syndicate control**, not a spreadsheet
+- [ ] Skyline strip visible at top; grows denser after a few building buys
+- [ ] Gold/ink palette; **landing fonts** visible (Limelight menu title, Space Mono balance)
 
-### Audio (closes P6 + P14.8 M1)
-- [ ] Config → raise Master + SFX: hear distinct cues (click, purchase, manager, territory,
-      rival, rank-up, prestige, error). Each milestone tier sounds different.
-- [ ] Raise Music: **menu** famiglia hook on main menu; **in-game** 8-bit waltz ambient (pad +
-      bass + lead); loops with no click/pop at the seam.
-- [ ] Heat ≥60%: tension grit/stab layer mixes under ambient (stub — no district motifs yet).
-- [ ] Music and SFX on separate buses (Godot Audio tab shows Music + SFX under Master).
-- [ ] Mute-all silences everything; sliders change loudness live.
-
-### Daily / offline return (closes P9, desktop-checkable)
-- [ ] Play briefly, quit, edit `save.json` `save_timestamp` back a few hours (or wait), relaunch →
-      offline overlay shows cash earned + "While you were away" rival lines.
-- [ ] Edit `last_login_date` to an earlier date → relaunch → "★ Daily reward — day N streak" line
-      appears in the return overlay; dismiss clears it.
+**Fail:** Blank city bar, ledger/parchment chrome, or default system font only.
 
 ---
 
-## B. Real device (Android first) — needs export
-Requires export templates + a connected device or APK install.
+## 0:15–3:00 — Core loop + prestige sanity (P15 + balance)
 
-### Performance / FPS (closes P8)
-- [ ] **Reference device:** Motorola **Moto G (2026)** — record exact variant if multiple SKUs.
-- [ ] Holds target FPS through a full session (early game → mid → many buildings + overlays).
-- [ ] Battery/thermal sanity over ~15–20 min — no excessive drain/heat.
-- [ ] On-device profiler: draw calls + overdraw within budget (note baselines for future regressions).
+- [ ] Main menu: ink background `#0c0c14`, no ledger corner brackets
+- [ ] **Hustle band** on city street taps; `+$` floats on glass (no duplicate HUSTLE button)
+- [ ] Buy **3–5 buildings** — skyline tier changes
+- [ ] Header: balance in **mono**, rank in **Cinzel**
+- [ ] Tap prestige gate / tree entry → progress shows **route earnings near $0**, not ~$50M
+- [ ] Bottom tabs switch: **Bldgs → Upgrs → Turf → Stats** (no crash, no clip)
 
-### Touch ergonomics + safe area (closes P7)
-- [ ] All targets tappable one-handed: bottom tabs (56px), Turf subtabs (48px), crew ± steppers
-      (48px), op/manager action buttons (48px), gear (44px). No fat-finger misses.
-- [ ] Notch / punch-hole device: header isn't occluded; bottom bar clears the home-bar gesture
-      area (confirms the `_apply_safe_area()` screen→viewport scaling).
-- [ ] Test ≥2 aspect ratios (e.g., 19.5:9 tall and ~16:9 short) — no clipping; left column not
-      crowded on the short one.
-- [ ] No reliance on hover anywhere. Prestige-tree perk detail shows as **visible label text** under
-      each perk (fixed in `prestige_tree_overlay.gd`) — confirm readable on small screens.
-
-### Notifications (P9 — not yet built)
-- [ ] Local lapse-nudge notifications are **not implemented** (platform APIs). When built: opt-in
-      prompt, fires after inactivity, respects OS permission + a gentle cadence.
+**Fail:** Prestige bar starts near gate max, tabs overlap notch/home bar, hustle dead.
 
 ---
 
-## C. Extended / automated
-- [ ] Multi-hour memory soak (headless was 120s flat). Run longer:
-      `"E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path godot --headless -s res://scripts/tools/memory_soak.gd -- --seconds 7200`
-      Pass = node count flat, static memory stable.
-- [ ] On-device extended session (1–2h) — watch for slowdown/leak the headless run can't surface
-      (renderer/texture memory).
+## 3:00–7:00 — Turf + one overlay (P7 nav)
+
+- [ ] Turf → Territory; negotiate or view one district row
+- [ ] Turf subtabs show **Crew/Ops** lock state (`n/5` · `n/2`) until unlocked
+- [ ] Trigger **one** overlay (any):
+  - Milestone (play until one fires), **or**
+  - Prestige tree modal (tap gate), **or**
+  - Offline: quit → edit `save.json` `save_timestamp` −4h → relaunch
+- [ ] Overlay: city **still visible** behind dim scrim; ink panel (not parchment ledger)
+
+**Fail:** Overlay hides city entirely, ledger brackets on modal, overlay stuck open.
 
 ---
 
-## Closes these report criteria
-| Item | Report |
-|---|---|
-| Compatibility renderer = no visual regression | P8 |
-| Holds FPS on low-tier device; battery/thermal; draw-call audit | P8 |
-| Multi-hour / on-device memory soak | P8 |
-| Playable in portrait; safe-area; touch targets on device | P7 |
-| Audio playtest (all tiers + music loop) | P6 |
-| Daily/offline loop on device; push-notification consent | P9 |
-| City viewport, hustle band, ink menu, P15 FPS on Moto G | P15 |
+## 7:00–9:00 — Audio + config (P6/P8)
 
-## Not in scope here (tracked elsewhere)
-- FTUE telemetry instrumentation — deferred until mobile analytics is scoped (P9 follow-up).
-- `click_value += 0.01×IPS` late-game runaway — separate balance question (P9 follow-up).
-- Store readiness / signing / crash reporting — **P11**.
+- [ ] Config → raise **SFX**: hear click + at least one buy/milestone cue
+- [ ] Raise **Music**: menu waltz on title; in-game loop, no loud seam pop
+- [ ] Mute-all silences everything; sliders respond live
+- [ ] **Device:** FPS overlay **green ≥30** while scrolling Stats + one overlay
+- [ ] **Device:** One-handed tap on bottom tabs and hustle — no systematic misses
+
+**Fail:** FPS red sustained during normal play, audio stuck, targets under thumb unreachable.
+
+---
+
+## 9:00–11:00 — Luck Wheel (gambling — timing feel)
+
+The whole mechanic is **timing skill**, so it lives or dies on touch latency + sweep readability on real hardware. `GAMBLING_ENABLED = true`.
+
+- [ ] Header **🎰 chip** visible with banked-spin **badge**; badge count matches Spins in overlay
+- [ ] Daily/offline return overlay shows **"🎰 Spin now"** CTA when spins were granted; it opens the wheel
+- [ ] Open wheel → **SPIN** sweeps the marker; button flips to **STOP**; STOP freezes exactly under the needle (WYSIWYG — no drift, no snap-back)
+- [ ] Segment under needle at stop = the multiplier paid (watch one payout notification match)
+- [ ] Jackpot band (10×) lands only on precise stops; **rankup SFX + gold "JACKPOT ×10"** fires
+- [ ] Spends decrement **Spins**; at 0 the CTA disables and **"Watch ad +1 spin"** shows (hidden if remove_ads owned or at cap 5)
+- [ ] Tap **Watch ad +1 spin** → mock/real rewarded flow banks **+1** (capped at 5); "SPIN AGAIN" goes live
+- [ ] Close/reopen mid-round is free (no spin lost); panel centred, never clipped at notch/home bar
+
+**Fail:** Marker drifts past where you tapped, badge count wrong, ad button grants past cap, spin consumed on close, panel clips.
+
+---
+
+## 11:00–14:00 — Stress skim (P8 regression)
+
+- [ ] Stats tab scrolls to bottom without freeze
+- [ ] Buy-mult chip + advice chip visible in header row
+- [ ] Heat bar visible; crimson shift when heat rises (buy buildings / turf action)
+- [ ] Resize window narrow (desktop) **or** rotate/second aspect (device) — header + nav usable
+
+**Fail:** Hard crash, permanent FPS drop after scroll, safe-area clip on header.
+
+---
+
+## 14:00–15:00 — Sign-off
+
+| Result | Notes |
+|--------|-------|
+| **PASS** / **FAIL** | Device model + Godot version |
+| Blocker(s) | One line each |
+| Prestige gate @ load | Route $ at first game screen: ______ |
+| Luck Wheel | STOP lands on-needle / drifts · best mult seen: ______ |
+| FPS | Avg feel: ≥30 / &lt;30 |
+| Fantasy 15s | City / spreadsheet / mixed |
+
+---
+
+## Pass criteria (all must be true)
+
+1. Smoke PASS (automated)
+2. New-game prestige **route** starts ~$0
+3. City + hustle + ink theme read correctly in 15s test
+4. No P0 crash, clip, or dead touch on critical path
+5. Device: FPS ≥30 in normal play
+
+---
+
+## Extended reference
+
+<details>
+<summary>P15 detail (desktop + device)</summary>
+
+- Film grain on when Particles ON (P14.8)
+- Prestige tree: ink chips, perk labels readable without hover
+- Config/Stats: ink row cards, not warm `BG_CARD` parchment
+- Owner taste script: [`P15_REPORT.md`](P15_REPORT.md)
+
+</details>
+
+<details>
+<summary>P7/P8 detail (renderer, layout, soak)</summary>
+
+- Renderer: `gl_compatibility` — revert to Forward+ in `project.godot` only if visual break
+- Particles OFF = reduced motion + grain off
+- Gear opens Config; dragon chip when patron active
+- Multi-hour soak:
+  `"E:/Downloads/Godot_v4.6.3-stable_win64.exe" --path godot --headless -s res://scripts/tools/memory_soak.gd -- --seconds 7200`
+
+</details>
+
+<details>
+<summary>P9 not built yet</summary>
+
+- Local lapse push notifications — not implemented
+- Daily/offline: full rival-line copy optional in 15-min pass; use timestamp cheat above
+
+</details>
+
+<details>
+<summary>Report mapping</summary>
+
+| Gate | Phase |
+|------|-------|
+| City, hustle, ink, fonts, prestige sanity | P15 |
+| Portrait, tabs, touch, safe area | P7 |
+| FPS, audio buses, performance skim | P8 |
+| Offline overlay cheat | P9 |
+| Store/signing/crash reporting | P11 |
+
+</details>
