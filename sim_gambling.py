@@ -30,7 +30,7 @@ SEGMENT_MULTS = [
 JACKPOT_MULT = 10.0
 BASE_INCOME_SECONDS = 90.0
 BASE_MIN_ABSOLUTE = 50.0
-SWEEP_SPEED = 1.7
+SWEEP_SPEED = 1.85
 DAILY_FREE_SPINS = 1
 STREAK_BONUS_THRESHOLD = 7
 STREAK_BONUS_SPINS = 1
@@ -53,8 +53,8 @@ SKILL_PROFILES = [
 ]
 
 DAILY_SCENARIOS = [
-    ("login max streak (2 spins/day)", DAILY_FREE_SPINS + STREAK_BONUS_SPINS),
-    ("login + rewarded ad (3 spins/day)", DAILY_FREE_SPINS + STREAK_BONUS_SPINS + 1),
+    ("login max streak (2 spins/day, no ad)", DAILY_FREE_SPINS + STREAK_BONUS_SPINS),
+    ("login sub-max + ad (2 spins/day)", DAILY_FREE_SPINS + 1),
 ]
 
 
@@ -178,19 +178,16 @@ def main() -> None:
     spins_ad = DAILY_SCENARIOS[1][1]
     bot_frac_2 = (spins_login * bot["income_seconds"]) / daily_cap_seconds
     bot_frac_3 = (spins_ad * bot["income_seconds"]) / daily_cap_seconds
-    expert = next(r for r in results if "expert" in r["label"])
-    expert_frac_3 = (spins_ad * expert["income_seconds"]) / daily_cap_seconds
     if bot_frac_2 < GUARDRAIL_FRACTION:
         print("  • 2-spin login scenario PASSES (bot worst %.2f%% < %g%%)."
               % (bot_frac_2 * 100, GUARDRAIL_FRACTION * 100))
     else:
         print("  • 2-spin login scenario FAILS (bot %.2f%%)." % (bot_frac_2 * 100))
     if bot_frac_3 >= GUARDRAIL_FRACTION:
-        print("  • 3-spin (+ad) bot case %.2f%% (theoretical); expert %.2f%% —"
-              " supply cap + human timing keep this safe in practice."
-              % (bot_frac_3 * 100, expert_frac_3 * 100))
+        print("  • 3-spin (+ad) bot case %.2f%% — should not occur (ad blocked at streak %d+)."
+              % (bot_frac_3 * 100, STREAK_BONUS_THRESHOLD))
     else:
-        print("  • 3-spin (+ad) scenario PASSES (bot %.2f%%)."
+        print("  • Sub-max login + ad PASSES (bot %.2f%%)."
               % (bot_frac_3 * 100))
     if skilled["ev"] > 2.5 * results[0]["ev"]:
         print("  • Skill spread is wide (skilled >> random). Raise SWEEP_SPEED to flatten.")

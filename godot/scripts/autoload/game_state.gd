@@ -1231,6 +1231,11 @@ func resolve_gamble(position: float) -> String:
 	return "No win\nBetter luck next spin"
 
 
+## Rewarded-ad → +1 spin eligibility (false at cap or on max-streak days).
+func can_gamble_ad_spin() -> bool:
+	return _GamblingSystem.ad_spin_eligible(self)
+
+
 ## Rewarded-ad → +1 spin. Returns true if banked (false at cap).
 func grant_gamble_ad_spin() -> bool:
 	if not _GamblingSystem.grant_ad_spin(self):

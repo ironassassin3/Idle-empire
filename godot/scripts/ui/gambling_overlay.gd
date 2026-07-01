@@ -98,7 +98,7 @@ func _no_spins_state() -> void:
 	_prompt.text = "No spins left — come back tomorrow for a free spin."
 	_spin_btn.text = "SPIN"
 	_spin_btn.disabled = true
-	_ad_btn.visible = not GameState.remove_ads and GameState.gambling_free_spins() < _Gambling.FREE_SPIN_CAP
+	_ad_btn.visible = not GameState.remove_ads and GameState.can_gamble_ad_spin()
 	_ad_btn.text = "Watch ad  +1 spin"
 
 

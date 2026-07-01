@@ -47,13 +47,14 @@ games. Six structural defenses, most already enforced in code:
 
 **Tuning (G-TUNE-1, validated in `sim_gambling.py`):** all knobs live in
 `gambling_system.gd` (`SWEEP_SPEED` included — UI reads from there). With
-`SWEEP_SPEED = 1.7` and the 16-segment ring (mean 1.375×, single 10× band),
-measured per-spin EV is ~1.38× random / ~2.14× skilled / ~3.0× expert (60ms
-jitter). Daily faucet at 2 login spins/day: random **0.58%**, skilled **0.89%**
-of 12h offline cap; bot worst case **4.17%** (PASS). Login + ad (3 spins/day):
-bot **6.25%** (FAIL on paper — human expert **1.87%**; ad spin stays capped at
-`FREE_SPIN_CAP`). Vs daily login reward at streak 7: skilled gambling ≈ **37%**
-of streak payout — side dish, not main course.
+`SWEEP_SPEED = 1.85` and the 16-segment ring (mean 1.375×, single 10× band),
+measured per-spin EV is ~1.38× random / ~2.03× skilled / ~2.84× expert (60ms
+jitter). Daily faucet at 2 login spins/day: random **0.58%**, skilled **0.85%**
+of 12h offline cap; bot worst case **4.17%** (PASS). Sub-max login + ad (2
+spins/day, max streak blocks ad): bot **4.17%** (PASS). The old 3-spin/day
+max-streak+ad case is **disallowed in code** (`ad_spin_eligible` returns false
+when `daily_streak >= 7`). Vs daily login reward at streak 7: skilled gambling
+≈ **37%** of streak payout — side dish, not main course.
 
 ```powershell
 python sim_gambling.py
@@ -65,9 +66,11 @@ python sim_gambling.py --sweep-speed 2.0
 (`lifetime_winnings / lifetime_earnings`). Tripwire: ratio > **8%** over 7 days →
 lower `BASE_INCOME_SECONDS` by 10–15. Also watch `best_mult` and spins/session.
 
-**Monetization caution:** the rewarded-ad `+1 spin` hook is capped at `FREE_SPIN_CAP`.
-Selling *uncapped* spins would break levers 1 and 6 — keep any ad/IAP spin source
-rate-limited. The whole safety model rests on supply scarcity.
+**Monetization caution:** the rewarded-ad `+1 spin` hook is capped at `FREE_SPIN_CAP`
+and **disabled on streak 7+ days** (those days already grant 2 login spins — stacking
+an ad would exceed the income guardrail). Selling *uncapped* spins would break
+levers 1 and 6 — keep any ad/IAP spin source rate-limited. The whole safety model
+rests on supply scarcity.
 
 **Inverse failure mode:** don't starve it so hard nobody engages. Per-spin payout should
 *feel* generous (income-scaled + a visible 10× jackpot band); scarcity comes from supply,
@@ -82,7 +85,7 @@ A `CanvasLayer` overlay (layer 11) matching the shipped `prestige_tree_overlay` 
   shuffled segment ring. SPIN starts the marker sweep (button → STOP); STOP freezes the
   marker and calls `resolve_gamble(position)`. "Spin again" is offered while
   `gambling_free_spins() > 0`; at 0 the CTA disables and a capped watch-ad-for-spin button
-  shows (`grant_gamble_ad_spin`).
+  shows when `can_gamble_ad_spin()` (hidden at spin cap or on streak 7+ days).
 - `gambling_wheel.gd` reads `GamblingSystem.SWEEP_SPEED` and animates a normalised
   position 0→1 in `_process`; the segment under the needle is exactly what `resolve_gamble`
   scores (WYSIWYG, no hidden RNG).

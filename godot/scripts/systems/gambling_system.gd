@@ -31,7 +31,7 @@ const STREAK_BONUS_SPINS := 1
 const WELCOME_FREE_SPINS := 1      # one-time onboarding spin on new game
 
 # Marker sweep speed (bars/sec). UI reads this; validate via sim_gambling.py.
-const SWEEP_SPEED := 1.7
+const SWEEP_SPEED := 1.85
 
 
 ## Fresh runtime container. Mirrors WorldState.make_* factories.
@@ -94,10 +94,21 @@ static func grant_daily_spins(state, daily_streak: int) -> int:
 	return after - before
 
 
+## Whether a rewarded-ad +1 spin is allowed (UI gate + grant guard).
+## Max-streak days already bank 2 login spins; stacking an ad would exceed the
+## daily-income guardrail (see sim_gambling.py).
+static func ad_spin_eligible(state) -> bool:
+	if free_spins(state) >= FREE_SPIN_CAP:
+		return false
+	if int(state.daily_streak) >= STREAK_BONUS_THRESHOLD:
+		return false
+	return true
+
+
 ## Monetization hook (rewarded ad → +1 spin). Kept here so the Monetization
 ## autoload stays a thin shell. Returns true if a spin was banked.
 static func grant_ad_spin(state) -> bool:
-	if free_spins(state) >= FREE_SPIN_CAP:
+	if not ad_spin_eligible(state):
 		return false
 	state.gambling["free_spins"] = free_spins(state) + 1
 	return true
