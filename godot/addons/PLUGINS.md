@@ -1,8 +1,18 @@
 # Android native plugins (§5) — install manifest
 
-**Do not commit plugin binaries.** Copy release zips into the paths below, enable each plugin in **Project → Project Settings → Plugins**, then tick the plugin in **Project → Export → Android → Plugins**.
+**Do not commit plugin binaries.** Copy release zips into the paths below, then enable each plugin in **Project → Project Settings → Plugins**.
 
 Godot version: **4.6.3** (`godot/project.godot`).
+
+> **No export checkbox.** These are **v2 Android plugins** (`export_plugin.gd`, no `.gdap`).
+> Godot 4.2+ removed the per-plugin checkbox list from the Android export dialog — v2
+> plugins are auto-included the moment their editor plugin is enabled. There is **no**
+> "Plugins" section under Export → Android → Options → Permissions. Enabling in Project
+> Settings → Plugins IS the whole integration. (Confirm load: no errors in the editor
+> log, and Play Games injects a `GodotPlayGameServices` autoload into `project.godot`.)
+>
+> Real config that DOES still matter: the **AdMob App ID** (Project Settings → AdMob +
+> `<meta-data>` in the manifest) — AdMob crashes on init without it.
 
 | Service | Plugin | Version | Install path | Runtime API (used by `AndroidBackend`) |
 |---------|--------|---------|--------------|----------------------------------------|

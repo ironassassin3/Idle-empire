@@ -8,17 +8,25 @@ signal purchase_completed(product_id: String)
 signal purchase_failed(product_id: String, reason: String)
 signal products_queried(products: Array)
 
-const PLUGIN_ADMOB_SINGLETON := "MobileAds"
 const PLUGIN_BILLING_CLASS := "BillingClient"
+# Device-only helper. load()ed lazily so its Poing-AdMob class deps are never
+# instantiated off-device (desktop/editor use MockBackend).
+const ADMOB_HELPER_PATH := "res://scripts/monetization/admob_rewarded.gd"
 
-var _admob: Object = null
+var _admob: RefCounted = null  # AdMobRewarded helper instance (Android only)
 var _billing: Object = null
 var _billing_ready := false
 
 
 func _init() -> void:
-	if Engine.has_singleton(PLUGIN_ADMOB_SINGLETON):
-		_admob = Engine.get_singleton(PLUGIN_ADMOB_SINGLETON)
+	if OS.get_name() == "Android":
+		var helper_script := load(ADMOB_HELPER_PATH)
+		if helper_script != null:
+			_admob = helper_script.new()
+			_admob.loaded.connect(func(p): ad_loaded.emit(p))
+			_admob.rewarded.connect(func(p): ad_rewarded.emit(p))
+			_admob.failed.connect(func(p, r): ad_failed.emit(p, r))
+			_admob.initialize()
 	if ClassDB.class_exists(PLUGIN_BILLING_CLASS):
 		_billing = ClassDB.instantiate(PLUGIN_BILLING_CLASS)
 		_wire_billing(_billing)
@@ -32,16 +40,14 @@ func load_rewarded(placement: String) -> void:
 	if _admob == null:
 		ad_failed.emit(placement, "admob_unavailable")
 		return
-	# Poing AdMob: load rewarded unit for placement — see addons/AdMob docs.
-	ad_loaded.emit(placement)
+	_admob.warm()
 
 
 func show_rewarded(placement: String) -> void:
 	if _admob == null:
 		ad_failed.emit(placement, "admob_unavailable")
 		return
-	# Poing AdMob: show loaded rewarded; on reward callback → ad_rewarded.emit(placement)
-	ad_rewarded.emit(placement)
+	_admob.show(placement)
 
 
 func show_interstitial(_trigger: String) -> void:
