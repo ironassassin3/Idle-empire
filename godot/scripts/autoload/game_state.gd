@@ -123,6 +123,7 @@ var shown_crew_tutorial: bool = false
 var shown_territory_tutorial: bool = false
 var shown_rivals_tutorial: bool = false
 var shown_heat_warning: bool = false
+var shown_gambling_tutorial: bool = false
 
 # Blackwater (rival) action bonuses
 var bw_attack_bonus: float = 0.0
@@ -282,6 +283,7 @@ func reset_new_game() -> void:
 	shown_territory_tutorial = false
 	shown_rivals_tutorial = false
 	shown_heat_warning = false
+	shown_gambling_tutorial = false
 	bw_attack_bonus = 0.0
 	bw_negotiate_bonus = 0.0
 	elim_overlay_active = false
@@ -918,6 +920,7 @@ func apply_save_data(data: Dictionary) -> void:
 	shown_territory_tutorial = _b(data, "shown_territory_tutorial", false)
 	shown_rivals_tutorial = _b(data, "shown_rivals_tutorial", false)
 	shown_heat_warning = _b(data, "shown_heat_warning", false)
+	shown_gambling_tutorial = _b(data, "shown_gambling_tutorial", false)
 	master_volume = _f(data, "master_volume", 1.0)
 	sfx_volume = _f(data, "sfx_volume", 1.0)
 	music_volume = _f(data, "music_volume", 0.5)
@@ -1073,6 +1076,7 @@ func to_save_data() -> Dictionary:
 		"shown_territory_tutorial": shown_territory_tutorial,
 		"shown_rivals_tutorial": shown_rivals_tutorial,
 		"shown_heat_warning": shown_heat_warning,
+		"shown_gambling_tutorial": shown_gambling_tutorial,
 		"master_volume": master_volume,
 		"sfx_volume": sfx_volume,
 		"music_volume": music_volume,
@@ -1238,6 +1242,56 @@ func grant_gamble_ad_spin() -> bool:
 	Telemetry.log_event("gamble_ad_spin", {"spins": _GamblingSystem.free_spins(self)})
 	stats_changed.emit()
 	return true
+
+
+# ── Cash-wager casino ────────────────────────────────────────────────────────
+
+func gambling_wager_enabled() -> bool:
+	return GameConfig.GAMBLING_ENABLED and _GamblingSystem.WAGER_ENABLED
+
+
+## Stage a casino round: roll a fresh sweet-spot target, return it for the wheel.
+func start_wager_round() -> float:
+	return _GamblingSystem.roll_sweet_spot(self, _rng)
+
+
+## Place a cash wager resolved at the marker position [0,1). Returns a
+## player-facing message; empty stake/insufficient funds return the failure copy.
+func place_wager(position: float, stake: float) -> String:
+	var res := _GamblingSystem.resolve_wager(self, position, stake, _rng)
+	if not res.get("ok", false):
+		return str(res.get("reason", "Cannot bet"))
+	_mark_ips_dirty()
+	stats_changed.emit()
+	var mult: float = float(res.get("multiplier", 0.0))
+	var net: float = float(res.get("net", 0.0))
+	var stake_in: float = float(res.get("stake", 0.0))
+	var win_net_ratio := 0.0
+	var wagered: float = float(gambling.get("lifetime_wagered", 0.0))
+	if wagered > 0.0:
+		win_net_ratio = float(gambling.get("lifetime_wager_net", 0.0)) / wagered
+	Telemetry.log_event("gamble_wager_resolve", {
+		"stake": stake_in,
+		"mult": mult,
+		"net": net,
+		"skill": float(res.get("skill", 0.0)),
+		"rtp": float(res.get("rtp", 0.0)),
+		"jackpot": bool(res.get("jackpot", false)),
+		"lifetime_wagered": wagered,
+		"lifetime_wager_net": float(gambling.get("lifetime_wager_net", 0.0)),
+		"lifetime_wager_net_ratio": win_net_ratio,
+	})
+	if res.get("jackpot", false):
+		_play_sfx("rankup")
+		notification.emit("JACKPOT ×%.0f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GOLD_BRIGHT)
+		return "JACKPOT ×%.1f\n+%s" % [mult, FormatUtil.format_money(net)]
+	if net > 0.0:
+		_play_sfx("coin")
+		notification.emit("Won ×%.2f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GREEN)
+		return "×%.2f\n+%s" % [mult, FormatUtil.format_money(net)]
+	_play_sfx("click")
+	notification.emit("Lost %s" % FormatUtil.format_money(-net), GameTheme.RED)
+	return "×%.2f\n%s" % [mult, FormatUtil.format_money(net)]
 
 
 func activate_dragon_ability(key: String) -> bool:

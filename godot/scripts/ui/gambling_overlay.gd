@@ -1,15 +1,18 @@
 extends CanvasLayer
-## Luck Wheel overlay — skill/timing gambling (daily-spin engagement hook).
+## Luck Wheel overlay — free daily skill spin + cash-wager casino.
 ##
-## Flow: open() stages a round (shuffled segments from GameState). SPIN starts the
-## marker sweep; the button becomes STOP. STOP freezes the marker and resolves the
-## spin at that position. One spin is consumed per resolve; when spins run out the
-## CTA disables and (if ads are on) offers a rewarded +1 spin.
+## Two ways to play the same wheel:
+##  • FREE SPIN — spends a banked free spin, positive-EV, never a cash loss.
+##  • BET $X    — stakes real balance on the skill-nudged RNG casino; the house
+##                keeps an edge (RTP < 1) so it can lose. Timing nudges the odds.
+## SPIN/BET starts a marker sweep; the button becomes STOP. STOP freezes the
+## marker and resolves the active mode (free spin vs wager) at that position.
 
 const _Gambling = preload("res://scripts/systems/gambling_system.gd")
 const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 
 enum Phase { READY, SWEEPING, DONE }
+enum Mode { FREE, WAGER }
 
 @onready var _dim: ColorRect = $Dim
 @onready var _panel: PanelContainer = $Panel
@@ -18,11 +21,20 @@ enum Phase { READY, SWEEPING, DONE }
 @onready var _prompt: Label = $Panel/Margin/VBox/PromptLabel
 @onready var _wheel: Control = $Panel/Margin/VBox/Wheel
 @onready var _status: Label = $Panel/Margin/VBox/StatusLabel
+@onready var _wager_row: HBoxContainer = $Panel/Margin/VBox/WagerRow
+@onready var _stake_label: Label = $Panel/Margin/VBox/WagerRow/StakeLabel
+@onready var _quarter_btn: Button = $Panel/Margin/VBox/WagerRow/QuarterBtn
+@onready var _half_btn: Button = $Panel/Margin/VBox/WagerRow/HalfBtn
+@onready var _max_btn: Button = $Panel/Margin/VBox/WagerRow/MaxBtn
+@onready var _bet_btn: Button = $Panel/Margin/VBox/BetBtn
 @onready var _spin_btn: Button = $Panel/Margin/VBox/SpinBtn
 @onready var _ad_btn: Button = $Panel/Margin/VBox/AdBtn
 @onready var _back_btn: Button = $Panel/Margin/VBox/BackBtn
 
 var _phase: int = Phase.READY
+var _mode: int = Mode.FREE
+var _stake: float = 0.0
+var _active_stake: float = 0.0  # stake locked in when a wager sweep started
 
 
 func _ready() -> void:
@@ -30,6 +42,10 @@ func _ready() -> void:
 	visible = false
 	_apply_theme()
 	_spin_btn.pressed.connect(_on_spin_pressed)
+	_bet_btn.pressed.connect(_on_bet_pressed)
+	_quarter_btn.pressed.connect(_set_stake_fraction.bind(0.25))
+	_half_btn.pressed.connect(_set_stake_fraction.bind(0.5))
+	_max_btn.pressed.connect(_set_stake_fraction.bind(1.0))
 	_ad_btn.pressed.connect(_on_ad_pressed)
 	_back_btn.pressed.connect(close)
 	_wheel.stopped.connect(_on_wheel_stopped)
@@ -49,14 +65,16 @@ func _apply_theme() -> void:
 	_status.add_theme_color_override("font_color", GameTheme.GOLD)
 	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 	GameTheme.apply_overlay_cta(_spin_btn, true)
-	GameTheme.apply_overlay_cta(_ad_btn, false)
-	GameTheme.apply_overlay_cta(_back_btn, false)
+	GameTheme.apply_overlay_cta(_bet_btn, true)
+	for b in [_quarter_btn, _half_btn, _max_btn, _ad_btn, _back_btn]:
+		GameTheme.apply_overlay_cta(b, false)
 
 
 func open() -> void:
 	visible = true
 	_status.text = ""
-	_stage_round()
+	_init_stake()
+	_stage_free_round()  # ring shown when free spins exist; harmless otherwise
 	if not GameState.stats_changed.is_connected(_refresh):
 		GameState.stats_changed.connect(_refresh)
 	_refresh()
@@ -69,48 +87,84 @@ func close() -> void:
 	visible = false
 
 
-func _stage_round() -> void:
+func _stage_free_round() -> void:
+	_mode = Mode.FREE
 	var segs: Array = GameState.start_gamble_round()
 	_wheel.set_segments(segs)
 	_wheel.reset()
 	_phase = Phase.READY if not segs.is_empty() else Phase.DONE
 
 
+func _init_stake() -> void:
+	# Default to a quarter of balance, floored to the min stake.
+	_stake = maxf(_Gambling.WAGER_MIN_STAKE, GameState.balance * 0.25)
+	_stake = minf(_stake, GameState.balance)
+
+
+func _set_stake_fraction(frac: float) -> void:
+	_stake = clampf(GameState.balance * frac, _Gambling.WAGER_MIN_STAKE, maxf(GameState.balance, 0.0))
+	_refresh()
+
+
+func _can_wager() -> bool:
+	return GameState.gambling_wager_enabled() and GameState.balance >= _Gambling.WAGER_MIN_STAKE
+
+
 func _refresh() -> void:
 	var spins: int = GameState.gambling_free_spins()
-	_spins.text = "Spins: %d" % spins
-	match _phase:
-		Phase.SWEEPING:
+	_spins.text = "Spins: %d  ·  Cash: %s" % [spins, FormatUtil.format_money(GameState.balance)]
+	_stake = minf(_stake, GameState.balance)  # balance may have shrunk
+
+	if _phase == Phase.SWEEPING:
+		if _mode == Mode.WAGER:
+			_prompt.text = "STOP on the AIM zone — closer = better odds (house still wins)."
+		else:
 			_prompt.text = "STOP on a high multiplier — timing is everything."
-			_spin_btn.text = "STOP"
-			_spin_btn.disabled = false
-			_ad_btn.visible = false
-		_:
-			if spins > 0:
-				_prompt.text = "Tap SPIN, then STOP the marker on a high slot."
-				_spin_btn.text = "SPIN AGAIN" if _phase == Phase.DONE else "SPIN"
-				_spin_btn.disabled = false
-				_ad_btn.visible = false
-			else:
-				_no_spins_state()
+		_spin_btn.visible = true
+		_spin_btn.text = "STOP"
+		_spin_btn.disabled = false
+		_wager_row.visible = false
+		_bet_btn.visible = false
+		_ad_btn.visible = false
+		return
 
+	# Idle / done state.
+	var can_wager := _can_wager()
+	_wager_row.visible = can_wager
+	_bet_btn.visible = can_wager
+	if can_wager:
+		_bet_btn.text = "BET  %s" % FormatUtil.format_money(_stake)
+		_stake_label.text = "Bet: %s" % FormatUtil.format_money(_stake)
 
-func _no_spins_state() -> void:
-	_prompt.text = "No spins left — come back tomorrow for a free spin."
-	_spin_btn.text = "SPIN"
-	_spin_btn.disabled = true
-	_ad_btn.visible = not GameState.remove_ads and GameState.gambling_free_spins() < _Gambling.FREE_SPIN_CAP
-	_ad_btn.text = "Watch ad  +1 spin"
+	if spins > 0:
+		_spin_btn.visible = true
+		_spin_btn.text = "SPIN AGAIN — free" if _phase == Phase.DONE else "SPIN — free"
+		_spin_btn.disabled = false
+		_ad_btn.visible = false
+	else:
+		_spin_btn.visible = not can_wager  # hide the dead free button if betting is offered
+		_spin_btn.text = "SPIN"
+		_spin_btn.disabled = true
+		_ad_btn.visible = not GameState.remove_ads and spins < _Gambling.FREE_SPIN_CAP
+
+	if _phase != Phase.DONE:
+		if spins > 0:
+			_prompt.text = "Tap SPIN for a free spin, or BET to wager cash."
+		elif can_wager:
+			_prompt.text = "No free spins — BET cash to play the casino."
+		else:
+			_prompt.text = "No spins left — come back tomorrow for a free spin."
 
 
 func _on_spin_pressed() -> void:
 	if _phase == Phase.SWEEPING:
-		_wheel.stop_sweep()  # → _on_wheel_stopped resolves the spin
+		_wheel.stop_sweep()  # → _on_wheel_stopped resolves the active mode
 		return
+	# Free spin.
 	if GameState.gambling_free_spins() <= 0:
 		return
-	if _phase == Phase.DONE or not _wheel.has_round():
-		_stage_round()  # fresh shuffled ring per spin
+	if _mode != Mode.FREE or _phase == Phase.DONE or not _wheel.has_round():
+		_stage_free_round()
 	if not _wheel.has_round():
 		return
 	_status.text = ""
@@ -119,24 +173,39 @@ func _on_spin_pressed() -> void:
 	_refresh()
 
 
+func _on_bet_pressed() -> void:
+	if _phase == Phase.SWEEPING or not _can_wager():
+		return
+	_stake = clampf(_stake, _Gambling.WAGER_MIN_STAKE, GameState.balance)
+	_active_stake = _stake
+	_mode = Mode.WAGER
+	var spot: float = GameState.start_wager_round()
+	_wheel.set_sweet_spot(spot)
+	_wheel.reset()
+	_status.text = ""
+	_wheel.start_sweep()
+	_phase = Phase.SWEEPING
+	_refresh()
+
+
 func _on_wheel_stopped(position: float) -> void:
-	_status.text = GameState.resolve_gamble(position)
+	if _mode == Mode.WAGER:
+		_status.text = GameState.place_wager(position, _active_stake)
+	else:
+		_status.text = GameState.resolve_gamble(position)
 	_phase = Phase.DONE
 	_refresh()
 
 
 func _on_ad_pressed() -> void:
-	# Rewarded +1 spin, routed through the Monetization autoload. On device this
-	# shows a real rewarded ad; the mock backend grants instantly in editor/headless.
-	# The reward lands in _on_ad_reward via Monetization.ad_reward_granted.
+	# Rewarded +1 free spin, routed through the Monetization autoload. On device
+	# this shows a real rewarded ad; the mock backend grants instantly in editor.
 	Monetization.show_rewarded(Monetization.PLACEMENT_GAMBLE_SPIN)
 
 
 func _on_ad_reward(placement: String) -> void:
 	if placement != Monetization.PLACEMENT_GAMBLE_SPIN or not visible:
 		return
-	# grant_gamble_ad_spin() already banked the spin + emitted stats_changed;
-	# just surface the confirmation and re-stage so SPIN AGAIN is live.
 	_status.text = "+1 spin"
-	_stage_round()
+	_stage_free_round()
 	_refresh()

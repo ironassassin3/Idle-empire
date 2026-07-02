@@ -76,6 +76,38 @@ autowrap_mode = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="WagerRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StakeLabel" type="Label" parent="Panel/Margin/VBox/WagerRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.84, 0.49, 1)
+theme_override_font_sizes/font_size = 15
+text = "Bet: $0"
+vertical_alignment = 1
+
+[node name="QuarterBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+text = "¼"
+
+[node name="HalfBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+text = "½"
+
+[node name="MaxBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
+custom_minimum_size = Vector2(60, 40)
+layout_mode = 2
+text = "Max"
+
+[node name="BetBtn" type="Button" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "BET"
+
 [node name="SpinBtn" type="Button" parent="Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2

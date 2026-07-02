@@ -1,7 +1,11 @@
 # Active Gambling — "Luck Wheel" Architecture
 
-> Skill/timing minigame whose only faucet is the **daily-return engagement hook**.
-> Designed so it can **never become the dominant activity** (see §3).
+> Two modes on one wheel:
+> 1. **Free daily spin** (§1–4) — skill/timing, positive-EV, **no cash loss**; faucet is the daily-return hook.
+> 2. **Cash-wager casino** (§5) — stake real balance, **can lose it**; a deliberate cash *sink* whose safety comes from a structural **house edge** (RTP < 1), not from supply scarcity.
+>
+> The free spin can never become dominant (§3). The casino can be played anytime with
+> unlimited stakes; it is safe because the house always wins long-run — see §5.
 
 ## 1. Layering (follows the existing Godot port conventions)
 
@@ -111,3 +115,50 @@ A `CanvasLayer` overlay (layer 11) matching the shipped `prestige_tree_overlay` 
 panel can never clip; `grow_vertical = 2` lets it expand from centre if the 125% accessibility
 text scale grows content past the design height. (The pygame `modal_panel_rect`/`blit_fit_center`
 helpers from the Phase 92 prototype work do **not** exist — and are not needed — in the Godot port.)
+
+## 5. Cash-wager casino (as built — `resolve_wager` + overlay BET path)
+
+The casino shares the wheel but is a different beast from the free spin: you **stake real
+balance and can lose it**. It exists as a deliberate **cash sink**. Its entire safety model
+is one invariant, not the six free-spin levers:
+
+> **Expected value < 1× at every skill level — the house always keeps an edge.**
+
+**How the edge can't leak (the key design trick).** Payout is
+`stake × band × RTP(skill)`, split into two independent parts:
+
+| Part | Source | Property |
+|---|---|---|
+| **Band** (variance / jackpot) | RNG draw over `WAGER_BANDS` weighted by `WAGER_WEIGHTS` | Mean is pinned to **exactly 1.0** (`Σ band·weight = 1.0`), so the segment RNG contributes **zero** net EV — it only adds spread. |
+| **RTP** (the house edge) | `wager_rtp(s) = WAGER_RTP_BASE + WAGER_RTP_SKILL·s` | `0.80` (random) … `0.97` (perfect timing). **Capped below 1**, so EV = 1.0 × RTP(s) = RTP(s) < 1 always. |
+
+Because EV is `1.0 × RTP(s)`, **skill nudges the odds but can never flip them** — even a
+0ms-perfect bot bleeds ~3%/wager. This is why "unlimited stakes" is safe: there is no
+aim-the-jackpot exploit (timing sets RTP, **not** which band you draw), and no positive-EV
+grind. Winnings still feed `balance`/`lifetime_earnings` but **not** `prestige_route_earnings`.
+
+**Validated** (`sim_gambling.py --wager`, mirrored + re-checked in-engine via
+`scripts/tools/wager_probe.gd`):
+
+```
+profile              EV(x)   house edge
+random tap           0.816     18.4%
+expert (60ms)        0.873     12.7%
+perfect bot (0ms)    0.971      2.9%   ← worst case, still < 1.0 → PASS
+```
+
+~83% of wagers return less than the stake — the mathematical consequence of a mean-1.0
+shape with a fat 25× jackpot tail (bigger jackpot ⇒ more frequent small losses). That's a
+**feel** knob (`WAGER_WEIGHTS` / `WAGER_JACKPOT`), not a safety one; retune freely as long as
+`Σ band·weight` stays 1.0.
+
+**View / flow.** The overlay's `BetRow` (¼ / ½ / Max presets) sets `_stake`; **BET $X** stages
+a round via `start_wager_round()` (rolls a random sweet-spot). The wheel switches to
+**skill-meter mode** (`set_sweet_spot`) — a dim track with a graded AIM zone, *not* a payout
+ring, so it never implies an outcome. STOP → `place_wager(position, stake)` → `resolve_wager`
+debits the stake, draws the band, scales by RTP(timing), credits the payout; a loss is shown
+in red. **Telemetry:** `gamble_wager_resolve` logs `lifetime_wager_net_ratio` (net / wagered)
+— expected negative; a *positive* trend means the edge is broken and is a hard tripwire.
+
+**Save:** `lifetime_wagered` + `lifetime_wager_net` (survive prestige, migrate via
+`merge_save_gambling`); `wager_sweet_spot` is runtime-only.

@@ -90,6 +90,96 @@ def run_profile(label: str, jitter_ms: float | None, spins: int,
     }
 
 
+# --- Cash-wager casino (skill-nudged RNG, house edge) ----------------------
+# Mirror of gambling_system.gd WAGER_* constants. The wheel SHAPE has mean 1.0
+# so it leaks no EV; the house edge lives entirely in RTP(s) < 1.
+WAGER_BANDS = [0.0, 0.5, 1.0, 2.0, 5.0, 25.0]
+WAGER_WEIGHTS = [0.48, 0.20, 0.15, 0.10, 0.06, 0.01]
+WAGER_JACKPOT = 25.0
+WAGER_RTP_BASE = 0.80
+WAGER_RTP_SKILL = 0.17
+WAGER_SKILL_TOL = 0.12
+
+
+def _ring_dist(a: float, b: float) -> float:
+    return abs(((a - b + 0.5) % 1.0) - 0.5)
+
+
+def _wager_skill(position: float, sweet_spot: float) -> float:
+    d = _ring_dist(position, sweet_spot)
+    return max(0.0, min(1.0, 1.0 - d / WAGER_SKILL_TOL))
+
+
+def _wager_draw_band(rng: random.Random) -> float:
+    u = rng.random()
+    c = 0.0
+    for band, w in zip(WAGER_BANDS, WAGER_WEIGHTS):
+        c += w
+        if u <= c:
+            return band
+    return WAGER_BANDS[-1]
+
+
+def simulate_wager(rng: random.Random, jitter_ms: float | None) -> tuple[float, float]:
+    """Return (payout_multiplier, timing_skill) for one cash wager.
+
+    The player aims the marker at the round's random sweet spot; timing jitter
+    (ms) blurs the stop exactly like the free-spin skill model. Payout multiplier
+    is band(RNG) * RTP(skill) — skill nudges RTP, never the drawn band.
+    """
+    sweet_spot = rng.random()
+    if jitter_ms is None:
+        stop = rng.random()  # no aim
+    else:
+        pos_err = SWEEP_SPEED * (jitter_ms / 1000.0)
+        stop = (sweet_spot + rng.gauss(0.0, pos_err)) % 1.0
+    skill = _wager_skill(stop, sweet_spot)
+    rtp = WAGER_RTP_BASE + WAGER_RTP_SKILL * skill
+    band = _wager_draw_band(rng)
+    return band * rtp, skill
+
+
+def print_wager_section(spins: int, seed: int) -> None:
+    shape_mean = sum(b * w for b, w in zip(WAGER_BANDS, WAGER_WEIGHTS))
+    print("\n" + "=" * 78)
+    print("CASH-WAGER CASINO — skill-nudged RNG, house edge")
+    print("  wheel shape mean = %.4fx (must be 1.0000 or the edge leaks) · "
+          "jackpot %gx" % (shape_mean, WAGER_JACKPOT))
+    print("  RTP(s) = %.2f + %.2f*s  ->  house edge %.0f%% (random) .. %.0f%% (perfect)"
+          % (WAGER_RTP_BASE, WAGER_RTP_SKILL,
+             (1 - WAGER_RTP_BASE) * 100, (1 - (WAGER_RTP_BASE + WAGER_RTP_SKILL)) * 100))
+    print("%-30s %8s %8s %8s %9s %9s"
+          % ("profile", "EV(x)", "RTP", "P(25x)", "P(<stake)", "edge"))
+    print("-" * 78)
+    worst_ev = 0.0
+    for label, jit in SKILL_PROFILES:
+        rng = random.Random(seed + 99)
+        evs = []
+        skills = []
+        p_jack = 0
+        p_loss = 0
+        for _ in range(spins):
+            m, s = simulate_wager(rng, jit)
+            evs.append(m)
+            skills.append(s)
+            if m >= WAGER_JACKPOT * WAGER_RTP_BASE:
+                p_jack += 1
+            if m < 1.0:
+                p_loss += 1
+        ev = statistics.fmean(evs)
+        worst_ev = max(worst_ev, ev)
+        mean_skill = statistics.fmean(skills)
+        print("%-30s %8.3f %8.3f %7.2f%% %8.1f%% %8.1f%%"
+              % (label, ev, WAGER_RTP_BASE + WAGER_RTP_SKILL * mean_skill,
+                 p_jack / spins * 100, p_loss / spins * 100, (1 - ev) * 100))
+    print("-" * 78)
+    ok = worst_ev < 1.0
+    print("  HOUSE EDGE HOLDS: worst-case EV (perfect bot) = %.3fx < 1.0  ->  %s"
+          % (worst_ev, "PASS" if ok else "FAIL — INFINITE MONEY BUG"))
+    print("  A grinder loses ~%.0f%% of every dollar wagered even at perfect skill."
+          % ((1 - worst_ev) * 100))
+
+
 def _guardrail_verdict(worst_frac: float) -> str:
     if worst_frac < GUARDRAIL_FRACTION:
         return "PASS"
@@ -142,6 +232,8 @@ def main() -> None:
     ap.add_argument("--compare-daily-reward", action="store_true",
                     help="also compare 2-spin/day income vs daily login reward")
     ap.add_argument("--seed", type=int, default=1234)
+    ap.add_argument("--wager", action="store_true",
+                    help="also validate the cash-wager casino house edge")
     args = ap.parse_args()
 
     print("Luck Wheel EV — ring mean = %.3fx over %d segments (jackpot %gx)"
@@ -194,6 +286,9 @@ def main() -> None:
               % (bot_frac_3 * 100))
     if skilled["ev"] > 2.5 * results[0]["ev"]:
         print("  • Skill spread is wide (skilled >> random). Raise SWEEP_SPEED to flatten.")
+
+    if args.wager:
+        print_wager_section(args.spins, args.seed)
 
 
 if __name__ == "__main__":

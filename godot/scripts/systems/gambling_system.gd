@@ -34,6 +34,104 @@ const WELCOME_FREE_SPINS := 1      # one-time onboarding spin on new game
 const SWEEP_SPEED := 1.7
 
 
+# ── Cash-wager casino (skill-nudged RNG, house edge) ─────────────────────────
+## Unlike the free daily spin (positive-EV, no loss), the casino lets the player
+## stake real balance and CAN lose it. The house edge is structural and cannot be
+## skilled around: the wheel SHAPE has mean multiplier == 1.0 (pure variance), and
+## the entire edge lives in a return-to-player scalar RTP(s) < 1. Payout is
+## `stake * band * RTP(s)`, so EV == RTP(s) at every skill level. Even a perfect
+## 0ms bot tops out at WAGER_RTP_BASE + WAGER_RTP_SKILL == 0.97 < 1 → the house
+## always wins long-run. Proven in sim_gambling.py (--wager). KEEP IN SYNC.
+const WAGER_ENABLED := true
+
+# Fair wheel shape: Σ weights == 1 and Σ band*weight == 1.0 exactly. The mean is
+# pinned to 1.0 so the segment RNG can never leak EV — the edge is only in RTP.
+const WAGER_BANDS: Array = [0.0, 0.5, 1.0, 2.0, 5.0, 25.0]
+const WAGER_WEIGHTS: Array = [0.48, 0.20, 0.15, 0.10, 0.06, 0.01]
+const WAGER_JACKPOT := 25.0
+
+# RTP(s) = BASE + SKILL * timing_skill, clamped < 1. This IS the house edge.
+const WAGER_RTP_BASE := 0.80    # random timing → 20% house edge
+const WAGER_RTP_SKILL := 0.17   # perfect timing → 3% house edge (never negative)
+
+# Ring-fraction distance to the sweet spot inside which full skill is earned.
+const WAGER_SKILL_TOL := 0.12
+const WAGER_MIN_STAKE := 1.0
+
+
+## Timing skill [0,1] from how close the stop landed to the round's sweet spot.
+## Distance is measured on the ring (wraps at 1.0).
+static func wager_skill(position: float, sweet_spot: float) -> float:
+	var d := absf(fposmod(position - sweet_spot + 0.5, 1.0) - 0.5)
+	return clampf(1.0 - d / WAGER_SKILL_TOL, 0.0, 1.0)
+
+
+static func wager_rtp(skill: float) -> float:
+	return WAGER_RTP_BASE + WAGER_RTP_SKILL * clampf(skill, 0.0, 1.0)
+
+
+## Draw one shape band by weight. Pure RNG — timing does NOT pick the band.
+static func wager_draw_band(rng: RandomNumberGenerator) -> float:
+	var u := rng.randf()
+	var c := 0.0
+	for i in WAGER_BANDS.size():
+		c += float(WAGER_WEIGHTS[i])
+		if u <= c:
+			return float(WAGER_BANDS[i])
+	return float(WAGER_BANDS[WAGER_BANDS.size() - 1])
+
+
+## The round's sweet-spot position [0,1). Randomised each round so it can't be
+## memorised; the UI shows it as the target the marker should stop on.
+static func roll_sweet_spot(state, rng: RandomNumberGenerator) -> float:
+	var spot := rng.randf()
+	state.gambling["wager_sweet_spot"] = spot
+	return spot
+
+
+## Resolve a cash wager. Debits `stake` from balance, draws an RNG band, scales by
+## RTP(timing_skill), credits the payout. Net can be negative (a real loss).
+## Returns {ok, multiplier, band, skill, rtp, stake, payout, net, jackpot, reason}.
+static func resolve_wager(state, position: float, stake: float, rng: RandomNumberGenerator) -> Dictionary:
+	var fail := {
+		"ok": false, "multiplier": 0.0, "band": 0.0, "skill": 0.0, "rtp": 0.0,
+		"stake": 0.0, "payout": 0.0, "net": 0.0, "jackpot": false, "reason": "",
+	}
+	if not WAGER_ENABLED:
+		fail["reason"] = "Casino disabled"
+		return fail
+	if stake < WAGER_MIN_STAKE:
+		fail["reason"] = "Stake too small"
+		return fail
+	if stake > state.balance:
+		fail["reason"] = "Not enough cash"
+		return fail
+	var spot := float(state.gambling.get("wager_sweet_spot", 0.5))
+	var skill := wager_skill(position, spot)
+	var rtp := wager_rtp(skill)
+	var band := wager_draw_band(rng)
+	var mult := band * rtp
+	var payout := stake * mult
+	var net := payout - stake
+	# Debit the stake, credit the payout. Winnings feed balance/lifetime_earnings
+	# but NOT prestige_route_earnings (same rule as the free spin).
+	state.balance -= stake
+	state.balance += payout
+	if net > 0.0:
+		state.lifetime_earnings += net
+	state.gambling["wager_sweet_spot"] = -1.0  # consume the staged round
+	state.gambling["lifetime_wagered"] = float(state.gambling.get("lifetime_wagered", 0.0)) + stake
+	state.gambling["lifetime_wager_net"] = float(state.gambling.get("lifetime_wager_net", 0.0)) + net
+	state.gambling["lifetime_plays"] = int(state.gambling.get("lifetime_plays", 0)) + 1
+	if mult > float(state.gambling.get("best_mult", 0.0)):
+		state.gambling["best_mult"] = mult
+	return {
+		"ok": true, "multiplier": mult, "band": band, "skill": skill, "rtp": rtp,
+		"stake": stake, "payout": payout, "net": net,
+		"jackpot": band >= WAGER_JACKPOT, "reason": "",
+	}
+
+
 ## Fresh runtime container. Mirrors WorldState.make_* factories.
 static func make_gambling() -> Dictionary:
 	return {
@@ -41,6 +139,11 @@ static func make_gambling() -> Dictionary:
 		"lifetime_plays": 0,
 		"lifetime_winnings": 0.0,
 		"best_mult": 0.0,
+		# Cash-casino lifetime stats (survive prestige, like the rest of gambling).
+		"lifetime_wagered": 0.0,
+		"lifetime_wager_net": 0.0,
+		# Per-round sweet-spot target; -1 when no wager round is staged.
+		"wager_sweet_spot": -1.0,
 		# Per-round, runtime-only (not saved): the shuffled segment order the UI
 		# is currently rendering. Rebuilt every start_round so a spin can't be
 		# memorised. Empty when no round is staged.
@@ -54,11 +157,12 @@ static func merge_save_gambling(g: Dictionary, saved) -> void:
 	for key in ["free_spins", "lifetime_plays"]:
 		if saved.get(key) != null:
 			g[key] = int(saved[key])
-	for key in ["lifetime_winnings", "best_mult"]:
+	for key in ["lifetime_winnings", "best_mult", "lifetime_wagered", "lifetime_wager_net"]:
 		if saved.get(key) != null:
 			g[key] = float(saved[key])
 	g["free_spins"] = clampi(int(g.get("free_spins", 0)), 0, FREE_SPIN_CAP)
 	g["round_segments"] = []
+	g["wager_sweet_spot"] = -1.0
 
 
 static func gambling_to_save(g: Dictionary) -> Dictionary:
@@ -67,6 +171,8 @@ static func gambling_to_save(g: Dictionary) -> Dictionary:
 		"lifetime_plays": int(g.get("lifetime_plays", 0)),
 		"lifetime_winnings": float(g.get("lifetime_winnings", 0.0)),
 		"best_mult": float(g.get("best_mult", 0.0)),
+		"lifetime_wagered": float(g.get("lifetime_wagered", 0.0)),
+		"lifetime_wager_net": float(g.get("lifetime_wager_net", 0.0)),
 	}
 
 
