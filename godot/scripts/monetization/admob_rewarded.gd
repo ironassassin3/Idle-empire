@@ -13,11 +13,17 @@ signal loaded(placement: String)
 signal rewarded(placement: String)
 signal failed(placement: String, reason: String)
 
-# Google public TEST rewarded unit (Android) — always fills, safe to click.
-# Swap for your real ca-app-pub-…/… unit(s) at launch. The App ID lives in
-# addons/admob/android/config.gd (APPLICATION_ID) and is injected into the manifest
-# by Poing's Android export plugin.
+# Rewarded ad units. DEBUG builds (editor + sideloaded debug APK) use Google's
+# public TEST unit — always fills, safe to click. RELEASE builds use the real unit,
+# so you can never accidentally click a live ad during development (= AdMob ban).
+# App ID (real): ca-app-pub-7658776587792417~1656634507 — set in
+# addons/admob/android/config.gd (gitignored) and injected into the manifest by Poing.
 const TEST_REWARDED_UNIT := "ca-app-pub-3940256099942544/5224354917"
+const REAL_REWARDED_UNIT := "ca-app-pub-7658776587792417/4834260941"
+
+
+func _rewarded_unit() -> String:
+	return TEST_REWARDED_UNIT if OS.is_debug_build() else REAL_REWARDED_UNIT
 
 var _ad: RewardedAd = null
 var _ready := false
@@ -111,7 +117,7 @@ func _warm() -> void:
 		_ready = false
 		_warming = false
 		failed.emit("", "load_failed")
-	loader.load(TEST_REWARDED_UNIT, AdRequest.new(), cb)
+	loader.load(_rewarded_unit(), AdRequest.new(), cb)
 
 
 func show(placement: String) -> void:
