@@ -1283,15 +1283,15 @@ func place_wager(position: float, stake: float) -> String:
 	})
 	if res.get("jackpot", false):
 		_play_sfx("rankup")
-		notification.emit("JACKPOT ×%.0f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GOLD_BRIGHT)
-		return "JACKPOT ×%.1f\n+%s" % [mult, FormatUtil.format_money(net)]
+		notification.emit("BIG SCORE ×%.0f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GOLD_BRIGHT)
+		return "BIG SCORE ×%.1f\n+%s" % [mult, FormatUtil.format_money(net)]
 	if net > 0.0:
 		_play_sfx("coin")
-		notification.emit("Won ×%.2f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GREEN)
-		return "×%.2f\n+%s" % [mult, FormatUtil.format_money(net)]
+		notification.emit("Paid off ×%.2f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GREEN)
+		return "Paid off ×%.2f\n+%s" % [mult, FormatUtil.format_money(net)]
 	_play_sfx("click")
-	notification.emit("Lost %s" % FormatUtil.format_money(-net), GameTheme.RED)
-	return "×%.2f\n%s" % [mult, FormatUtil.format_money(net)]
+	notification.emit("Deal fell through  %s" % FormatUtil.format_money(net), GameTheme.RED)
+	return "Deal fell through\n%s" % FormatUtil.format_money(net)
 
 
 func activate_dragon_ability(key: String) -> bool:

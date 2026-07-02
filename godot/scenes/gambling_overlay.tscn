@@ -85,7 +85,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.84, 0.49, 1)
 theme_override_font_sizes/font_size = 15
-text = "Bet: $0"
+text = "Risk: $0"
 vertical_alignment = 1
 
 [node name="QuarterBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
@@ -106,7 +106,7 @@ text = "Max"
 [node name="BetBtn" type="Button" parent="Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-text = "BET"
+text = "RISK IT"
 
 [node name="SpinBtn" type="Button" parent="Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 56)

@@ -117,7 +117,7 @@ func _refresh() -> void:
 
 	if _phase == Phase.SWEEPING:
 		if _mode == Mode.WAGER:
-			_prompt.text = "STOP on the AIM zone — closer = better odds (house still wins)."
+			_prompt.text = "STOP in the sweet spot — the closer you land, the bigger the cut."
 		else:
 			_prompt.text = "STOP on a high multiplier — timing is everything."
 		_spin_btn.visible = true
@@ -133,8 +133,8 @@ func _refresh() -> void:
 	_wager_row.visible = can_wager
 	_bet_btn.visible = can_wager
 	if can_wager:
-		_bet_btn.text = "BET  %s" % FormatUtil.format_money(_stake)
-		_stake_label.text = "Bet: %s" % FormatUtil.format_money(_stake)
+		_bet_btn.text = "RISK  %s" % FormatUtil.format_money(_stake)
+		_stake_label.text = "Risk: %s" % FormatUtil.format_money(_stake)
 
 	if spins > 0:
 		_spin_btn.visible = true
@@ -149,9 +149,9 @@ func _refresh() -> void:
 
 	if _phase != Phase.DONE:
 		if spins > 0:
-			_prompt.text = "Tap SPIN for a free spin, or BET to wager cash."
+			_prompt.text = "Tap SPIN for a free spin, or put cash on the line."
 		elif can_wager:
-			_prompt.text = "No free spins — BET cash to play the casino."
+			_prompt.text = "No free spins — put cash on the line to keep playing."
 		else:
 			_prompt.text = "No spins left — come back tomorrow for a free spin."
 

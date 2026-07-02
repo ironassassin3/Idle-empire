@@ -248,7 +248,7 @@ func _ready() -> void:
 	offline_vbox.move_child(_offline_watch_ad, offline_vbox.get_child_count() - 1)
 	_offline_watch_ad.pressed.connect(_on_offline_watch_ad)
 	_offline_spin_btn = Button.new()
-	_offline_spin_btn.text = "🎰 Spin now"
+	_offline_spin_btn.text = "🎯 Spin now"
 	_offline_spin_btn.visible = false
 	offline_vbox.add_child(_offline_spin_btn)
 	offline_vbox.move_child(_offline_spin_btn, offline_vbox.get_child_count() - 1)
@@ -1163,7 +1163,7 @@ func _spin_grant_line() -> String:
 	if not _has_spin_grant():
 		return ""
 	var n: int = GameState.gambling_spins_granted
-	return "\n\n🎰 +%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
+	return "\n\n🎯 +%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
 
 
 func _offline_body_text(daily_only: bool) -> String:
@@ -1340,7 +1340,7 @@ func _refresh_all() -> void:
 	_buy_mult_chip.tooltip_text = "Buy quantity: ×1, ×10, or Max affordable"
 	if _wheel_chip.visible:
 		var spins: int = GameState.gambling_free_spins()
-		_wheel_chip.text = "🎰%d" % spins if spins > 0 else "🎰"
+		_wheel_chip.text = "🎯%d" % spins if spins > 0 else "🎯"
 		_wheel_chip.tooltip_text = "Luck Wheel — %d free spin(s)" % spins
 	var hint := _GoalSystem.next_focus_hint(GameState)
 	if hint.is_empty():

@@ -102,7 +102,7 @@ clip_text = true
 [node name="WheelChip" type="Button" parent="Root/VBox/Header"]
 custom_minimum_size = Vector2(44, 44)
 layout_mode = 2
-text = "🎰"
+text = "🎯"
 
 [node name="CfgBtn" type="Button" parent="Root/VBox/Header"]
 custom_minimum_size = Vector2(44, 44)
