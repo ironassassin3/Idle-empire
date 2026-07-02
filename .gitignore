@@ -7,3 +7,9 @@ __pycache__/
 *.pyc
 *.pyo
 graphify-out/
+
+# Native Android plugin binaries — install per godot/addons/PLUGINS.md, never commit.
+/godot/_plugin_staging/
+/godot/addons/GodotGooglePlayBilling/
+/godot/addons/GodotPlayGameServices/
+/godot/addons/admob/
