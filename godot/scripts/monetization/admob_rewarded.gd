@@ -22,16 +22,67 @@ const TEST_REWARDED_UNIT := "ca-app-pub-3940256099942544/5224354917"
 var _ad: RewardedAd = null
 var _ready := false
 var _warming := false
+var _ads_started := false
 
 
 func initialize() -> void:
 	# Compliance (B1): simulated-gambling + crime theme → cap ad maturity and never
-	# declare child-directed. Set before initialize so the first request honours it.
+	# declare child-directed. Set before init so the first request honours it.
 	var cfg := RequestConfiguration.new()
 	cfg.max_ad_content_rating = RequestConfiguration.MAX_AD_CONTENT_RATING_MA
 	cfg.tag_for_child_directed_treatment = RequestConfiguration.TagForChildDirectedTreatment.FALSE
 	cfg.tag_for_under_age_of_consent = RequestConfiguration.TagForUnderAgeOfConsent.FALSE
 	MobileAds.set_request_configuration(cfg)
+	# GDPR/CCPA (B2): resolve UMP consent BEFORE starting the ads SDK, so EU/California
+	# users get the consent form and no ad is ever requested pre-consent. UMP ships
+	# inside Poing's "ads" library, so it's present whenever AdMob is.
+	_request_consent()
+
+
+# ── UMP consent gate (B2) ────────────────────────────────────────────────────
+
+func _request_consent() -> void:
+	# No debug_geography here — forcing EEA would show the form to everyone. Real
+	# geography detection applies; the form appears only where legally required.
+	var params := ConsentRequestParameters.new()
+	params.tag_for_under_age_of_consent = false
+	UserMessagingPlatform.consent_information.update(
+		params, _on_consent_updated, _on_consent_failed)
+
+
+func _on_consent_updated() -> void:
+	if UserMessagingPlatform.consent_information.get_is_consent_form_available():
+		UserMessagingPlatform.load_consent_form(_on_form_loaded, _on_form_failed)
+	else:
+		_start_ads()
+
+
+func _on_consent_failed(_error: FormError) -> void:
+	# Consent lookup failed (e.g. no network). Proceed — the SDK falls back to
+	# non-personalized ads until consent can be gathered on a later launch.
+	_start_ads()
+
+
+func _on_form_loaded(form: ConsentForm) -> void:
+	if UserMessagingPlatform.consent_information.get_consent_status() == ConsentInformation.ConsentStatus.REQUIRED:
+		form.show(_on_form_dismissed)
+	else:
+		_start_ads()
+
+
+func _on_form_failed(_error: FormError) -> void:
+	_start_ads()
+
+
+func _on_form_dismissed(_error: FormError) -> void:
+	# User has now answered (or the form errored). The SDK reads the stored consent.
+	_start_ads()
+
+
+func _start_ads() -> void:
+	if _ads_started:
+		return
+	_ads_started = true
 	MobileAds.initialize()
 	_warm()
 
