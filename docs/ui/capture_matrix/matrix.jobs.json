@@ -1,0 +1,19 @@
+[
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "0", "out": "docs/ui/capture_matrix/tier0_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "1", "out": "docs/ui/capture_matrix/tier1_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "out": "docs/ui/capture_matrix/tier2_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "3", "out": "docs/ui/capture_matrix/tier3_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "4", "out": "docs/ui/capture_matrix/tier4_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "owned_list": [1],   "out": "docs/ui/capture_matrix/buildings1_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "owned_list": [10],  "out": "docs/ui/capture_matrix/buildings10_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "owned_list": [40],  "out": "docs/ui/capture_matrix/buildings40_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "owned_list": [100], "out": "docs/ui/capture_matrix/buildings100_bldgs.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "heat": "0",  "out": "docs/ui/capture_matrix/tier2_heat0.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "heat": "50", "out": "docs/ui/capture_matrix/tier2_heat50.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "heat": "75", "out": "docs/ui/capture_matrix/tier2_heat75.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "districts": "0",  "out": "docs/ui/capture_matrix/tier2_districts0.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "districts": "5",  "out": "docs/ui/capture_matrix/tier2_districts5.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "districts": "20", "out": "docs/ui/capture_matrix/tier2_districts20.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "city_tier": "2", "cash": 5000, "out": "docs/ui/capture_matrix/tier2_affordance.png"},
+  {"shell": true, "tab": 0, "w": 720, "h": 1280, "frames": 40, "no_overlays": true, "all_buildings_owned": 7, "out": "docs/ui/capture_matrix/tab_bldgs.png"}
+]

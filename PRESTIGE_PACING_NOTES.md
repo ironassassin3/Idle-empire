@@ -16,7 +16,7 @@ Post-P1 snowball had two drivers:
 | Reset route earnings on prestige | `src/prestige.py` | already present |
 | Soft rebuild gates on 2nd+ prestige (75% of first) | 15 dealers / 6 rackets / 3 chops | `game_config.gd` + `prestige.gd` |
 
-First prestige gates unchanged: $20M route, 20/8/4 buildings, Made Man rank.
+First prestige gates unchanged: $50M route, 25/10/5 buildings, Made Man rank.
 
 ## Cadence — before vs after
 

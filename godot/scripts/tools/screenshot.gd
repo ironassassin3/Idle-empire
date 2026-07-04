@@ -17,6 +17,7 @@ extends SceneTree
 ##   --prestige-tree      Open prestige tree overlay for capture
 
 const GAME_SCREEN := "res://scenes/game_screen.tscn"
+const GAME_SHELL := "res://scenes/game_shell.tscn"
 const MAIN_MENU := "res://scenes/main_menu.tscn"
 const SoakAutoloads = preload("res://scripts/tools/soak_autoloads.gd")
 
@@ -28,8 +29,13 @@ var _tab := 0
 var _out := "user://shot.png"
 var _screen: Node = null
 var _menu_mode := false
+var _shell_mode := false
 var _offline_overlay_mode := false
 var _prestige_tree_mode := false
+
+## --shell tab indices → Stage & Ledger tab ids (turf subtabs share "turf").
+const _SHELL_TABS := ["bldgs", "upgrs", "turf", "turf", "turf", "turf", "stats", "mgrs", "config"]
+const _SHELL_SUBTABS := {2: "turf", 3: "rivals", 4: "crew", 5: "ops"}
 
 
 func _initialize() -> void:
@@ -39,10 +45,12 @@ func _initialize() -> void:
 	var w := int(_arg_after("--w", "720"))
 	var h := int(_arg_after("--h", "1280"))
 	_menu_mode = _has_flag("--menu")
+	_shell_mode = _has_flag("--shell")
 	_offline_overlay_mode = _has_flag("--offline-overlay")
 	_prestige_tree_mode = _has_flag("--prestige-tree")
 
 	SoakAutoloads.install(self)
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
 	var gs: Node = root.get_node_or_null("GameState")
 	if gs != null and gs.has_method("reset_new_game") and not _menu_mode:
 		gs.reset_new_game()
@@ -55,7 +63,7 @@ func _initialize() -> void:
 	root.set_content_scale_size(Vector2i(w, h))
 	DisplayServer.window_set_size(Vector2i(w, h))
 
-	var scene_path := MAIN_MENU if _menu_mode else GAME_SCREEN
+	var scene_path := MAIN_MENU if _menu_mode else (GAME_SHELL if _shell_mode else GAME_SCREEN)
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
 		push_error("Failed to load %s" % scene_path)
@@ -82,8 +90,15 @@ func _apply_city_matrix_seed(gs: Node) -> void:
 		var unlock_count := clampi(int(districts_arg), 0, districts.size())
 		for i in districts.size():
 			var t = districts[i]
-			if t != null and t.has_method("set"):
-				t.unlocked = i < unlock_count
+			if t == null:
+				continue
+			var owned: bool = i < unlock_count
+			if typeof(t) == TYPE_DICTIONARY:
+				t["unlocked"] = owned
+				if owned:
+					t["owner"] = "player"
+			elif t.has_method("set"):
+				t.unlocked = owned
 		if gs.has_signal("stats_changed"):
 			gs.stats_changed.emit()
 	var prestige_arg := _arg_after("--prestige-tokens", "")
@@ -129,8 +144,23 @@ func _seed_buildings(gs: Node, count: int) -> void:
 
 func _process(_delta: float) -> bool:
 	_frame += 1
+	# game_screen's session start can reset seeded state — re-apply seeds
+	# once the scene is live so affordance/heat states actually show.
+	if not _menu_mode and _frame == 3:
+		var gs: Node = root.get_node_or_null("GameState")
+		if gs != null:
+			var cash := float(_arg_after("--cash", "0"))
+			if cash > 0.0:
+				gs.balance = cash
+			_apply_city_matrix_seed(gs)
 	if not _menu_mode and _frame == 5 and _screen != null:
-		if _screen.has_method("_set_tab"):
+		if _shell_mode:
+			var events: Node = root.get_node_or_null("UiEvents")
+			if events != null and _tab >= 0 and _tab < _SHELL_TABS.size():
+				events.emit_signal("tab_requested", _SHELL_TABS[_tab])
+				if _SHELL_SUBTABS.has(_tab):
+					events.emit_signal("subtab_requested", _SHELL_SUBTABS[_tab])
+		elif _screen.has_method("_set_tab"):
 			_screen.call("_set_tab", _tab)
 		if _prestige_tree_mode:
 			var tree := _screen.get_node_or_null("PrestigeTreeOverlay")

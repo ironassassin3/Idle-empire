@@ -19,6 +19,7 @@ const AUTOLOADS := [
 	["Notifications", "res://scripts/autoload/notifications.gd"],
 	["CloudSave", "res://scripts/autoload/cloud_save.gd"],
 	["RusticUi", "res://scripts/autoload/rustic_ui.gd"],
+	["UiEvents", "res://scripts/ui/shell/ui_events.gd"],
 ]
 
 

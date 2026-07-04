@@ -8,6 +8,10 @@ __pycache__/
 *.pyo
 graphify-out/
 
+# /godot-design render output (design scenes themselves ARE committed).
+/godot/design/shots/
+/backups/
+
 # Native Android plugin binaries — install per godot/addons/PLUGINS.md, never commit.
 /godot/_plugin_staging/
 /godot/addons/GodotGooglePlayBilling/

@@ -1,14 +1,14 @@
-# Project: Criminal Empire ó 2D Idle Game
+# Project: Criminal Empire ÔøΩ 2D Idle Game
 
-> **MANDATORY ó read before any art/UI/audio work:** [`ART_POLICY.md`](ART_POLICY.md)  
+> **MANDATORY ÔøΩ read before any art/UI/audio work:** [`ART_POLICY.md`](ART_POLICY.md)  
 > No generative-AI assets. Visuals and SFX are **code-built** (or owner-provided hand art only).
 
 ## Ship target vs prototype
 
 | Runtime | Role |
 |---------|------|
-| **`godot/`** | **1.0 product** ó mobile launch vehicle. All player-facing UI, feel, and new features land here. |
-| **pygame (`src/`, `main.py`)** | **Prototype / balance lab** ó mechanics reference and sim harness (`sim_pacing.py`, `sim_smoke.py`, income parity). Not maintained for UI or presentation. Do not spend effort on pygame polish phases. |
+| **`godot/`** | **1.0 product** ÔøΩ mobile launch vehicle. All player-facing UI, feel, and new features land here. |
+| **pygame (`src/`, `main.py`)** | **Prototype / balance lab** ÔøΩ mechanics reference and sim harness (`sim_pacing.py`, `sim_smoke.py`, income parity). Not maintained for UI or presentation. Do not spend effort on pygame polish phases. |
 
 Balance changes: prove in pygame sims if convenient, then port constants to Godot. Gameplay/UI work: **Godot first.**
 
@@ -16,7 +16,7 @@ Balance changes: prove in pygame sims if convenient, then port constants to Godo
 - Be concise by default. Lead with the conclusion, then minimal supporting detail.
 - Prefer bullets and short tables over paragraphs. No preamble, no filler, no motivational language.
 - Don't restate the question or recap context the user already has.
-- Answer what was asked ó don't volunteer tangents or over-explain.
+- Answer what was asked ÔøΩ don't volunteer tangents or over-explain.
 - Match response length to the task: one-liners for simple things, detail only when it changes a decision.
 - Don't be a yes-man. Challenge weak reasoning and give evidence-based pushback when warranted.
 - Show code/file refs as clickable links, not fenced restatements of code the user can open.
@@ -29,7 +29,12 @@ A modular idle/incremental game where the player builds a criminal empire. Core 
 # Ship target (Godot 1.0)
 # Open godot/project.godot in Godot 4.3+ and press F5
 
-# Prototype / balance lab (pygame ó sims + optional manual playtest)
+# UI design loop (/godot-design skill) ‚Äî build a scene in godot/design/, render, look, iterate
+.\design_preview.ps1 -Scene godot\design\<name>.tscn -Sizes 720x1280,1080x1920
+# Fast path (batch/exact-px/debug-rects/input-playback): .\ui_capture.ps1 -Spec <jobs.json>  or  -Shell -Tab 0 -Size 1080x1920 -DebugRects
+# Kit/contract: godot/design/DESIGN_KIT.md ¬∑ harnesses: godot/scripts/tools/design_preview.gd + ui_capture.gd
+
+# Prototype / balance lab (pygame ÔøΩ sims + optional manual playtest)
 python main.py
 python sim_pacing.py --minutes 45 --active 0.33 --cps 2
 python sim_prestige_strategies.py --active 0.33 --minutes 120 --prestiges 10
@@ -38,7 +43,7 @@ pip install pygame-ce   # only needed for lab sims
 flake8 .
 ```
 
-## Key Files (pygame prototype ó lab reference)
+## Key Files (pygame prototype ÔøΩ lab reference)
 
 Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui.py`) as the product UI.**
 
@@ -46,7 +51,7 @@ Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui
 |---|---|
 | `main.py` | Engine entry point. `MenuState` ? `PlayingState` handoff only. |
 | `config.py` | All constants: `SCREEN_WIDTH=900`, `SCREEN_HEIGHT=720`, `FPS`, colours, font sizes. |
-| `src/states.py` | `PlayingState` ó main game loop: `update()`, `draw()`, `handle_events()`. Tab routing, milestone queue, achievement throttle, income cache. |
+| `src/states.py` | `PlayingState` ÔøΩ main game loop: `update()`, `draw()`, `handle_events()`. Tab routing, milestone queue, achievement throttle, income cache. |
 | `src/buildings.py` | 11 `Building` dataclasses, `draw_panel()`, `handle_click()`, `update_building_specials()`. |
 | `src/managers.py` | 11 manager objects, `compute_base_income()`. |
 | `src/upgrades.py` | Tiered upgrades with `effect_key` system. |
@@ -54,7 +59,7 @@ Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui
 | `src/prestige_tree.py` | Perk tree, `perks_purchased` list. |
 | `src/ui.py` | All render helpers: `draw_stats()`, `draw_right_panel()`, `draw_milestone_overlay()`, notification stack, surface caches. |
 | `src/save_load.py` | JSON save/load with field migration. `load_game_preview()` for title screen. |
-| `src/heat.py` | Heat meter (0ñ100). `reduce_heat()`. Police raids at 60%+. |
+| `src/heat.py` | Heat meter (0ÔøΩ100). `reduce_heat()`. Police raids at 60%+. |
 | `src/territory.py` | 5 territories + warfare (Attack/Bribe/Negotiate/Sabotage). Success chance uses rival penalty. |
 | `src/rivals.py` | 5 rival factions with Traits, passive growth, rival-vs-rival combat, defeat system. |
 | `src/crew.py` | 5 crew roles (Protection/Collection/Smuggling/Territory/Heat). Pool = total buildings owned. |
@@ -66,15 +71,15 @@ Use these when tuning balance or running sims. **Do not treat pygame UI (`src/ui
 ## Architecture Rules
 
 ### State machine
-All states inherit `GameState` (src/state_base.py). `main.py` only switches between `MenuState` and `PlayingState` ó no loose booleans.
+All states inherit `GameState` (src/state_base.py). `main.py` only switches between `MenuState` and `PlayingState` ÔøΩ no loose booleans.
 
 ### Income pipeline
 ```
 buildings.income_per_second
   ? managers.compute_base_income
-  ? PlayingState.income_per_second   # applies prestige mult ◊ heat mult ◊ territory mult ◊ syndicate buffs ◊ crew collection bonus
+  ? PlayingState.income_per_second   # applies prestige mult ÔøΩ heat mult ÔøΩ territory mult ÔøΩ syndicate buffs ÔøΩ crew collection bonus
 ```
-`income_per_second` is a cached property ó `_ips_dirty = True` is set at the top of `update()` so it recomputes at most once per frame.
+`income_per_second` is a cached property ÔøΩ `_ips_dirty = True` is set at the top of `update()` so it recomputes at most once per frame.
 
 ### Delta time
 Every movement, rate, and timer must multiply by `dt`. Never tie speed to FPS.
@@ -95,11 +100,11 @@ Strings in `_milestone_queue` **must** use `\n` as line separator:
 - Remaining lines ? body (xs muted text)
 `draw_milestone_overlay()` in ui.py handles all cases. Do not pass flat strings.
 
-### Performance ó do not regress
-- `_ips_dirty` / `_ips_cached` pattern in `PlayingState` ó never call income computation more than once per frame.
+### Performance ÔøΩ do not regress
+- `_ips_dirty` / `_ips_cached` pattern in `PlayingState` ÔøΩ never call income computation more than once per frame.
 - `_STATS_SURF_CACHE` in ui.py rebuilds the stats tab surface at ~5fps, not 60fps.
-- `_ach_check_timer` ó achievements evaluated every 0.5s, not every frame.
-- Notification/coin/orbit surfaces are globally reused ó do not allocate new surfaces per-frame in draw code.
+- `_ach_check_timer` ÔøΩ achievements evaluated every 0.5s, not every frame.
+- Notification/coin/orbit surfaces are globally reused ÔøΩ do not allocate new surfaces per-frame in draw code.
 
 ## Code Style
 - **Naming:** PEP 8. `snake_case` functions/variables/files, `PascalCase` classes, `UPPER_CASE` constants.
@@ -111,24 +116,24 @@ Strings in `_milestone_queue` **must** use `\n` as line separator:
 
 **Full policy (required reading):** [`ART_POLICY.md`](ART_POLICY.md)
 
-- **No generative-AI assets** ó images, sprites, textures, UI art, audio, or marketing visuals.
-- **Code-built by default** ó pygame/Godot primitives, theme tokens, procedural SFX.
-- **Procedural music (Godot):** motif/scales/tempo scaffold ù [MUSIC_ARCHITECTURE.md](MUSIC_ARCHITECTURE.md), godot/scripts/audio/music_defs.gd (MusicDefs); PCM/sequencer in M1+.
+- **No generative-AI assets** ÔøΩ images, sprites, textures, UI art, audio, or marketing visuals.
+- **Code-built by default** ÔøΩ pygame/Godot primitives, theme tokens, procedural SFX.
+- **Procedural music (Godot):** motif/scales/tempo scaffold ÔøΩ [MUSIC_ARCHITECTURE.md](MUSIC_ARCHITECTURE.md), godot/scripts/audio/music_defs.gd (MusicDefs); PCM/sequencer in M1+.
 - **Hand-authored only** when the project owner explicitly supplies files (agents must not AI-generate on their behalf).
 
-## Presentation Saga (pygame ó **archived**)
+## Presentation Saga (pygame ÔøΩ **archived**)
 
-Phases 121ñ127 and 125 were pygame-only UI passes. **Inactive** ó Godot `game_screen.gd` is the live UI. Do not continue this track unless explicitly reviving the prototype.
+Phases 121ÔøΩ127 and 125 were pygame-only UI passes. **Inactive** ÔøΩ Godot `game_screen.gd` is the live UI. Do not continue this track unless explicitly reviving the prototype.
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 121ñ127, 125 | Done (pygame) | Historical; parity ideas already ported or superseded in Godot P6ñP7 |
-| 126, 128 | **Godot only** ó Phase 126 done (`PHASE126_REPORT.md`); 128 partial in P6 |
+| 121ÔøΩ127, 125 | Done (pygame) | Historical; parity ideas already ported or superseded in Godot P6ÔøΩP7 |
+| 126, 128 | **Godot only** ÔøΩ Phase 126 done (`PHASE126_REPORT.md`); 128 partial in P6 |
 
-**Lab sims (still maintained):** `sim_pacing.py`, `sim_prestige_strategies.py`, `sim_smoke.py`, `sim_harness.py`, `sim_godot_soak.py` ó pygame design (Pete's Pick, hard prestige wipe, 0 starting dealers).
+**Lab sims (still maintained):** `sim_pacing.py`, `sim_prestige_strategies.py`, `sim_smoke.py`, `sim_harness.py`, `sim_godot_soak.py` ÔøΩ pygame design (Pete's Pick, hard prestige wipe, 0 starting dealers).
 
 ## Save/Load
-New fields must be added with a migration default in `save_load.py` so old saves don't crash. Check `load_game_preview()` separately ó it reads a lightweight subset for the title screen.
+New fields must be added with a migration default in `save_load.py` so old saves don't crash. Check `load_game_preview()` separately ÔøΩ it reads a lightweight subset for the title screen.
 
 ## graphify
 

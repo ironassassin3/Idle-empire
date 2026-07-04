@@ -7,7 +7,7 @@
 #   .\device_pass.ps1 run            # export + install + launch on connected device
 #   .\device_pass.ps1 log            # tail Godot/Android logcat for the app
 #
-# Set GODOT_BIN to override Godot path. See DEVICE_TEST_CHECKLIST.md for manual gates.
+# Set GODOT_BIN to override Godot path. Manual gates: DEVICE_TEST_CHECKLIST.md (15-min pass).
 
 param(
     [Parameter(Position = 0)]

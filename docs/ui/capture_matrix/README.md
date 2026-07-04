@@ -4,18 +4,42 @@ Screenshot baseline for touch-first UI validation. Capture after each UI phase o
 
 ## Tooling
 
-Windowed Godot only — headless cannot read viewport textures:
+Windowed Godot only — headless cannot read viewport textures.
 
-```bash
-E:/Downloads/Godot_v4.6.3-stable_win64.exe --path godot -s res://scripts/tools/screenshot.gd -- \
-  --tab 0 --out docs/ui/capture_matrix/tier0_bldgs.png --city-tier 0 --w 720 --h 1280
+**Capture the live shell (`game_shell.tscn`).** `screenshot.gd` defaults to the
+retired `game_screen.tscn` fallback unless `--shell` is passed — the 2026-06-20
+matrix below was captured that way and shows a scene players never see. Always
+target the shell now, either via the batch fast-path (one Godot launch for the
+whole set) or `screenshot.gd --shell`:
+
+```powershell
+# Fast path — batch spec, one launch (preferred):
+.\ui_capture.ps1 -Spec docs/ui/capture_matrix/matrix.jobs.json
+# Single shot:
+E:/Downloads/Godot_v4.6.3-stable_win64.exe --path godot -s res://scripts/tools/ui_capture.gd -- \
+  --shell --tab 0 --out docs/ui/capture_matrix/tier0_bldgs.png --city-tier 0 --w 720 --h 1280
 ```
 
-Harness flags: `--menu`, `--tab N` (0 Bldgs … 8 Config), `--out PATH`, `--w` / `--h`, `--frames`, `--cash`, `--city-tier N`, `--buildings N`, `--heat N`, `--districts N`, `--prestige-tokens N`, `--offline-overlay`, `--prestige-tree`.
+`ui_capture` job/flag keys: `shell`, `tab N` (0 Bldgs … 8 Config), `out`, `w`/`h`,
+`frames`, `cash`, `city_tier N`, `owned_list [..]` (per-building counts),
+`all_buildings_owned N`, `heat N`, `districts N`, `prestige_tokens N`,
+`offline_hours N`, `no_overlays`, `debug_rects`.
 
-## P15 capture matrix (2026-06-20)
+## Shell refresh (2026-07-04)
 
-Automated via `screenshot.gd` at 720×1280. **Complete** — 29 PNGs including offline overlay and prestige tree.
+Regenerated on the live **shell** at 720×1280 (gilded surfaces, OFL fonts,
+Phosphor nav, code-drawn building glyphs, layered city skyline that scales with
+owned count). 17 core city/rows/atmosphere shots below are current; the tab,
+menu, stats/config, and overlay (offline / prestige-tree) shots still show the
+old `game_screen` baseline and are pending a shell re-capture.
+
+Current (shell): `tier0–4_bldgs`, `buildings1/10/40/100_bldgs`,
+`tier2_heat0/50/75`, `tier2_districts0/5/20`, `tier2_affordance`, `tab_bldgs`.
+
+## P15 capture matrix (2026-06-20 — legacy `game_screen`)
+
+Automated via `screenshot.gd` at 720×1280. 29 PNGs; **pre-shell** unless listed
+as refreshed above.
 
 | File | Description |
 |------|-------------|
