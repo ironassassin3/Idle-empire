@@ -10,19 +10,24 @@ assets/ui/
 
 ## Texture sources (priority order)
 
-1. **Material Maker PNG** — drop exports into `textures/` (see below).
-2. **Procedural bake** — `RusticTextureBaker` in `scripts/ui/rustic_texture_baker.gd` runs once at startup via `RusticUi` autoload when `GameConfig.UI_RUSTIC_THEME` is true.
+1. **Material Maker PNG** — drop exports into `textures/` (see [`MATERIAL_MAKER_SPEC.md`](MATERIAL_MAKER_SPEC.md)).
+2. **Ink procedural bake** — `InkTextureBaker` + `scripts/tools/bake_ink_ui_textures.gd` (P15 city v2; committed PNGs until MM graphs replace them).
+3. **Rustic procedural bake** — `RusticTextureBaker` when `GameConfig.UI_RUSTIC_THEME` is true.
 
-MM files override procedural keys when present on disk (`FileAccess.file_exists`):
+| File | Use |
+|------|-----|
+| `textures/panel_9slice.png` | Panels, scroll wraps, header (city v2 + rustic) |
+| `textures/card_frame.png` | Row cards, config/stats (city v2) |
+| `textures/tab_bar.png` | Bottom nav strip (city v2) |
+| `textures/modal_frame.png` | Overlays, menu ledger (city v2) |
+| `textures/film_grain.png` | Atmosphere tile (`film_grain_overlay.gd`) |
+| `textures/wax_seal.png` | Buyable row affordance (`draw_row_wax_seal`) |
 
-| File | Procedural key |
-|------|----------------|
-| `textures/panel_9slice.png` | panel |
-| `textures/card_frame.png` | card |
-| `textures/tab_bar.png` | tab_bar_bg |
-| `textures/modal_frame.png` | modal |
+Rebake ink placeholders:
 
-Other surfaces (tab idle/active, header strip, buttons) stay procedural until MM graphs land.
+```powershell
+godot --path godot --headless -s res://scripts/tools/bake_ink_ui_textures.gd
+```
 
 ## Toggle
 
@@ -42,7 +47,7 @@ Other surfaces (tab idle/active, header strip, buttons) stay procedural until MM
 
 ## Godot wiring
 
-- `StyleBoxTexture` via `GameTheme` helpers + runtime patch in `GameTheme.apply_rustic_theme()`
+- `StyleBoxTexture` via `GameTheme._mm_slice_style()` (city v2) and `apply_rustic_theme()` (rustic)
 - Shared baked/MM textures cached on `GameTheme` — no per-frame alloc
 - Progress bar **fills** stay code-drawn; only **tracks** use textures when MM track PNG exists
 
