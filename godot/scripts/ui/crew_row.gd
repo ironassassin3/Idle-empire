@@ -38,7 +38,7 @@ func _ready() -> void:
 
 func _apply_label_scale() -> void:
 	_icon.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
-	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_row_title(_name, 14)
 	_effect.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_detail.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
 	_count.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))

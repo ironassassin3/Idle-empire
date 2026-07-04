@@ -25,8 +25,33 @@ const BADGE_BORDER := Color("c8a35a")
 const CHIP_BG := Color("1e1828")
 const CHIP_BORDER := Color("6a5a40")
 
+# Gilded-ledger surface system (/godot-design v3 port). High-contrast layer:
+# lifted card fills, 2px edges, INVERTED gold CTAs (gold fill · dark text).
+const GOLD_TEXT_DARK := Color("1a1208")
+const INK_DEEP := Color("140e1c")
+const CARD_LIFT := Color("221a2e")
+const CARD_EDGE := Color("4a3c2a")
+const PLATE := Color("1f1626")
+
+# ── Stage & Ledger semantic surface tokens (UI_OVERHAUL §7; V3 token lint law:
+# shell/screens/components reference THESE, never raw hex) ──────────────────
+const INK_FIELD := Color("0c0c14")          # surface.field — rail/dock chrome
+const SHEET_GLASS := Color(0.047, 0.047, 0.078, 0.9)  # surface.sheet — content deck
+const STATE_READY_BG := Color("1a1520")
+const STATE_READY_EDGE := Color("c8a35a", 0.65)
+const STATE_APPROACH_BG := Color("14101c")
+const STATE_APPROACH_EDGE := Color("2e2638")
+const STATE_LOCKED_BG := Color("100c16")
+const STATE_LOCKED_EDGE := Color("221c2c")
+const GOLD_SHADOW := Color("8a6f3c")        # READY button bottom bevel
+# MM 9-slice card/tab textures are too low-contrast for the gilded pass —
+# flat factories below are the live surfaces while this is true.
+const UI_GILDED := true
+
 # P14 economy HUD — balance 1.4× rank body (14 → 20).
+# UI-v2 port: balance is the hero — Limelight display face, one size up.
 const FONT_BALANCE := 28
+const FONT_BALANCE_DISPLAY := 34
 const FONT_IPS := 17
 const FONT_RANK := 12
 const FONT_CHIP := 13
@@ -77,6 +102,23 @@ static func is_rustic_active() -> bool:
 
 static func is_city_v2_active() -> bool:
 	return GameConfig.UI_CITY_V2 and GameConfig.UI_CITY_VIEW and not _rustic_active
+
+
+# Per-business signature neon — the single source of truth for the colour a
+# business lights up in. Consumed by both city_view.gd `_draw_building_signature`
+# (facade windows/marquee) and the row medallion (count_medallion.gd), so a
+# business's tower and its list disc always glow the same hue.
+static func building_neon(key: String) -> Color:
+	match key:
+		"dealer", "pawn": return Color8(255, 180, 70)
+		"racket", "arms": return Color8(220, 60, 70)
+		"chop": return Color8(255, 140, 50)
+		"betting", "dock": return Color8(70, 180, 255)
+		"loan": return Color8(200, 190, 80)
+		"casino": return Color8(255, 80, 180)
+		"club": return Color8(180, 80, 255)
+		"hq": return Color(0.925, 0.792, 0.49)
+		_: return Color8(255, 180, 70)
 
 
 static func init_rustic() -> void:
@@ -139,25 +181,27 @@ static func apply_city_v2_theme(tree: SceneTree = null) -> void:
 
 
 static func ink_panel_style() -> StyleBox:
-	var sb := _mm_slice_style(TEX_PANEL, _SLICE_MARGIN, 4.0)
-	if sb != null:
-		return sb
+	if not UI_GILDED:
+		var sb := _mm_slice_style(TEX_PANEL, _SLICE_MARGIN, 4.0)
+		if sb != null:
+			return sb
 	return _ink_panel_flat()
 
 
 static func _ink_panel_flat() -> StyleBoxFlat:
+	# Gilded: the list zone reads as a visible gold-edged ledger frame.
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color("0c0c14")
-	sb.border_color = Color(GOLD, 0.35)
+	sb.bg_color = INK_DEEP
+	sb.border_color = Color(GOLD, 0.55)
 	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(4)
-	sb.set_content_margin_all(4.0)
+	sb.set_corner_radius_all(6)
+	sb.set_content_margin_all(8.0)
 	return sb
 
 
 static func ink_scroll_wrap_style() -> StyleBox:
 	var sb := ink_panel_style().duplicate()
-	sb.set_content_margin_all(2.0)
+	sb.set_content_margin_all(8.0)
 	return sb
 
 
@@ -170,24 +214,27 @@ static func ink_header_strip_style() -> StyleBox:
 
 
 static func ink_tab_bar_style() -> StyleBox:
-	var sb := _mm_slice_style_margins(TEX_TAB_BAR, 16, 8, 16, 8, 4.0)
-	if sb != null:
-		sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-		return sb
+	if not UI_GILDED:
+		var sb := _mm_slice_style_margins(TEX_TAB_BAR, 16, 8, 16, 8, 4.0)
+		if sb != null:
+			sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+			return sb
 	return _ink_tab_bar_flat()
 
 
 static func _ink_tab_bar_flat() -> StyleBoxFlat:
 	var sb := _ink_panel_flat()
-	sb.bg_color = BG_PANEL
+	sb.bg_color = Color("1a1322")
+	sb.border_color = Color(GOLD, 0.5)
 	sb.set_border_width(Side.SIDE_TOP, 1)
 	sb.set_border_width(Side.SIDE_LEFT, 0)
 	sb.set_border_width(Side.SIDE_RIGHT, 0)
 	sb.set_border_width(Side.SIDE_BOTTOM, 0)
-	sb.content_margin_left = 2.0
-	sb.content_margin_right = 2.0
-	sb.content_margin_top = 2.0
-	sb.content_margin_bottom = 4.0
+	sb.set_corner_radius_all(0)
+	sb.content_margin_left = 6.0
+	sb.content_margin_right = 6.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 7.0
 	return sb
 
 
@@ -205,13 +252,12 @@ static func make_ink_chip_flat(active: bool = false) -> StyleBoxFlat:
 
 
 static func make_ink_tab_strip_flat(active: bool) -> StyleBoxFlat:
+	# Gilded: active tab is a solid gold slot with dark glyphs.
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color("1a1528") if active else Color("0a0a12")
+	sb.bg_color = GOLD if active else Color(0, 0, 0, 0)
 	sb.border_color = GOLD_BRIGHT if active else Color(GOLD, 0.18)
-	sb.set_border_width_all(0)
-	sb.set_border_width(Side.SIDE_TOP, 1 if active else 0)
-	sb.set_border_width(Side.SIDE_BOTTOM, 3 if active else 1)
-	sb.set_corner_radius_all(0)
+	sb.set_border_width_all(1 if active else 0)
+	sb.set_corner_radius_all(5)
 	sb.content_margin_left = 2.0
 	sb.content_margin_right = 2.0
 	sb.content_margin_top = 4.0
@@ -256,15 +302,41 @@ static func ink_tutorial_banner_style() -> StyleBoxFlat:
 
 static func ink_section_header_style() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color("121018")
-	sb.border_color = Color(GOLD, 0.55)
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(2)
-	sb.content_margin_left = 8.0
-	sb.content_margin_right = 8.0
-	sb.content_margin_top = 4.0
-	sb.content_margin_bottom = 4.0
+	sb.bg_color = PLATE
+	sb.set_border_width_all(0)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 12.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 6.0
+	sb.content_margin_bottom = 6.0
 	return sb
+
+
+static func goal_strip_style() -> StyleBoxFlat:
+	# Gilded: NEXT-goal band — gold accent edge on the left.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("171020")
+	sb.border_color = GOLD
+	sb.border_width_left = 4
+	sb.content_margin_left = 12.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 8.0
+	sb.content_margin_bottom = 8.0
+	return sb
+
+
+static func apply_gold_chip(btn: Button) -> void:
+	# Gilded inverted chip: gold bevel, dark glyphs (masthead ×1 / wheel).
+	if btn == null:
+		return
+	btn.add_theme_stylebox_override("normal", make_game_button_flat(GOLD))
+	btn.add_theme_stylebox_override("hover", make_game_button_flat(GOLD_BRIGHT))
+	btn.add_theme_stylebox_override("pressed", make_game_button_flat(GOLD, true))
+	btn.add_theme_stylebox_override("disabled", make_game_button_flat(GOLD))
+	btn.add_theme_color_override("font_color", GOLD_TEXT_DARK)
+	btn.add_theme_color_override("font_hover_color", GOLD_TEXT_DARK)
+	btn.add_theme_color_override("font_pressed_color", GOLD_TEXT_DARK)
+	btn.add_theme_color_override("font_disabled_color", Color(GOLD_TEXT_DARK, 0.6))
 
 
 static func _rustic_tex(key: String) -> Texture2D:
@@ -577,10 +649,12 @@ static func chip_style(active: bool = false) -> StyleBox:
 static func apply_economy_hud(balance: Label, ips: Label, rank: Label) -> void:
 	if balance == null or ips == null or rank == null:
 		return
-	balance.add_theme_font_override("font", GameFonts.mono(true))
-	balance.add_theme_font_size_override("font_size", scaled_font(FONT_BALANCE))
+	balance.add_theme_font_override("font", GameFonts.display())
+	balance.add_theme_font_size_override("font_size", scaled_font(FONT_BALANCE_DISPLAY))
 	balance.add_theme_color_override("font_color", GOLD_BRIGHT)
-	ips.add_theme_font_override("font", GameFonts.mono(false))
+	balance.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	balance.add_theme_constant_override("shadow_offset_y", 2)
+	ips.add_theme_font_override("font", GameFonts.mono(true))
 	ips.add_theme_font_size_override("font_size", scaled_font(FONT_IPS))
 	ips.add_theme_color_override("font_color", GREEN)
 	rank.add_theme_font_override("font", GameFonts.heading())
@@ -590,6 +664,55 @@ static func apply_economy_hud(balance: Label, ips: Label, rank: Label) -> void:
 	else:
 		rank.add_theme_color_override("font_color", TEXT_MUTED)
 	rank.clip_text = true
+
+
+static func make_game_button_flat(fill: Color, pressed: bool = false) -> StyleBoxFlat:
+	# Chunky mobile-idle button: solid fill + darker bottom edge reads as
+	# physically pressable (AdCap/Idle Miner convention). Pressed drops the
+	# edge and shifts content down 3px.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = fill.darkened(0.08) if pressed else fill
+	sb.set_corner_radius_all(8)
+	sb.border_color = fill.darkened(0.45)
+	sb.set_border_width(Side.SIDE_BOTTOM, 0 if pressed else 4)
+	sb.content_margin_left = 10.0
+	sb.content_margin_right = 10.0
+	sb.content_margin_top = 7.0 if pressed else 4.0
+	sb.content_margin_bottom = 4.0 if pressed else 7.0
+	return sb
+
+
+static func make_game_button_disabled_flat() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("18121f")
+	sb.border_color = Color(GOLD, 0.28)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(5.0)
+	return sb
+
+
+static func apply_row_title(lbl: Label, base_size: int = 15) -> void:
+	# UI-v2 port: every list row leads with a Cinzel gold title.
+	if lbl == null:
+		return
+	lbl.add_theme_font_override("font", GameFonts.heading())
+	lbl.add_theme_font_size_override("font_size", scaled_font(base_size))
+	lbl.add_theme_color_override("font_color", GOLD)
+
+
+static func rank_plate_style() -> StyleBox:
+	# UI-v2 port: rank chip becomes a bordered masthead plate.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(BG_PANEL, 0.82)
+	sb.border_color = CHIP_BORDER
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 12.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 5.0
+	sb.content_margin_bottom = 5.0
+	return sb
 
 
 static func apply_flavor_label(lbl: Label) -> void:
@@ -618,18 +741,28 @@ static func apply_button_icon(btn: Button, icon_name: String, icon_px: int = 20,
 static func apply_gear_icon_button(btn: Button) -> void:
 	if btn == null:
 		return
-	apply_ink_chip_button(btn, false, scaled_font(16), GOLD_BRIGHT)
+	apply_gold_chip(btn)
 	btn.text = ""
 	btn.expand_icon = true
 	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	apply_button_icon(btn, GameIcons.GEAR, 22, true)
+	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
+			"icon_focus_color", "icon_disabled_color"]:
+		btn.add_theme_color_override(state, GOLD_TEXT_DARK)
 
 
 static func apply_tab_nav_icon(btn: Button, icon_name: String, active: bool) -> void:
 	if btn == null:
 		return
-	apply_button_icon(btn, icon_name, 16, active)
+	# UI-v2 port: icon stacked above the label, both centered.
+	apply_button_icon(btn, icon_name, 20, active)
+	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	if active:
+		# Gilded gold slot — dark icon in every state (active tab is disabled).
+		for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
+				"icon_focus_color", "icon_disabled_color"]:
+			btn.add_theme_color_override(state, GOLD_TEXT_DARK)
 
 
 static func apply_ink_icon_button(btn: Button) -> void:
@@ -669,13 +802,58 @@ static func tab_label_with_badge(base: String, count: int) -> String:
 
 
 static func text_scale_mult() -> float:
+	if GameState.ui_text_scale >= 2:
+		return 1.5
 	if GameState.ui_text_scale >= 1:
 		return 1.25
 	return 1.0
 
 
 static func scaled_font(base: int) -> int:
-	return int(round(float(base) * text_scale_mult()))
+	var px := int(round(float(base) * text_scale_mult()))
+	# Market Supremacy N6: enforced legibility floor (Egg Inc's tiny-text
+	# failure). Captions never render below 12px-equivalent under the shell.
+	if GameConfig.UI_SHELL_V3:
+		px = maxi(px, 12)
+	return px
+
+
+# ── Dense-screen font boost ──────────────────────────────────────────────────
+# The UI is authored at a 720-wide base. On an HD phone (screen width == 720) the
+# canvas_items+expand stretch sits at 1.0×, so base font px land at native size on a
+# high-DPI panel → illegible. We can't scale the whole canvas (fixed-px modals would
+# overflow), so we scale FONTS ONLY toward the density the sizes assume (~160dpi).
+static var _device_font_boost := -1.0
+
+
+static func device_font_boost() -> float:
+	if _device_font_boost < 0.0:
+		_device_font_boost = 1.0
+		if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
+			var dpi := DisplayServer.screen_get_dpi()
+			if dpi > 200:
+				_device_font_boost = clampf(float(dpi) / 160.0, 1.0, 1.6)
+	return _device_font_boost
+
+
+## Recursively multiply every Control's effective font_size by the device boost.
+## Idempotent (marks nodes) so it's safe to re-run after dynamic content is added.
+## Layout containers are untouched — only text grows — so fixed modals don't overflow.
+static func apply_device_font_boost(node: Node) -> void:
+	var f := device_font_boost()
+	if f <= 1.0:
+		return
+	_boost_fonts(node, f)
+
+
+static func _boost_fonts(node: Node, f: float) -> void:
+	if node is Control and not node.has_meta("_fb"):
+		var eff: int = node.get_theme_font_size("font_size")
+		if eff > 0:
+			node.add_theme_font_size_override("font_size", int(round(float(eff) * f)))
+		node.set_meta("_fb", true)
+	for c in node.get_children():
+		_boost_fonts(c, f)
 
 
 ## Particles OFF doubles as reduced-motion (P14.7) — skip overlay pulses / heavy UI motion.
@@ -809,11 +987,15 @@ static func apply_tab_button(btn: Button, active: bool = false) -> void:
 	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_stylebox_override("disabled", tab_strip_style(active))
 	if is_city_v2_active():
-		btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT)
-		btn.add_theme_color_override("font_hover_color", GOLD_BRIGHT)
+		# Gilded: active slot is a solid gold fill, so its glyphs go dark.
+		# Active tabs are DISABLED buttons — the disabled colors are the
+		# active look, not an edge case.
+		btn.add_theme_color_override("font_color", GOLD_TEXT_DARK if active else TEXT)
+		btn.add_theme_color_override("font_hover_color", GOLD_TEXT_DARK if active else GOLD_BRIGHT)
+		btn.add_theme_color_override("font_disabled_color", GOLD_TEXT_DARK if active else TEXT_MUTED)
 	else:
 		btn.add_theme_color_override("font_color", GOLD_BRIGHT if active else TEXT_MUTED)
-	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
+		btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
 	if is_city_v2_active():
 		var icon_name: String = str(btn.get_meta("nav_icon", ""))
 		if not icon_name.is_empty():
@@ -825,18 +1007,28 @@ static func apply_menu_button(btn: Button, primary: bool = false) -> void:
 		return
 	btn.custom_minimum_size.y = maxf(float(btn.custom_minimum_size.y), float(MENU_BTN_MIN_H))
 	if is_city_v2_active():
-		var normal := make_ink_menu_button_flat(primary)
-		var hover := make_ink_menu_button_flat(primary)
-		hover.bg_color = hover.bg_color.lightened(0.06)
-		var pressed := make_ink_menu_button_flat(primary)
-		pressed.bg_color = pressed.bg_color.darkened(0.08)
-		btn.add_theme_stylebox_override("normal", normal)
-		btn.add_theme_stylebox_override("hover", hover)
-		btn.add_theme_stylebox_override("pressed", pressed)
-		btn.add_theme_stylebox_override("disabled", make_ink_menu_button_flat(false))
-		btn.add_theme_color_override("font_color", GOLD_BRIGHT if primary else TEXT)
-		btn.add_theme_color_override("font_hover_color", GOLD_BRIGHT)
-		btn.add_theme_font_size_override("font_size", scaled_font(16 if primary else 15))
+		# Gilded: primary CTA = fat gold bevel with dark text; secondary =
+		# dark bevel with gold keyline. Ship-game button language.
+		if primary:
+			btn.add_theme_stylebox_override("normal", make_game_button_flat(GOLD))
+			btn.add_theme_stylebox_override("hover", make_game_button_flat(GOLD_BRIGHT))
+			btn.add_theme_stylebox_override("pressed", make_game_button_flat(GOLD, true))
+			btn.add_theme_stylebox_override("disabled", make_game_button_disabled_flat())
+			btn.add_theme_color_override("font_color", GOLD_TEXT_DARK)
+			btn.add_theme_color_override("font_hover_color", GOLD_TEXT_DARK)
+			btn.add_theme_color_override("font_pressed_color", GOLD_TEXT_DARK)
+		else:
+			var dark := make_game_button_flat(Color("241b2f"))
+			dark.border_color = Color(GOLD, 0.55)
+			var dark_h := make_game_button_flat(Color("2c2138"))
+			dark_h.border_color = GOLD
+			btn.add_theme_stylebox_override("normal", dark)
+			btn.add_theme_stylebox_override("hover", dark_h)
+			btn.add_theme_stylebox_override("pressed", make_game_button_flat(Color("241b2f"), true))
+			btn.add_theme_stylebox_override("disabled", make_game_button_disabled_flat())
+			btn.add_theme_color_override("font_color", GOLD_BRIGHT)
+			btn.add_theme_color_override("font_hover_color", GOLD_BRIGHT)
+		btn.add_theme_font_size_override("font_size", scaled_font(17 if primary else 15))
 		return
 	if _rustic_active:
 		var normal := _rustic_btn_style(RusticTextureBaker.KEY_BTN_NORMAL)
@@ -869,19 +1061,22 @@ static func make_ink_row_card_flat(affordance: int) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	match affordance:
 		RowAffordance.OWNED:
-			sb.bg_color = Color("101418")
-			sb.border_color = Color(GREEN, 0.45)
+			sb.bg_color = Color("1c2218")
+			sb.border_color = Color(GREEN, 0.6)
 		RowAffordance.PETE:
-			sb.bg_color = Color("181410")
-			sb.border_color = Color(GOLD_BRIGHT, 0.75)
+			sb.bg_color = Color("2a2114")
+			sb.border_color = GOLD_BRIGHT
 		RowAffordance.BUYABLE:
-			sb.bg_color = Color("0e1410")
-			sb.border_color = Color(GREEN, 0.55)
+			sb.bg_color = CARD_LIFT
+			sb.border_color = CARD_EDGE
 		_:
-			sb.bg_color = Color("0a0a12")
-			sb.border_color = Color(GOLD, 0.22)
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(4)
+			sb.bg_color = Color("18121f")
+			sb.border_color = Color("2a2232")
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.shadow_color = Color(0, 0, 0, 0.45)
+	sb.shadow_size = 6
+	sb.shadow_offset = Vector2(0, 3)
 	sb.set_content_margin_all(0.0)
 	return sb
 
@@ -909,11 +1104,12 @@ static func make_row_card_flat(affordance: int) -> StyleBoxFlat:
 
 static func row_card_style(affordance: int) -> StyleBox:
 	if is_city_v2_active():
-		var base := _mm_slice_style(TEX_CARD, _CARD_SLICE, _ROW_CONTENT)
-		if base != null:
-			var sb := base.duplicate() as StyleBoxTexture
-			sb.modulate_color = _row_card_modulate(affordance)
-			return sb
+		if not UI_GILDED:
+			var base := _mm_slice_style(TEX_CARD, _CARD_SLICE, _ROW_CONTENT)
+			if base != null:
+				var sb := base.duplicate() as StyleBoxTexture
+				sb.modulate_color = _row_card_modulate(affordance)
+				return sb
 		return make_ink_row_card_flat(affordance)
 	if _rustic_active:
 		var base := _rustic_slice_style(RusticTextureBaker.KEY_CARD, _ROW_SLICE, _ROW_CONTENT)
@@ -945,22 +1141,23 @@ static func apply_row_buy_button(btn: Button) -> void:
 	if btn == null:
 		return
 	btn.add_theme_font_size_override("font_size", scaled_font(12))
-	var normal := make_chip_flat(false)
-	var hover := make_chip_flat(false)
-	hover.bg_color = hover.bg_color.lightened(0.08)
-	var pressed := make_chip_flat(false)
-	pressed.bg_color = pressed.bg_color.darkened(0.06)
-	var disabled := make_chip_flat(false)
-	disabled.bg_color = disabled.bg_color.darkened(0.12)
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_color_override("font_color", TEXT)
+	# Gilded: affordable = chunky gold bevel with dark text (inverted CTA);
+	# disabled = flat dark with a faint gold keyline so lists never go dead.
+	btn.add_theme_stylebox_override("normal", make_game_button_flat(GOLD))
+	btn.add_theme_stylebox_override("hover", make_game_button_flat(GOLD_BRIGHT))
+	btn.add_theme_stylebox_override("pressed", make_game_button_flat(GOLD, true))
+	btn.add_theme_stylebox_override("disabled", make_game_button_disabled_flat())
+	btn.add_theme_color_override("font_color", GOLD_TEXT_DARK)
+	btn.add_theme_color_override("font_hover_color", GOLD_TEXT_DARK)
+	btn.add_theme_color_override("font_pressed_color", GOLD_TEXT_DARK)
 	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
 
 
 static func draw_row_wax_seal(control: Control, affordance: int) -> void:
+	# Stage & Ledger shell: READY state is carried by the solid-gold action
+	# button + row border (rule 10) — the corner seal is redundant chrome.
+	if GameConfig.UI_SHELL_V3:
+		return
 	if affordance != RowAffordance.BUYABLE and affordance != RowAffordance.PETE:
 		return
 	if texture_exists(TEX_WAX_SEAL):

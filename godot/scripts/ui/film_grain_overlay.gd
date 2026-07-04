@@ -1,7 +1,7 @@
 extends TextureRect
 ## P14.8 film grain — procedural tileable noise, low alpha. Skipped headless / reduced motion.
 
-const TILE_SIZE := 128
+const TEX_GRAIN := "res://assets/ui/textures/film_grain.png"
 const GRAIN_ALPHA := 0.055
 
 func _ready() -> void:
@@ -12,7 +12,7 @@ func _ready() -> void:
 	if _should_skip():
 		visible = false
 		return
-	texture = _bake_grain_texture()
+	texture = _load_grain_texture()
 	modulate = Color(1.0, 1.0, 1.0, GRAIN_ALPHA)
 
 
@@ -28,7 +28,16 @@ func _should_skip() -> bool:
 	return GameTheme.ui_reduced_motion()
 
 
+func _load_grain_texture() -> Texture2D:
+	if FileAccess.file_exists(TEX_GRAIN):
+		var file_tex := load(TEX_GRAIN) as Texture2D
+		if file_tex != null:
+			return file_tex
+	return _bake_grain_texture()
+
+
 func _bake_grain_texture() -> ImageTexture:
+	const TILE_SIZE := 128
 	var img := Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242

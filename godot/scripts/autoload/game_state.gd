@@ -154,7 +154,9 @@ var show_particles: bool = true
 var show_debug_fps: bool = false
 var notifications_enabled: bool = false
 var telemetry_consent: bool = true
-var ui_text_scale: int = 0  # 0=100%, 1=125% (P14.6 a11y)
+var ui_text_scale: int = 0  # 0=100%, 1=125%, 2=150% (P14.6 a11y + Supremacy N6)
+var ui_compact_rows: bool = false  # Supremacy N8 veteran density (D5)
+var compact_offer_done: bool = false  # one-shot rail offer after prestige 1
 
 # P14 — global buy multiplier chip (×1 / ×10 / Max). Persisted in save.
 var buy_mult_mode: int = 0  # 0=×1, 1=×10, 2=Max
@@ -928,7 +930,9 @@ func apply_save_data(data: Dictionary) -> void:
 	fps_cap = _i(data, "fps_cap", 60)
 	show_particles = _b(data, "show_particles", true)
 	show_debug_fps = _b(data, "show_debug_fps", false)
-	ui_text_scale = clampi(_i(data, "ui_text_scale", 0), 0, 1)
+	ui_text_scale = clampi(_i(data, "ui_text_scale", 0), 0, 2)
+	ui_compact_rows = _b(data, "ui_compact_rows", false)
+	compact_offer_done = _b(data, "compact_offer_done", false)
 	notifications_enabled = _b(data, "notifications_enabled", false)
 	telemetry_consent = _b(data, "telemetry_consent", true)
 	buy_mult_mode = clampi(_i(data, "buy_mult_mode", 0), 0, 2)
@@ -1085,6 +1089,8 @@ func to_save_data() -> Dictionary:
 		"show_particles": show_particles,
 		"show_debug_fps": show_debug_fps,
 		"ui_text_scale": ui_text_scale,
+		"ui_compact_rows": ui_compact_rows,
+		"compact_offer_done": compact_offer_done,
 		"notifications_enabled": notifications_enabled,
 		"telemetry_consent": telemetry_consent,
 		"buy_mult_mode": buy_mult_mode,

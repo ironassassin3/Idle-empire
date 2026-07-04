@@ -27,20 +27,21 @@ const OPERATION_ROW := preload("res://scenes/operation_row.tscn")
 
 enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 
-@onready var _balance: Label = $Root/VBox/Header/EconomyCol/Balance
-@onready var _ips: Label = $Root/VBox/Header/EconomyCol/Income
-@onready var _rank: Label = $Root/VBox/Header/RankChip/Rank
-@onready var _rank_chip: PanelContainer = $Root/VBox/Header/RankChip
-@onready var _advice_chip: Button = $Root/VBox/Header/AdviceChip
-@onready var _buy_mult_chip: Button = $Root/VBox/Header/BuyMultChip
-@onready var _heat_bar: ProgressBar = $Root/VBox/StatusStrip/HeatRow/HeatBar
-@onready var _heat_label: Label = $Root/VBox/StatusStrip/HeatRow/HeatLabel
+@onready var _balance: Label = $Root/VBox/Masthead/UI/V/HeroPlate/HeroBox/Balance
+@onready var _ips: Label = $Root/VBox/Masthead/UI/V/HeroPlate/HeroBox/Income
+@onready var _hero_plate: PanelContainer = $Root/VBox/Masthead/UI/V/HeroPlate
+@onready var _rank: Label = $Root/VBox/Masthead/UI/V/TopRow/RankChip/Rank
+@onready var _rank_chip: PanelContainer = $Root/VBox/Masthead/UI/V/TopRow/RankChip
+@onready var _advice_chip: Button = $Root/VBox/AdviceChip
+@onready var _buy_mult_chip: Button = $Root/VBox/Masthead/UI/V/TopRow/BuyMultChip
+@onready var _heat_bar: ProgressBar = $Root/VBox/Masthead/UI/V/TopRow/HeatCol/HeatBar
+@onready var _heat_label: Label = $Root/VBox/Masthead/UI/V/TopRow/HeatCol/HeatLabel
 @onready var _coin_btn: Button = $Root/VBox/StatusStrip/StatusRow/CoinBtn
 @onready var _heat_row: HBoxContainer = $Root/VBox/StatusStrip/HeatRow
 @onready var _automation_row: HBoxContainer = $Root/VBox/StatusStrip/AutomationRow
 @onready var _automation_label: Label = $Root/VBox/StatusStrip/AutomationRow/AutomationLabel
 @onready var _shield_label: Label = $Root/VBox/StatusStrip/StatusRow/ShieldLabel
-@onready var _city_view: Control = $Root/VBox/CityViewport/CityView
+@onready var _city_view: Control = $Root/VBox/Masthead/CityView
 @onready var _hustle_band: Control = $Root/VBox/HustleBand
 @onready var _click_info: Label = $Root/VBox/StatusStrip/StatusRow/ClickInfo
 @onready var _prestige_btn: Button = $Root/VBox/StatusStrip/PrestigeRow/PrestigeBtn
@@ -50,21 +51,21 @@ enum Tab { BLDGS, UPGRS, TURF, RIVALS, CREW, OPS, STATS, MGRS, CONFIG }
 @onready var _prestige_gate_label: Label = $Root/VBox/StatusStrip/PrestigeGateRow/HBox/PrestigeGateLabel
 @onready var _prestige_gate_bar: ProgressBar = $Root/VBox/StatusStrip/PrestigeGateRow/HBox/PrestigeGateBar
 @onready var _buff_label: Label = $Root/VBox/StatusStrip/StatusRow/BuffLabel
-@onready var _city_viewport: Control = $Root/VBox/CityViewport
+@onready var _city_viewport: Control = $Root/VBox/Masthead
 @onready var _status_strip: VBoxContainer = $Root/VBox/StatusStrip
 @onready var _status_row: HBoxContainer = $Root/VBox/StatusStrip/StatusRow
 @onready var _prestige_row: HBoxContainer = $Root/VBox/StatusStrip/PrestigeRow
 # Bottom nav bar (5 primary tabs) + Turf subtab bar + header gear.
 @onready var _bottom_bar: HBoxContainer = $Root/VBox/BottomBar
-@onready var _header: HBoxContainer = $Root/VBox/Header
+@onready var _header: HBoxContainer = $Root/VBox/Masthead/UI/V/TopRow
 @onready var _body_right: VBoxContainer = $Root/VBox/Body/Right
 @onready var _tab_bldgs: Button = $Root/VBox/BottomBar/BldgsBtn
 @onready var _tab_upgrs: Button = $Root/VBox/BottomBar/UpgrsBtn
 @onready var _tab_mgrs: Button = $Root/VBox/BottomBar/MgrsBtn
 @onready var _tab_turf: Button = $Root/VBox/BottomBar/TurfBtn
 @onready var _tab_stats: Button = $Root/VBox/BottomBar/StatsBtn
-@onready var _cfg_btn: Button = $Root/VBox/Header/CfgBtn
-@onready var _wheel_chip: Button = $Root/VBox/Header/WheelChip
+@onready var _cfg_btn: Button = $Root/VBox/Masthead/UI/V/TopRow/CfgBtn
+@onready var _wheel_chip: Button = $Root/VBox/Masthead/UI/V/TopRow/WheelChip
 @onready var _turf_subbar: HBoxContainer = $Root/VBox/Body/Right/TurfSubBar
 @onready var _sub_territory: Button = $Root/VBox/Body/Right/TurfSubBar/TerritoryBtn
 @onready var _sub_rivals: Button = $Root/VBox/Body/Right/TurfSubBar/RivalsBtn
@@ -203,6 +204,8 @@ func _ready() -> void:
 	_apply_safe_area()
 	_apply_ui_surfaces()
 	_apply_header_theme()
+	# Dense-screen legibility: runs after all children/rows are ready (deferred).
+	GameTheme.apply_device_font_boost.call_deferred(self)
 	get_viewport().size_changed.connect(_apply_safe_area)
 	_heat_bar.max_value = 100.0
 	_populate_buildings()
@@ -273,7 +276,35 @@ func _ready() -> void:
 
 func _apply_header_theme() -> void:
 	GameTheme.apply_economy_hud(_balance, _ips, _rank)
-	_rank_chip.add_theme_stylebox_override("panel", GameTheme.chip_style(false))
+	# Masthead hero: balance floats centered over the city, one size class up,
+	# on a translucent plate so city sprites can never collide with it.
+	_balance.add_theme_font_size_override("font_size", GameTheme.scaled_font(46))
+	_ips.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = Color(0, 0, 0, 0.5)
+	plate.set_corner_radius_all(14)
+	plate.content_margin_left = 22.0
+	plate.content_margin_right = 22.0
+	plate.content_margin_top = 2.0
+	plate.content_margin_bottom = 4.0
+	_hero_plate.add_theme_stylebox_override("panel", plate)
+	_heat_label.add_theme_font_override("font", GameFonts.mono(true))
+	_heat_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
+	var heat_bg := StyleBoxFlat.new()
+	heat_bg.bg_color = Color("241a20")
+	heat_bg.set_corner_radius_all(3)
+	_heat_bar.add_theme_stylebox_override("background", heat_bg)
+	_advice_chip.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var goal_sb := GameTheme.goal_strip_style()
+	var goal_hover := GameTheme.goal_strip_style()
+	goal_hover.bg_color = goal_hover.bg_color.lightened(0.05)
+	_advice_chip.add_theme_stylebox_override("normal", goal_sb)
+	_advice_chip.add_theme_stylebox_override("hover", goal_hover)
+	_advice_chip.add_theme_stylebox_override("pressed", goal_sb)
+	_advice_chip.add_theme_color_override("font_color", GameTheme.TEXT)
+	GameTheme.apply_gold_chip(_buy_mult_chip)
+	GameTheme.apply_gold_chip(_wheel_chip)
+	_rank_chip.add_theme_stylebox_override("panel", GameTheme.rank_plate_style())
 	_buy_mult_chip.add_theme_stylebox_override("normal", GameTheme.chip_style(true))
 	_buy_mult_chip.add_theme_stylebox_override("hover", GameTheme.chip_style(true))
 	_buy_mult_chip.add_theme_stylebox_override("pressed", GameTheme.chip_style(true))
@@ -313,7 +344,8 @@ func _apply_ui_surfaces() -> void:
 
 
 func _apply_city_v2_surfaces() -> void:
-	_wrap_strip_panel(_header, GameTheme.ink_header_strip_style())
+	# Masthead TopRow floats over the city view (scrim handles legibility) —
+	# wrapping it in an opaque ink strip would sever the masthead composition.
 	_wrap_strip_panel(_bottom_bar, GameTheme.ink_tab_bar_style())
 	for scroll in [
 		_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
@@ -427,7 +459,8 @@ func _wrap_tutorial_banner() -> void:
 
 func _apply_city_layout() -> void:
 	var city_on := GameConfig.UI_CITY_VIEW and GameConfig.UI_CITY_V2
-	_city_viewport.visible = city_on
+	# Masthead hosts the economy HUD — only the city backdrop toggles.
+	_city_view.visible = city_on
 	_hustle_band.visible = city_on
 	if city_on:
 		_relocate_coin_to_band()
@@ -455,7 +488,7 @@ func _apply_city_v2_status_strip() -> void:
 	_prestige_btn.add_theme_stylebox_override("disabled", GameTheme.make_chip_flat(false))
 	_prestige_btn.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_prestige_btn.add_theme_color_override("font_disabled_color", GameTheme.TEXT_MUTED)
-	_heat_bar.custom_minimum_size = Vector2(0, 12)
+	_heat_bar.custom_minimum_size = Vector2(132, 10)
 	_heat_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
 	_heat_label.add_theme_color_override("font_color", GameTheme.TEXT)
 	_shield_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
@@ -761,18 +794,17 @@ func _districts_owned() -> int:
 	return n
 
 
-func _city_top_building_keys() -> Array:
+func _city_top_buildings() -> Array:
+	# Ranked most-owned first; the city skyline draws up to 5 hero facades and
+	# scales each one by its owned count, so buying keeps growing the city.
 	var ranked: Array = []
 	for b in GameState.buildings:
 		if b.owned > 0:
 			ranked.append({"key": b.icon_key, "owned": b.owned})
 	ranked.sort_custom(func(a, b): return int(a["owned"]) > int(b["owned"]))
-	var out: Array = []
-	for entry in ranked:
-		out.append(str(entry["key"]))
-		if out.size() >= 3:
-			break
-	return out
+	if ranked.size() > 5:
+		ranked = ranked.slice(0, 5)
+	return ranked
 
 
 func _city_district_slots() -> Array:
@@ -836,14 +868,21 @@ func _refresh_city_view(overlay_blocking: bool) -> void:
 	if _city_view == null or not _city_view.has_method("refresh"):
 		return
 	_city_view.call("set_overlay_occluded", overlay_blocking)
+	var top := _city_top_buildings()
+	var keys: Array = []
+	var counts: Array = []
+	for entry in top:
+		keys.append(str(entry["key"]))
+		counts.append(int(entry["owned"]))
 	_city_view.call(
 		"refresh",
 		total,
 		GameState.heat,
 		_districts_owned(),
 		GameState.lifetime_tokens,
-		_city_top_building_keys(),
+		keys,
 		_city_district_slots(),
+		counts,
 	)
 
 
@@ -1349,7 +1388,7 @@ func _refresh_all() -> void:
 		_advice_chip.visible = false
 	else:
 		_advice_chip.visible = true
-		_advice_chip.text = GameTheme.truncate("▸ %s" % hint, 24)
+		_advice_chip.text = GameTheme.truncate("▸ NEXT — %s" % hint, 52)
 	_heat_bar.value = GameState.heat
 	var heat_col := GameTheme.GREEN if GameState.heat < 60.0 else GameTheme.RED
 	if GameTheme.is_city_v2_active():
@@ -1421,7 +1460,7 @@ func _refresh_prestige_progress(can_p: bool = GameState.can_prestige()) -> void:
 		if not blockers.is_empty():
 			headline += " · " + ", ".join(blockers)
 
-	_prestige_gate_label.text = GameTheme.truncate(headline, 56)
+	_prestige_gate_label.text = GameTheme.truncate(headline, 38)
 	_prestige_gate_btn.tooltip_text = tooltip
 	_prestige_gate_btn.visible = GameTheme.is_city_v2_active()
 	var gate_col := GameTheme.GOLD_BRIGHT if can_p else GameTheme.TEXT

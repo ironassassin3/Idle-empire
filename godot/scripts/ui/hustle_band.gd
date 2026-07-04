@@ -5,6 +5,8 @@ class_name HustleBand
 
 signal hustle_pressed
 
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
+
 const MIN_BAND_H := 64.0
 const MIN_TAP_H := 48.0
 
@@ -34,7 +36,7 @@ func _ready() -> void:
 	custom_minimum_size.y = MIN_BAND_H
 	_hustle_btn.flat = true
 	_hustle_btn.text = ""
-	_hustle_btn.custom_minimum_size = Vector2(120.0, MIN_TAP_H)
+	_hustle_btn.custom_minimum_size = Vector2(220.0, MIN_TAP_H)
 	_hustle_btn.pressed.connect(func(): hustle_pressed.emit())
 	_hustle_btn.mouse_entered.connect(func(): _set_hustle_hover(true))
 	_hustle_btn.mouse_exited.connect(func(): _set_hustle_hover(false))
@@ -101,7 +103,7 @@ func _sync_layout() -> void:
 		return
 	var band_h := maxf(MIN_BAND_H, size.y)
 	var tap_h := maxf(MIN_TAP_H, (band_h - 8.0) * _click_scale)
-	_hustle_btn.custom_minimum_size = Vector2(120.0, tap_h)
+	_hustle_btn.custom_minimum_size = Vector2(220.0, tap_h)
 	if _spacer:
 		_spacer.custom_minimum_size.x = _coin_col.size.x
 
@@ -152,38 +154,23 @@ func _draw_hustle_glass(rect: Rect2) -> void:
 		draw_line(Vector2(cx - bw * 0.28, refl_y), Vector2(cx + bw * 0.28, refl_y),
 				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.14), 1.5)
 
-	var fill_a := 0.647 if _hustle_hover else 0.314
-	var glass := StyleBoxFlat.new()
-	glass.bg_color = Color(INK_GLASS.r, INK_GLASS.g, INK_GLASS.b, fill_a)
-	glass.set_corner_radius_all(int(br))
-	glass.draw(get_canvas_item(), rect)
-	var border_col := INK_GOLD_BRIGHT if _hustle_hover else INK_GOLD
-	var border_a := 0.863 if _hustle_hover else 0.588
-	var border := StyleBoxFlat.new()
-	border.bg_color = Color.TRANSPARENT
-	border.border_color = Color(border_col.r, border_col.g, border_col.b, border_a)
-	border.set_border_width_all(2)
-	border.set_corner_radius_all(int(br))
-	border.draw(get_canvas_item(), rect)
-
-	var inset := maxf(8.0, bw / 8.0)
-	var inner := Rect2(rect.position + Vector2(inset, inset), rect.size - Vector2(inset, inset) * 2.0)
-	var inner_box := StyleBoxFlat.new()
-	inner_box.bg_color = Color.TRANSPARENT
-	inner_box.border_color = Color(INK_GOLD_DEEP.r, INK_GOLD_DEEP.g, INK_GOLD_DEEP.b, 0.314)
-	inner_box.set_border_width_all(1)
-	inner_box.set_corner_radius_all(maxi(0, int(br) - 4))
-	inner_box.draw(get_canvas_item(), inner)
+	# Gilded: solid gold bevel tap button — the primary active-play CTA
+	# should look like the juiciest button on screen, not hollow glass.
+	var fill: Color = GameTheme.GOLD_BRIGHT if _hustle_hover or _hustle_active else GameTheme.GOLD
+	var body := GameTheme.make_game_button_flat(fill)
+	body.set_corner_radius_all(int(br))
+	body.draw(get_canvas_item(), rect)
 
 	var hustle_lbl := "HUSTLE"
 	if _hustle_active:
 		hustle_lbl = "HUSTLE ×%.2f" % _hustle_mult
-	var font := ThemeDB.fallback_font
-	var font_size := GameTheme.scaled_font(14 if _hustle_active else 13)
+	var font := GameFonts.heading()
+	var font_size := GameTheme.scaled_font(16 if _hustle_active else 15)
 	var lbl_size := font.get_string_size(hustle_lbl, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	draw_string(font, Vector2(cx - lbl_size.x * 0.5, cy - 8.0), hustle_lbl,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, INK_BONE if not _hustle_hover else INK_GOLD_BRIGHT)
-	var hint := "+%s" % FormatUtil.format_money(_click_value)
-	var hint_size := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size - 1)
-	draw_string(font, Vector2(cx - hint_size.x * 0.5, cy + 14.0), hint,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size - 1, INK_GOLD_BRIGHT)
+	draw_string(font, Vector2(cx - lbl_size.x * 0.5, cy - 6.0), hustle_lbl,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, GameTheme.GOLD_TEXT_DARK)
+	var hint := "+%s / tap" % FormatUtil.format_money(_click_value)
+	var mono := GameFonts.mono(true)
+	var hint_size := mono.get_string_size(hint, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size - 3)
+	draw_string(mono, Vector2(cx - hint_size.x * 0.5, cy + 15.0), hint,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size - 3, Color(GameTheme.GOLD_TEXT_DARK, 0.8))

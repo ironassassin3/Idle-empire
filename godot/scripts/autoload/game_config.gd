@@ -51,3 +51,7 @@ const UI_RUSTIC_THEME := false
 const UI_CITY_V2 := true
 # P15.7 rollback — false hides CityViewport and restores compact status strip (dev-only P14 fallback).
 const UI_CITY_VIEW := true
+# Stage & Ledger overhaul (docs/ui/UI_OVERHAUL_ARCHITECTURE.md) — full-bleed city
+# stage, single content sheet, attention rail, 2-band chrome (game_shell.tscn).
+# False = legacy strip shell (game_screen.tscn).
+const UI_SHELL_V3 := true

@@ -75,7 +75,7 @@ static func is_unlocked(state) -> bool:
 	var terr: int = _TerritorySystem.player_district_count(state.territories)
 	if terr >= UNLOCK_TERRITORIES:
 		return true
-	return Prestige.rank_index(Prestige.get_rank(state.lifetime_tokens)) >= Prestige.rank_index("Made Man")
+	return Prestige.rank_index(Prestige.get_rank(state.prestige_tokens)) >= Prestige.rank_index("Made Man")
 
 
 static func unlock_requirement_text(state) -> String:

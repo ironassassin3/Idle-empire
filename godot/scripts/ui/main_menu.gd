@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const MusicDefs = preload("res://scripts/audio/music_defs.gd")
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 
 const _BASE_MARGIN := 20
 const _INK_BG := Color("0c0c14")
@@ -36,6 +37,7 @@ func _ready() -> void:
 	# ships in any exported build.
 	_import_btn.visible = OS.has_feature("editor")
 	_refresh_save_ui()
+	GameTheme.apply_device_font_boost.call_deferred(self)
 
 
 func _apply_safe_area() -> void:
@@ -61,13 +63,17 @@ func _apply_menu_theme() -> void:
 		$Background.color = _INK_BG
 	else:
 		$Background.color = GameTheme.BG
+	_title.add_theme_font_override("font", GameFonts.display())
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_TITLE))
 	_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_subtitle.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_SUBTITLE))
 	_subtitle.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	GameTheme.apply_flavor_label(_subtitle)
 	_preview_card.add_theme_stylebox_override("panel", GameTheme.menu_preview_style())
+	_preview_head.add_theme_font_override("font", GameFonts.heading())
 	_preview_head.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_PREVIEW_HEAD))
 	_preview_head.add_theme_color_override("font_color", GameTheme.GOLD)
+	_prestige_lbl.add_theme_font_override("font", GameFonts.mono(true))
 	_prestige_lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_PREVIEW_LEAD))
 	_prestige_lbl.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_influence_lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(GameTheme.FONT_MENU_PREVIEW_BODY))
@@ -94,21 +100,28 @@ func _refresh_save_ui() -> void:
 	_time_lbl.text = "%.0f min played" % (float(p.get("play_time", 0.0)) / 60.0)
 
 
+## Stage & Ledger shell (UI_SHELL_V3) vs legacy strip shell — rollback flag.
+func _game_scene() -> String:
+	if GameConfig.UI_SHELL_V3:
+		return "res://scenes/game_shell.tscn"
+	return "res://scenes/game_screen.tscn"
+
+
 func _on_continue() -> void:
 	if SaveManager.load_game():
-		get_tree().change_scene_to_file("res://scenes/game_screen.tscn")
+		get_tree().change_scene_to_file(_game_scene())
 
 
 func _on_new() -> void:
 	if SaveManager.has_save():
 		SaveManager.delete_save()
 	GameState.reset_new_game()
-	get_tree().change_scene_to_file("res://scenes/game_screen.tscn")
+	get_tree().change_scene_to_file(_game_scene())
 
 
 func _on_import() -> void:
 	if SaveManager.try_import_python_save():
-		get_tree().change_scene_to_file("res://scenes/game_screen.tscn")
+		get_tree().change_scene_to_file(_game_scene())
 	else:
 		_import_note.visible = true
 		_preview_card.visible = false

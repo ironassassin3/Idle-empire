@@ -31,7 +31,7 @@ func _ready() -> void:
 
 func _apply_label_scale() -> void:
 	_icon.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
-	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_row_title(_name, 14)
 	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_req.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
@@ -56,25 +56,30 @@ func _refresh() -> void:
 		_status.text = _OperationSystem.unlock_requirement_text(GameState)
 		_action.text = "Locked"
 		_action.disabled = true
+		GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.LOCKED)
 		return
 	if bool(op.get("active", false)) and not bool(op.get("collected", false)):
 		if _OperationSystem.is_ready(GameState, op):
 			_status.text = "READY — tap to collect"
 			_action.text = "Collect\n%s" % FormatUtil.format_money(float(op.get("reward", 0.0)))
 			_action.disabled = false
+			GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.BUYABLE)
 		else:
 			var remain: float = _OperationSystem.time_remaining(GameState, op)
 			var pct: int = int(_OperationSystem.progress(GameState, op) * 100.0)
 			_status.text = "%d%% complete — %s left" % [pct, _OperationSystem.fmt_duration(remain)]
 			_action.text = "Running"
 			_action.disabled = true
+			GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.OWNED)
 		return
 	var gate: Dictionary = _OperationSystem.can_start(GameState, op)
 	if gate.get("ok", false):
 		_status.text = "Ready to launch"
 		_action.text = "Start"
 		_action.disabled = false
+		GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.BUYABLE)
 	else:
 		_status.text = str(gate.get("reason", "Cannot start"))
 		_action.text = "Start"
 		_action.disabled = true
+		GameTheme.apply_row_affordance(self, GameTheme.RowAffordance.LOCKED)

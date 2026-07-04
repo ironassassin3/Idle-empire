@@ -35,6 +35,7 @@ Monetization="*res://scripts/autoload/monetization.gd"
 Notifications="*res://scripts/autoload/notifications.gd"
 CloudSave="*res://scripts/autoload/cloud_save.gd"
 RusticUi="*res://scripts/autoload/rustic_ui.gd"
+UiEvents="*res://scripts/ui/shell/ui_events.gd"
 
 [display]
 
@@ -44,6 +45,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation="portrait"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotGooglePlayBilling/plugin.cfg", "res://addons/admob/plugin.cfg")
+
 [gui]
 
 theme/custom="res://theme/noir_theme.tres"
@@ -52,4 +57,5 @@ theme/custom="res://theme/noir_theme.tres"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.102, 0.082, 0.125, 1)

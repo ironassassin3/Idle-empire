@@ -39,7 +39,7 @@ func _ready() -> void:
 
 
 func _apply_label_scale() -> void:
-	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	GameTheme.apply_row_title(_name, 15)
 	_badge.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_leader.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_trait.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))

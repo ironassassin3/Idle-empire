@@ -3,6 +3,7 @@ extends CanvasLayer
 
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 
 @onready var _dim: ColorRect = $Dim
 @onready var _panel: PanelContainer = $Panel
@@ -67,14 +68,18 @@ func _apply_ink_theme() -> void:
 	if not GameTheme.is_city_v2_active():
 		return
 	_panel.add_theme_stylebox_override("panel", GameTheme.overlay_ledger_style())
+	_title.add_theme_font_override("font", GameFonts.heading())
 	_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
+	_influence.add_theme_font_override("font", GameFonts.mono(false))
 	_influence.add_theme_color_override("font_color", GameTheme.TEXT)
 	_influence.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_prompt.add_theme_font_override("font", GameFonts.heading())
 	_prompt.add_theme_color_override("font_color", GameTheme.GOLD)
 	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 	_blurb.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	_blurb.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	GameTheme.apply_flavor_label(_blurb)
 	_lock_label.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	_lock_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_perk_scroll.add_theme_stylebox_override("panel", GameTheme.ink_scroll_wrap_style())
@@ -88,12 +93,16 @@ func _apply_dialog_theme() -> void:
 	GameTheme.apply_overlay_cta(_branch_no, false)
 	GameTheme.apply_overlay_cta(_prestige_yes, true)
 	GameTheme.apply_overlay_cta(_prestige_no, false)
+	_branch_dialog_title.add_theme_font_override("font", GameFonts.heading())
 	_branch_dialog_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_branch_dialog_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	_branch_dialog_body.add_theme_color_override("font_color", GameTheme.TEXT)
 	_branch_dialog_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	GameTheme.apply_flavor_label(_branch_dialog_body)
+	_prestige_gain.add_theme_font_override("font", GameFonts.mono(true))
 	_prestige_gain.add_theme_color_override("font_color", GameTheme.TEXT)
 	_prestige_gain.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_prestige_rank.add_theme_font_override("font", GameFonts.heading())
 	_prestige_rank.add_theme_color_override("font_color", GameTheme.GOLD)
 	_prestige_rank.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 

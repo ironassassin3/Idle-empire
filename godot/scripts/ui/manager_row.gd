@@ -39,7 +39,7 @@ func _ready() -> void:
 
 
 func _apply_label_scale() -> void:
-	_name.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	GameTheme.apply_row_title(_name, 14)
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_badge.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
 	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
@@ -47,8 +47,15 @@ func _apply_label_scale() -> void:
 	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 
 
+# Rule 10 (Stage & Ledger): progress-to-afford underbar while APPROACHING.
+var _afford := 0.0
+
+
 func _draw() -> void:
 	GameTheme.draw_row_wax_seal(self, _affordance)
+	if _afford > 0.0 and _afford < 1.0:
+		draw_rect(Rect2(0, size.y - 3.0, size.x, 3.0), Color(GameTheme.GOLD, 0.14))
+		draw_rect(Rect2(0, size.y - 3.0, size.x * _afford, 3.0), GameTheme.GOLD)
 
 
 func _on_cycle_promoter_target() -> void:
@@ -113,10 +120,19 @@ func _refresh() -> void:
 		var can_hire := GameState.can_hire_manager(manager_index)
 		_hire.disabled = not can_hire
 		_affordance = GameTheme.RowAffordance.BUYABLE if can_hire else GameTheme.RowAffordance.LOCKED
+		if GameConfig.UI_SHELL_V3:
+			Affordance.apply_action_button(
+				_hire, Affordance.READY if can_hire else Affordance.APPROACHING)
+			_afford = 0.0 if can_hire else Affordance.progress(m.cost, GameState.balance)
+			queue_redraw()
 	else:
 		_status.text = "Locked: %s" % ManagerDefs.unlock_text(manager_index)
 		_status.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 		_hire.text = "Locked"
 		_hire.disabled = true
 		_affordance = GameTheme.RowAffordance.LOCKED
+		if GameConfig.UI_SHELL_V3:
+			Affordance.apply_action_button(_hire, Affordance.LOCKED)
+			_afford = 0.0
+			queue_redraw()
 	GameTheme.apply_row_affordance(self, _affordance)

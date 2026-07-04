@@ -3,6 +3,7 @@ class_name CityView
 ## P15.3b — Godot-native city viewport (inspired by pygame tiers, not pixel-parity). ART_POLICY: no textures.
 
 const PrestigeScript = preload("res://scripts/systems/prestige.gd")
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 
 const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
@@ -26,6 +27,11 @@ const NEON_RED := Color8(220, 60, 70)
 
 @onready var _empire_label: Label = $EmpireLabel
 
+## Stage & Ledger shell promotes the city to the app background (Z2). Full-bleed
+## drops the framed-viewport chrome (border chevrons + caption) that only makes
+## sense when the city is a strip inside other chrome.
+@export var full_bleed := false
+
 var _t: float = 0.0
 var _anim_accum: float = 0.0
 var _dirty: bool = true
@@ -36,6 +42,7 @@ var _heat: float = 0.0
 var _districts_owned: int = 0
 var _rank_idx: int = 0
 var _top_building_keys: Array = []
+var _top_building_counts: Array = []
 var _district_slots: Array = []
 # Neon reflection anchors collected during the skyline pass, painted into the
 # wet street afterwards (street is drawn on top of the buildings).
@@ -71,7 +78,8 @@ func refresh(
 	districts_owned: int,
 	career_tokens: int,
 	top_building_keys: Array = [],
-	district_slots: Array = []
+	district_slots: Array = [],
+	building_counts: Array = []
 ) -> void:
 	var rank_name := PrestigeScript.get_rank(career_tokens)
 	var rank_idx := PrestigeScript.rank_index(rank_name)
@@ -94,6 +102,7 @@ func refresh(
 	_districts_owned = districts_owned
 	_rank_idx = rank_idx
 	_top_building_keys = top_building_keys
+	_top_building_counts = building_counts
 	_district_slots = district_slots
 
 	if state_changed:
@@ -142,10 +151,13 @@ func _draw() -> void:
 	var tier := _tier(_total_buildings)
 	var ground_y := VIRTUAL_SIZE.y - 28.0
 	_reflect_points.clear()
-	_draw_frame()
+	if full_bleed:
+		draw_rect(Rect2(Vector2.ZERO, VIRTUAL_SIZE), INK)
+	else:
+		_draw_frame()
 	_draw_back_parallax(_t, tier)
 	_draw_searchlights(_t, _rank_idx)
-	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _t, ground_y)
+	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _top_building_counts, _t, ground_y)
 	_draw_horizon_glow(ground_y)
 	if tier == 0:
 		_draw_tier0_street_detail(ground_y, _t)
@@ -155,8 +167,10 @@ func _draw() -> void:
 	_draw_traffic(ground_y, _t)
 	_draw_district_strip(ground_y, _district_slots)
 	_draw_atmosphere(_heat, _rank_idx, _t, tier)
+	_draw_vignette()
 	_draw_rain(_t, _heat)
-	_draw_caption(tier, _total_buildings)
+	if not full_bleed:
+		_draw_caption(tier, _total_buildings)
 	if not GameTheme.ui_reduced_motion():
 		_draw_scanlines()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -191,6 +205,15 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 	draw_rect(Rect2(0, 0, sw, sh * 0.45), SKY_BACK)
 	draw_rect(Rect2(0, sh * 0.35, sw, sh * 0.25), SKY_MID)
 	draw_rect(Rect2(0, sh * 0.55, sw, sh * 0.25), SKY_HAZE)
+	# Distant city glow banked on the horizon — warms the empty upper sky so
+	# even a tier-0 empire reads as "a city at night," not a flat void.
+	var glow_y := sh * 0.5
+	for gi in 4:
+		var ga := 0.05 - gi * 0.011
+		if ga <= 0.0:
+			continue
+		draw_rect(Rect2(0, glow_y - gi * 8.0, sw, 8.0),
+				Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, ga))
 	# Moon + haze disc (tier 4+).
 	if tier >= 4:
 		var moon_x := sw - 36.0 + sin(t * 0.15) * 2.0
@@ -203,34 +226,74 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		var sy := 8.0 + float(i * 11 % 40)
 		var tw := 0.35 + 0.65 * _hash01(i * 17, t * 0.5)
 		draw_rect(Rect2(sx, sy, 2.0, 2.0), Color(0.82, 0.84, 1.0, tw * 0.7))
+	# Far skyline ridge — a distant, dim row high in the frame gives the sky
+	# depth before the empire owns anything (fills the tier-0 dead zone).
+	var far_base := sh * 0.52
+	var far_h := 26.0 + tier * 8.0
+	var far_drift := fmod(drift * 0.18, sw)
+	var far_col := Color(SILHOUETTE_BACK.r * 0.8, SILHOUETTE_BACK.g * 0.8, SILHOUETTE_BACK.b * 0.85, 0.7)
+	for i in 11 + tier * 2:
+		var fw := 12.0 + float(i % 5) * 9.0
+		var fh := far_h * (0.4 + float((i * 7) % 4) * 0.18)
+		var fx := fmod(float(i * 37) + far_drift, sw + fw) - fw * 0.5
+		draw_rect(Rect2(fx, far_base - fh, fw, fh), far_col)
+		# Faint lit windows scattered through the distant towers.
+		if (i * 13) % 3 == 0:
+			draw_rect(Rect2(fx + fw * 0.35, far_base - fh * 0.55, 2.0, 2.0), Color(NEON_WARM, 0.28))
+	# Three tall distant skyscrapers punching into the upper sky — gives the
+	# empty top third a believable downtown ridge even at tier 0.
+	var anchor_x := [sw * 0.2, sw * 0.52, sw * 0.82]
+	var anchor_top := [sh * 0.3, sh * 0.24, sh * 0.33]
+	for a in 3:
+		var ax: float = anchor_x[a] + sin(t * 0.12 + a) * 0.6
+		var atop: float = anchor_top[a]
+		var aw := 16.0 + float(a % 2) * 6.0
+		draw_rect(Rect2(ax - aw * 0.5, atop, aw, far_base - atop), far_col)
+		# Slim antenna mast + red aviation blip on the crown.
+		draw_line(Vector2(ax, atop), Vector2(ax, atop - 10.0), Color(SILHOUETTE_RIM, 0.4), 1.0)
+		if _hash01(a * 41 + 3, t * 1.5) > 0.5:
+			draw_rect(Rect2(ax - 1.0, atop - 11.0, 2.0, 2.0), Color(NEON_RED, 0.5))
+		# A sparse column of lit windows so the tower reads as inhabited.
+		for wy in 4:
+			if _hash_flicker(a * 19 + wy * 7, t):
+				draw_rect(Rect2(ax - aw * 0.25, atop + 10.0 + wy * 14.0, 2.0, 3.0), Color(NEON_WARM, 0.3))
 	# Distant mid-parallax silhouettes (always present, density grows with tier).
-	var back_h := 40.0 + tier * 18.0
+	var back_h := 44.0 + tier * 18.0
 	var back_y := sh * 0.58 - back_h
 	var back_drift := fmod(drift * 0.35, sw)
-	for i in 6 + tier * 2:
+	for i in 8 + tier * 2:
 		var bw := 18.0 + float(i % 4) * 14.0
 		var bh := back_h * (0.55 + float(i % 3) * 0.15)
 		var bx := fmod(float(i * 53) + back_drift, sw + bw) - bw * 0.5
-		draw_rect(Rect2(bx, back_y + back_h - bh, bw, bh), Color(SILHOUETTE_BACK, 0.88))
+		draw_rect(Rect2(bx, back_y + back_h - bh, bw, bh), Color(SILHOUETTE_BACK, 0.92))
+		# A few nearer distant towers carry a dim warm window so the ridge lives.
+		if i % 3 == 1:
+			draw_rect(Rect2(bx + bw * 0.4, back_y + back_h - bh + 4.0, 2.0, 3.0), Color(NEON_WARM, 0.35))
 
 
-func _draw_mid_skyline(total: int, tier: int, keys: Array, t: float, ground_y: float) -> void:
+func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: float, ground_y: float) -> void:
 	var sw := VIRTUAL_SIZE.x
-	# Always show at least one facade so tier 0 is not an empty void.
-	var count := mini(maxi(keys.size(), 1), 3)
+	# One hero facade per owned business type (up to 5), so owning more types
+	# widens the skyline. Always show at least one so tier 0 is not a void.
+	var count := mini(maxi(keys.size(), 1), 5)
 	var slot_w := sw / maxf(1.0, float(count))
 	var neon_keys: Array = keys if not keys.is_empty() else ["dealer"]
 	for i in count:
 		var key: String = neon_keys[i] if i < neon_keys.size() else "dealer"
+		var owned: int = int(counts[i]) if i < counts.size() else 1
 		var cx := slot_w * (float(i) + 0.5) + sin(t * 0.4 + i) * 1.5
-		var base_h := 36.0 + tier * 22.0 + float(i % 2) * 12.0
+		# Each unit invested climbs the facade (log-damped so it never runs
+		# away): +0 at 1 owned, ~+34 at 6, ~+57 at 20. This is what makes the
+		# city keep growing every purchase, not just at tier thresholds.
+		var grow := log(float(maxi(owned, 1))) / log(6.0)
+		var base_h := 34.0 + tier * 18.0 + grow * 34.0 + float(i % 2) * 10.0
 		if total >= 80:
 			base_h += 40.0
 		elif total >= 35:
 			base_h += 24.0
 		# Dominant business (most owned) towers as the empire's hero landmark.
 		if i == 0 and not keys.is_empty():
-			base_h *= 1.35
+			base_h *= 1.3
 		_draw_building_signature(key, cx, ground_y, base_h, tier, i, t)
 	# Tier 3+ — bridge connector.
 	if tier >= 3 and count >= 2:
@@ -260,7 +323,9 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 	var bx := cx - bw * 0.5
 	var by := ground_y - bh
 	var body := SILHOUETTE
-	var neon := NEON_WARM
+	# Facade neon is single-sourced in GameTheme so the tower and its row
+	# medallion (count_medallion.gd) always light up the same colour.
+	var neon := GameTheme.building_neon(key)
 	match key:
 		"dealer":
 			bw = 44.0
@@ -269,57 +334,46 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 				Vector2(bx, by + bh * 0.15), Vector2(bx + bw * 0.5, by),
 				Vector2(bx + bw, by + bh * 0.15),
 			]), Color(body, 0.95))
-			neon = NEON_WARM
 		"racket":
 			draw_rect(Rect2(bx, by, bw, bh), body)
 			draw_rect(Rect2(bx + 4.0, by - 6.0, bw - 8.0, 6.0), Color8(50, 54, 72))
-			neon = NEON_RED
 		"chop":
 			draw_rect(Rect2(bx, by + bh * 0.2, bw, bh * 0.8), body)
 			for stripe in 3:
 				var sy := by + bh * 0.25 + stripe * 14.0
 				draw_line(Vector2(bx + 4.0, sy), Vector2(bx + bw - 4.0, sy + 8.0), Color8(45, 48, 65), 2.0)
-			neon = Color8(255, 140, 50)
 		"betting":
 			draw_rect(Rect2(bx + 6.0, by + 8.0, bw - 12.0, bh - 8.0), body)
 			draw_rect(Rect2(bx, by, bw, 10.0), Color8(48, 52, 70))
-			neon = NEON_COOL
 		"pawn":
 			draw_rect(Rect2(bx + 8.0, by, bw - 16.0, bh), body)
 			for pi in 3:
 				draw_circle(Vector2(bx + bw * (0.25 + pi * 0.25), by + 18.0), 4.0, Color8(35, 38, 55))
-			neon = NEON_WARM
 		"loan":
 			bw = 38.0
 			bx = cx - bw * 0.5
 			draw_rect(Rect2(bx, by, bw, bh), body)
 			draw_rect(Rect2(bx + bw * 0.5 - 2.0, by + 10.0, 4.0, bh - 20.0), Color8(200, 180, 60, 120))
-			neon = Color8(200, 190, 80)
 		"casino":
 			draw_rect(Rect2(bx, by + 16.0, bw, bh - 16.0), body)
 			draw_colored_polygon(PackedVector2Array([
 				Vector2(bx, by + 16.0), Vector2(bx + bw * 0.5, by - 4.0), Vector2(bx + bw, by + 16.0),
 			]), Color8(38, 42, 60))
-			neon = Color8(255, 80, 180)
 		"club":
 			draw_rect(Rect2(bx + 4.0, by + 12.0, bw - 8.0, bh - 12.0), body)
 			draw_arc(Vector2(cx, by + 12.0), bw * 0.45, PI, TAU, 12, Color8(42, 46, 64), 3.0)
-			neon = Color8(180, 80, 255)
 		"dock":
 			draw_rect(Rect2(bx, by + bh * 0.35, bw, bh * 0.65), body)
 			draw_line(Vector2(bx + bw * 0.7, by), Vector2(bx + bw * 0.7, by + bh * 0.35), Color8(55, 60, 78), 2.0)
 			draw_line(Vector2(bx + bw * 0.7, by + 4.0), Vector2(bx + bw * 0.45, by + 14.0), Color8(55, 60, 78), 2.0)
-			neon = NEON_COOL
 		"arms":
 			draw_rect(Rect2(bx + 10.0, by + 20.0, bw - 20.0, bh - 20.0), body)
 			draw_line(Vector2(cx, by), Vector2(cx, by + 16.0), Color8(60, 64, 82), 2.0)
 			draw_circle(Vector2(cx, by), 3.0, Color8(70, 74, 92))
-			neon = NEON_RED
 		"hq":
 			draw_rect(Rect2(bx + 6.0, by + 24.0, bw - 12.0, bh - 24.0), body)
 			draw_rect(Rect2(bx + bw * 0.5 - 4.0, by, 8.0, 28.0), Color8(46, 50, 68))
 			_draw_crown_watermark(cx, by - 6.0, t, 0.5)
-			neon = INK_GOLD_BRIGHT
 		_:
 			draw_rect(Rect2(bx, by, bw, bh), body)
 	# Neon facade trim + hash flicker windows.
@@ -487,6 +541,21 @@ func _draw_traffic(ground_y: float, t: float) -> void:
 		draw_circle(Vector2(cx - dir * 7.0, cy), 1.5, Color(0.92, 0.22, 0.2, 0.6))
 
 
+func _draw_vignette() -> void:
+	var sw := VIRTUAL_SIZE.x
+	var sh := VIRTUAL_SIZE.y
+	var depth := 32.0
+	var steps := 6
+	for i in steps:
+		var t := float(i) / float(steps)
+		var a := (1.0 - t) * 0.14
+		var band := depth * (float(i) + 1.0) / float(steps)
+		draw_rect(Rect2(0.0, 0.0, sw, band), Color(0.0, 0.0, 0.0, a))
+		draw_rect(Rect2(0.0, sh - band, sw, band), Color(0.0, 0.0, 0.0, a))
+		draw_rect(Rect2(0.0, 0.0, band, sh), Color(0.0, 0.0, 0.0, a))
+		draw_rect(Rect2(sw - band, 0.0, band, sh), Color(0.0, 0.0, 0.0, a))
+
+
 func _draw_rain(t: float, heat: float) -> void:
 	# Light noir drizzle that thickens with heat — tension you can feel.
 	if GameTheme.ui_reduced_motion():
@@ -520,7 +589,7 @@ func _draw_searchlights(t: float, rank_idx: int) -> void:
 
 func _draw_caption(tier: int, total: int) -> void:
 	# At-a-glance empire state — readable over the busy skyline.
-	var font := ThemeDB.fallback_font
+	var font := GameFonts.heading()
 	var txt := "TIER %d · %d SPOTS" % [tier, total]
 	var col := Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.6)
 	draw_string(font, Vector2(9.0, 16.0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0, 0, 0, 0.55))
@@ -548,7 +617,7 @@ func _draw_district_strip(ground_y: float, slots: Array) -> void:
 				draw_rect(Rect2(bx + 2.0, by + 6.0, maxf(2.0, block_w * 0.35), 3.0), Color(col, 0.55))
 			var short_lbl: String = str(slot.get("short", ""))
 			if short_lbl.length() > 0 and block_w >= 14.0:
-				var font := ThemeDB.fallback_font
+				var font := GameFonts.mono(false)
 				var fs := 7
 				draw_string(font, Vector2(bx + 1.0, by + 11.0), short_lbl.substr(0, 3),
 						HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col, 0.7))

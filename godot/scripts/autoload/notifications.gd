@@ -38,12 +38,13 @@ func _notification(what: int) -> void:
 
 
 func _schedule_pending() -> void:
-	var offline_secs: float = GameConfig.OFFLINE_CAP_HOURS * 3600.0
-	var offline_msg := "Your empire earned cash while you were away. Tap to collect."
+	# Supremacy N10: fire BEFORE the cap (cap − 2h) with invitation framing, so
+	# a return lands while earnings still flow — never "you already lost it".
+	var offline_secs: float = maxf(1.0, (GameConfig.OFFLINE_CAP_HOURS - 2.0) * 3600.0)
+	var offline_msg := "The crew's still collecting — swing by before the take stalls."
 	if GameState.offline_gain > 0.0:
-		offline_msg = "Your empire earned %s. Tap to collect." % FormatUtil.format_money(
-			GameState.offline_gain
-		)
+		offline_msg = "The crew's holding %s for you — swing by before the take stalls." \
+			% FormatUtil.format_money(GameState.offline_gain)
 	_backend.schedule(
 		"offline_cap",
 		offline_secs,
