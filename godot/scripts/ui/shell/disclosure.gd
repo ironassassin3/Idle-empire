@@ -81,5 +81,8 @@ static func ad_coin_visible(state) -> bool:
 		return false
 	if session_started_msec <= 0:
 		return false
+	# Just collected a coin — let it stay gone for a beat before re-offering.
+	if state.golden_coin_ad_cd > 0.0:
+		return false
 	var elapsed := float(Time.get_ticks_msec() - session_started_msec) / 1000.0
 	return elapsed >= AD_OBJECT_SESSION_SECS or state.prestige_count > 0

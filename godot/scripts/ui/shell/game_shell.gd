@@ -269,6 +269,11 @@ func _on_gap_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			# The diegetic coin lives in the stage; depending on z-order it may
+			# be under this catcher, so give it the tap first (the coin also
+			# handles its own gui_input for when it ends up on top).
+			if bool(_stage.call("try_tap_coin", mb.global_position)):
+				return
 			_stage.call("handle_tap", mb.global_position)
 
 

@@ -87,6 +87,9 @@ var coins_caught: int = 0
 var golden_coin_active: bool = false
 var golden_coin_lifetime: float = 0.0
 var golden_coin_timer: float = 0.0
+# Runtime-only: after a coin is collected, suppress the "watch an ad" coin for a
+# beat so it doesn't instantly recycle (esp. desktop mock ads, which are instant).
+var golden_coin_ad_cd: float = 0.0
 var promoter_heat_target: float = 50.0
 var offline_gain: float = 0.0
 var offline_rival_events: Array[String] = []  # runtime-only; rebuilt on load
@@ -101,6 +104,8 @@ var smuggler_timer: float = 0.0
 var smuggler_notified: Array = []
 var mechanic_autobuys: int = 0
 var accountant_autobuys: int = 0
+var accountant_order_idx: int = -1
+var mechanic_order_ready: bool = false
 var automation_flash: String = ""
 var automation_flash_timer: float = 0.0
 
@@ -407,8 +412,11 @@ func _process(delta: float) -> void:
 	for msg in _TerritorySystem.tick_milestones(self):
 		_TutorialSystem.push_milestone(self, msg, 6.0)
 	for msg in _ManagerSystem.tick_manager_effects(self, delta):
-		push_automation_flash(msg)
-		notification.emit(msg, GameTheme.GREEN)
+		if _ManagerSystem.is_manager_recommendation(msg):
+			notification.emit(msg, GameTheme.GOLD)
+		else:
+			push_automation_flash(msg)
+			notification.emit(msg, GameTheme.GREEN)
 	for msg in _OperationSystem.tick_smuggler_ops(self, delta):
 		var smug_col := GameTheme.GOLD_BRIGHT if msg.begins_with("Smuggler:") else GameTheme.GREEN
 		push_automation_flash(msg)
@@ -640,10 +648,13 @@ func count_hireable_managers() -> int:
 
 
 func next_purchase_hint() -> String:
+	var order := _ManagerSystem.pending_order_hint(self)
+	if not order.is_empty():
+		return order
 	for i in upgrades.size():
 		if can_buy_upgrade(i):
 			return upgrades[i].display_name
-	var pete_idx: int = _ManagerSystem.pete_recommends_index(self)
+	var pete_idx: int = _ManagerSystem.building_advisor_index(self)
 	if pete_idx >= 0:
 		return buildings[pete_idx].display_name
 	for i in buildings.size():
@@ -700,6 +711,10 @@ func hire_manager(index: int) -> bool:
 	var m := managers[index]
 	balance -= m.cost
 	m.hired = true
+	if m.display_name == "The Accountant":
+		_ManagerSystem._refresh_accountant_order(self)
+	elif m.display_name == "The Mechanic":
+		_ManagerSystem._refresh_mechanic_order(self)
 	notification.emit(_ManagerSystem.hire_notification(m.display_name, self), GameTheme.GOLD_BRIGHT)
 	_mark_ips_dirty()
 	stats_changed.emit()
@@ -1317,6 +1332,8 @@ func _goals_completed_keys() -> Array:
 
 
 func _tick_golden_coin(dt: float) -> void:
+	if golden_coin_ad_cd > 0.0:
+		golden_coin_ad_cd -= dt
 	if not golden_coin_active:
 		golden_coin_timer -= dt
 		if golden_coin_timer <= 0.0:
@@ -1349,6 +1366,7 @@ func collect_golden_coin(auto: bool = false) -> void:
 		return
 	golden_coin_active = false
 	golden_coin_timer = _next_coin_timer()
+	golden_coin_ad_cd = golden_coin_timer
 	coins_caught += 1
 	_play_sfx("coin")
 	if auto:

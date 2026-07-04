@@ -256,7 +256,19 @@ func _build_coin() -> void:
 	_coin_btn.tooltip_text = "Golden coin"
 	_coin_btn.visible = false
 	_coin_btn.pressed.connect(_on_coin_pressed)
+	# Direct gui_input as well: the pressed signal has been observed to not fire
+	# for this button in the shell, yet it still grabs the mouse (blocking the
+	# hustle tap). Handling the raw event guarantees the coin action runs.
+	_coin_btn.gui_input.connect(_on_coin_gui_input)
 	add_child(_coin_btn)
+
+
+func _on_coin_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			_on_coin_pressed()
+			_coin_btn.accept_event()
 
 
 func _refresh_coin(_delta: float) -> void:
@@ -283,6 +295,19 @@ func _on_coin_pressed() -> void:
 		Monetization.show_rewarded(Monetization.PLACEMENT_FREE_COIN)
 	else:
 		GameState.collect_golden_coin(false)
+
+
+## The stage gap is one STOP tap-catcher sitting ABOVE the city, so the diegetic
+## coin (a stage child, behind the gap) can never receive its own press — every
+## tap on it was being consumed as a hustle click. The shell routes gap taps here
+## first; a hit on the visible coin acts on the coin and swallows the tap.
+func try_tap_coin(global_pos: Vector2) -> bool:
+	if _coin_btn == null or not _coin_btn.visible:
+		return false
+	if _coin_btn.get_global_rect().grow(10.0).has_point(global_pos):
+		_on_coin_pressed()
+		return true
+	return false
 
 
 func _layout_gap_children() -> void:
