@@ -42,11 +42,14 @@ Watch the game screen **without reading numbers**.
 - [ ] Main menu: ink background `#0c0c14`, no ledger corner brackets
 - [ ] **Hustle band** on city street taps; `+$` floats on glass (no duplicate HUSTLE button)
 - [ ] Buy **3–5 buildings** — skyline tier changes
+- [ ] **City keeps growing** (not frozen at 3): buy more of one business → its **tower grows taller**; buy new types → **more facades** appear (up to 5). Distant skyscrapers fill the sky even at the start
+- [ ] **Row medallions show glyphs, not letters** — each business a distinct mark (dealer diamond, racket shield, betting die, pawn 3-balls, casino spade, dock anchor, arms crosshair, HQ crown…); disc tint matches its tower's colour
 - [ ] Header: balance in **mono**, rank in **Cinzel**
 - [ ] Tap prestige gate / tree entry → progress shows **route earnings near $0**, not ~$50M
 - [ ] Bottom tabs switch: **Bldgs → Upgrs → Turf → Stats** (no crash, no clip)
+- [ ] **Tutorial hint** floats **above** the building list — never covers a row or its BUY button (check at the phone's aspect / short screens)
 
-**Fail:** Prestige bar starts near gate max, tabs overlap notch/home bar, hustle dead.
+**Fail:** Prestige bar starts near gate max, tabs overlap notch/home bar, hustle dead, city stops changing after building 3, medallions show duplicate letters, tutorial pill sits on top of rows.
 
 ---
 
@@ -80,7 +83,7 @@ Watch the game screen **without reading numbers**.
 
 The whole mechanic is **timing skill**, so it lives or dies on touch latency + sweep readability on real hardware. `GAMBLING_ENABLED = true`.
 
-- [ ] Header **🎰 chip** visible with banked-spin **badge**; badge count matches Spins in overlay
+- [ ] Header **🎯 chip** visible with banked-spin **badge**; badge count matches Spins in overlay
 - [ ] Daily/offline return overlay shows **"🎰 Spin now"** CTA when spins were granted; it opens the wheel
 - [ ] Open wheel → **SPIN** sweeps the marker; button flips to **STOP**; STOP freezes exactly under the needle (WYSIWYG — no drift, no snap-back)
 - [ ] Segment under needle at stop = the multiplier paid (watch one payout notification match)
@@ -90,6 +93,20 @@ The whole mechanic is **timing skill**, so it lives or dies on touch latency + s
 - [ ] Close/reopen mid-round is free (no spin lost); panel centred, never clipped at notch/home bar
 
 **Fail:** Marker drifts past where you tapped, badge count wrong, ad button grants past cap, spin consumed on close, panel clips.
+
+---
+
+## Golden coin (city reward — regression-checked this build)
+
+The ★ coin is a diegetic city object; tap latency + z-order behave differently under real touch than a mouse (this was the fix — coin taps were being eaten as hustle clicks / the button's `pressed` never fired).
+
+- [ ] ★ coin appears in the city stage (right side), pulses/glints
+- [ ] **Tap the coin → powerup fires** (frenzy / lucky / click-storm notification) — **every** tap, not just sometimes
+- [ ] Tapping the coin does **not** just do a hustle click (no stray `+$` float where the coin is; income clicking doesn't "stall" on the coin)
+- [ ] After collecting, the coin **stays gone** (~30–60s) — does not instantly re-pop
+- [ ] "Watch an ad" coin → **real rewarded ad** plays on device → grants a golden coin to collect
+
+**Fail:** Tap does nothing / only hustles, coin instantly recycles after collect, coin blocks the income tap.
 
 ---
 
