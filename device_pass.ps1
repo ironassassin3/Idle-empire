@@ -45,6 +45,21 @@ function Find-Adb {
     return $null
 }
 
+function Find-Python {
+    # The bare `python` command on Windows is often the broken Store alias, so
+    # prefer the `py` launcher, then a real python on PATH, then known installs.
+    $py = Get-Command py -ErrorAction SilentlyContinue
+    if ($py) { return $py.Source }
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python -and $python.Source -notlike "*WindowsApps*") { return $python.Source }
+    foreach ($c in @(
+        (Join-Path $env:LOCALAPPDATA "Python\pythoncore-3.14-64\python.exe"),
+        (Join-Path $env:LOCALAPPDATA "Python\bin\python.exe"))) {
+        if (Test-Path $c) { return $c }
+    }
+    return $null
+}
+
 function Test-ExportTemplates {
     $tpl = Join-Path $env:APPDATA "Godot\export_templates\$GodotVersion\android_debug.apk"
     return Test-Path $tpl
@@ -134,9 +149,11 @@ function Invoke-Smoke {
     $loadExit = Invoke-Godot $godot --headless --quit --path $GodotProject
     if ($loadExit -ne 0) { throw "Godot headless load failed (exit $loadExit)" }
     Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
+    $python = Find-Python
+    if (-not $python) { throw "Python not found (install the 'py' launcher or add python to PATH)." }
     Push-Location $RepoRoot
     try {
-        python sim_godot_soak.py --godot $godot --seconds 30
+        & $python sim_godot_soak.py --godot $godot --seconds 30
         if ($LASTEXITCODE -ne 0) { throw "sim_godot_soak failed" }
     } finally {
         Pop-Location
