@@ -492,6 +492,8 @@ class PrestigeManager:
         state._collector_shield_cd = 0.0
         state._mechanic_timer = 0.0
         state._autobuy_timer = 0.0
+        state._accountant_order_idx = -1
+        state._mechanic_order_ready = False
         state._broker_retry_cd = 0.0
         state._smuggler_notified = set()
         state._promoter_heat_target = 50.0

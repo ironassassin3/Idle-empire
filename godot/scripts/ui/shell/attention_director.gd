@@ -5,6 +5,7 @@ extends Node
 
 const _OperationSystem = preload("res://scripts/systems/operation_system.gd")
 const _GoalSystem = preload("res://scripts/systems/goal_system.gd")
+const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 
 const TAKEOVER_DWELL := 4.0
 const REFRESH_INTERVAL := 0.5
@@ -176,6 +177,14 @@ func _ambient_item() -> Dictionary:
 			"kind": "compact_offer", "prio": PRIO_OFFER,
 			"text": "▸ BOSS MODE — a compact ledger for a grown empire",
 			"value": "ENABLE", "target": "compact",
+		}
+	var order := _ManagerSystem.pending_manager_order(GameState)
+	if not order.is_empty():
+		var val := "APPROVE" if bool(order.get("can_approve", false)) else ""
+		return {
+			"kind": "manager_order", "prio": PRIO_AFFORD_HINT + 5,
+			"text": "▸ %s" % _ManagerSystem.pending_order_hint(GameState),
+			"value": val, "target": "bldgs",
 		}
 	var hint := _GoalSystem.next_focus_hint(GameState)
 	if not hint.is_empty():

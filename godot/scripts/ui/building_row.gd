@@ -93,10 +93,11 @@ func _refresh() -> void:
 		_owned.visible = not compact
 		custom_minimum_size.y = 64.0 if compact else 0.0
 		_buy1.custom_minimum_size = Vector2(118, 48 if compact else 56)
-	var pete_pick := _ManagerSystem.pete_recommends_index(GameState)
-	var is_pete := pete_pick == building_index
-	if is_pete:
-		_name.text = "★ %s" % _building.display_name
+	var advisor_idx := _ManagerSystem.building_advisor_index(GameState)
+	var is_advised := advisor_idx == building_index
+	var prefix := _ManagerSystem.building_advisor_prefix(GameState, building_index)
+	if is_advised and not prefix.is_empty():
+		_name.text = "%s%s" % [prefix, _building.display_name]
 	else:
 		_name.text = _building.display_name
 	_apply_special_line()
@@ -118,7 +119,7 @@ func _refresh() -> void:
 	_buy10.disabled = not GameState.can_buy_building(building_index, 10)
 	_buy_max.disabled = max_n <= 0
 	var can_any := GameState.can_buy_building(building_index, 1)
-	if is_pete and can_any:
+	if is_advised and can_any:
 		_affordance = GameTheme.RowAffordance.PETE
 	elif can_any:
 		_affordance = GameTheme.RowAffordance.BUYABLE

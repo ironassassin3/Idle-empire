@@ -9,9 +9,9 @@ const _OperationSystem = preload("res://scripts/systems/operation_system.gd")
 
 const COLLECTOR_SHIELD_CD := 300.0
 const MECHANIC_BUILDING_IDX := 2
-const MECHANIC_AUTOBUY_INTERVAL := 3.0
+const MECHANIC_ORDER_INTERVAL := 8.0
 const MECHANIC_BALANCE_MULT := 2.0
-const AUTOBUY_INTERVAL := 3.0
+const ACCOUNTANT_ORDER_INTERVAL := 12.0
 const CARL_RAID_THRESHOLD := 60.0
 const CARL_EMERGENCY_TARGET := 55.0
 const CARL_EMERGENCY_DROP := 20.0
@@ -57,14 +57,14 @@ static func hire_notification(display_name: String, state) -> String:
 			return "Collector's shield is up — first raid bounces"
 		"The Mechanic":
 			if manager_autobuy_unlocked(state):
-				return "Mechanic's on night shift — Chop Shops auto-buy"
-			return "Mechanic hired — auto-buy unlocks after 1st prestige"
+				return "Mechanic's on night shift — Chop Shop orders on Buildings"
+			return "Mechanic hired — purchase orders unlock after 1st prestige"
 		"Clean Carl":
 			return "Carl's watching heat — forecast + one emergency dump"
 		"The Accountant":
 			if manager_autobuy_unlocked(state):
-				return "The Accountant is on payroll — auto-buy active"
-			return "Accountant hired — auto-buy unlocks after 1st prestige"
+				return "The Accountant is on payroll — best-buy orders on Buildings"
+			return "Accountant hired — purchase orders unlock after 1st prestige"
 		"Maxine the Dealer":
 			return "Maxine boosts the family — behaviors scale with casinos"
 		"The Promoter":
@@ -90,12 +90,15 @@ static func automation_strip(state) -> Dictionary:
 		tags.append("Sal: coins")
 	if manager_active(state, "The Mechanic"):
 		if manager_autobuy_unlocked(state):
-			tags.append("Mech: shops")
+			tags.append("Mech: order" if state.mechanic_order_ready else "Mech: watch")
 		else:
 			tags.append("Mech: gated")
 	if manager_active(state, "The Accountant"):
 		if manager_autobuy_unlocked(state):
-			tags.append("Acct: buy")
+			if state.accountant_order_idx >= 0 and state.accountant_order_idx < state.buildings.size():
+				tags.append("Acct: %s" % state.buildings[state.accountant_order_idx].display_name)
+			else:
+				tags.append("Acct: watch")
 		else:
 			tags.append("Acct: gated")
 	if manager_active(state, "The Smuggler"):
@@ -142,7 +145,101 @@ static func _count_ready_ops(state) -> int:
 
 
 static func purchase_autobuy_gate_text() -> String:
-	return "Unlocks after 1st prestige"
+	return "Purchase orders unlock after 1st prestige"
+
+
+static func is_manager_recommendation(message: String) -> bool:
+	return message.contains("recommends")
+
+
+static func pending_order_hint(state) -> String:
+	var order := pending_manager_order(state)
+	if order.is_empty():
+		return ""
+	return "%s — buy %s" % [str(order.get("source_label", "")).to_upper(), order.get("building_name", "")]
+
+
+## Active manager purchase order (Mechanic Chop Shop beats Accountant best-buy).
+static func pending_manager_order(state) -> Dictionary:
+	_sync_manager_orders(state)
+	if state.mechanic_order_ready and state.buildings.size() > MECHANIC_BUILDING_IDX:
+		var chop: Building = state.buildings[MECHANIC_BUILDING_IDX]
+		var chop_cost: float = chop.current_cost()
+		return {
+			"index": MECHANIC_BUILDING_IDX,
+			"source": "mechanic",
+			"source_label": "Mechanic",
+			"building_name": chop.display_name,
+			"qty": 1,
+			"cost": chop_cost,
+			"can_approve": chop_cost > 0.0 and state.balance >= chop_cost * MECHANIC_BALANCE_MULT,
+		}
+	if state.accountant_order_idx >= 0 and state.accountant_order_idx < state.buildings.size():
+		var idx: int = state.accountant_order_idx
+		var b: Building = state.buildings[idx]
+		var qty: int = maxi(1, state.effective_buy_qty(idx))
+		var cost: float = b.cost_for_n(qty)
+		return {
+			"index": idx,
+			"source": "accountant",
+			"source_label": "Accountant",
+			"building_name": b.display_name,
+			"qty": qty,
+			"cost": cost,
+			"can_approve": state.can_buy_building(idx, qty),
+		}
+	return {}
+
+
+static func on_building_purchased(state, index: int) -> void:
+	if not manager_autobuy_unlocked(state):
+		return
+	if manager_active(state, "The Mechanic") and index == MECHANIC_BUILDING_IDX:
+		_refresh_mechanic_order(state)
+	if manager_active(state, "The Accountant") and index == state.accountant_order_idx:
+		_refresh_accountant_order(state)
+
+
+static func approve_manager_order(state) -> Dictionary:
+	var order := pending_manager_order(state)
+	if order.is_empty() or not bool(order.get("can_approve", false)):
+		return {"ok": false}
+	var idx: int = int(order.get("index", -1))
+	var qty: int = maxi(1, int(order.get("qty", 1)))
+	if not state.buy_building(idx, qty):
+		return {"ok": false, "reason": "failed"}
+	if str(order.get("source", "")) == "mechanic":
+		state.mechanic_order_ready = false
+		_refresh_mechanic_order(state)
+	else:
+		_refresh_accountant_order(state)
+	return {
+		"ok": true,
+		"index": idx,
+		"qty": qty,
+		"building_name": str(order.get("building_name", "")),
+		"source_label": str(order.get("source_label", "")),
+	}
+
+
+static func building_advisor_index(state) -> int:
+	_sync_manager_orders(state)
+	if state.mechanic_order_ready:
+		return MECHANIC_BUILDING_IDX
+	if state.accountant_order_idx >= 0:
+		return state.accountant_order_idx
+	return pete_recommends_index(state)
+
+
+static func building_advisor_prefix(state, idx: int) -> String:
+	_sync_manager_orders(state)
+	if state.mechanic_order_ready and idx == MECHANIC_BUILDING_IDX:
+		return "▸ "
+	if state.accountant_order_idx == idx:
+		return "▸ "
+	if pete_recommends_index(state) == idx:
+		return "★ "
+	return ""
 
 
 static func manager_active(state, name: String) -> bool:
@@ -272,6 +369,10 @@ static func tick_carl_emergency(state, heat_before: float, heat_after: float) ->
 static func pete_recommends_index(state) -> int:
 	if not manager_active(state, "Sticky Pete"):
 		return -1
+	return _best_affordable_building_index(state)
+
+
+static func _best_affordable_building_index(state) -> int:
 	var best_idx := -1
 	var best_ratio := 0.0
 	for i in state.buildings.size():
@@ -284,6 +385,46 @@ static func pete_recommends_index(state) -> int:
 			best_ratio = ratio
 			best_idx = i
 	return best_idx
+
+
+static func _building_affordable(state, idx: int) -> bool:
+	if idx < 0 or idx >= state.buildings.size():
+		return false
+	var cost: float = state.buildings[idx].current_cost()
+	return cost > 0.0 and state.balance >= cost
+
+
+static func _chop_shop_order_valid(state) -> bool:
+	if state.buildings.size() <= MECHANIC_BUILDING_IDX:
+		return false
+	var cost: float = state.buildings[MECHANIC_BUILDING_IDX].current_cost()
+	return cost > 0.0 and state.balance >= cost * MECHANIC_BALANCE_MULT
+
+
+static func _sync_manager_orders(state) -> void:
+	if manager_active(state, "The Mechanic") and manager_autobuy_unlocked(state):
+		state.mechanic_order_ready = _chop_shop_order_valid(state)
+	else:
+		state.mechanic_order_ready = false
+	if manager_active(state, "The Accountant") and manager_autobuy_unlocked(state):
+		if state.accountant_order_idx >= 0 and not _building_affordable(state, state.accountant_order_idx):
+			state.accountant_order_idx = -1
+	else:
+		state.accountant_order_idx = -1
+
+
+static func _refresh_accountant_order(state) -> void:
+	if not manager_active(state, "The Accountant") or not manager_autobuy_unlocked(state):
+		state.accountant_order_idx = -1
+		return
+	state.accountant_order_idx = _best_affordable_building_index(state)
+
+
+static func _refresh_mechanic_order(state) -> void:
+	if not manager_active(state, "The Mechanic") or not manager_autobuy_unlocked(state):
+		state.mechanic_order_ready = false
+		return
+	state.mechanic_order_ready = _chop_shop_order_valid(state)
 
 
 static func sal_autocollect_delay(state) -> float:
@@ -485,24 +626,21 @@ static func tick_manager_effects(state, dt: float) -> Array[String]:
 	tick_promoter_heat(state, dt)
 	if manager_active(state, "The Mechanic") and manager_autobuy_unlocked(state):
 		state.mechanic_timer += dt
-		if state.mechanic_timer >= behavior_interval(MECHANIC_AUTOBUY_INTERVAL, state):
+		if state.mechanic_timer >= behavior_interval(MECHANIC_ORDER_INTERVAL, state):
 			state.mechanic_timer = 0.0
-			var bought: String = _auto_buy_chop_shop(state)
-			if not bought.is_empty():
-				state.mechanic_autobuys += 1
-				var n: int = int(state.mechanic_autobuys)
-				if n == 1 or n % 3 == 0:
-					messages.append("Mechanic bought %s" % bought)
+			var was_ready: bool = state.mechanic_order_ready
+			_refresh_mechanic_order(state)
+			if state.mechanic_order_ready and not was_ready:
+				messages.append("Mechanic recommends Chop Shop — Approve on Buildings")
 	if manager_active(state, "The Accountant") and manager_autobuy_unlocked(state):
 		state.autobuy_timer += dt
-		if state.autobuy_timer >= behavior_interval(AUTOBUY_INTERVAL, state):
+		if state.autobuy_timer >= behavior_interval(ACCOUNTANT_ORDER_INTERVAL, state):
 			state.autobuy_timer = 0.0
-			var bought_best: String = _auto_buy_best(state)
-			if not bought_best.is_empty():
-				state.accountant_autobuys += 1
-				var n: int = int(state.accountant_autobuys)
-				if n == 1 or n % 2 == 0:
-					messages.append("Accountant bought %s" % bought_best)
+			var prev_idx: int = state.accountant_order_idx
+			_refresh_accountant_order(state)
+			if state.accountant_order_idx >= 0 and state.accountant_order_idx != prev_idx:
+				var name: String = state.buildings[state.accountant_order_idx].display_name
+				messages.append("Accountant recommends %s — Approve on Buildings" % name)
 	return messages
 
 
@@ -521,18 +659,10 @@ static func _auto_buy_chop_shop(state) -> String:
 
 
 static func _auto_buy_best(state) -> String:
-	var best: Building = null
-	var best_ratio := 0.0
-	for b: Building in state.buildings:
-		var cost: float = b.current_cost()
-		if cost <= 0.0 or state.balance < cost:
-			continue
-		var ratio: float = (b.base_income * b.income_multiplier) / cost
-		if ratio > best_ratio:
-			best_ratio = ratio
-			best = b
-	if best == null:
+	var idx: int = _best_affordable_building_index(state)
+	if idx < 0:
 		return ""
+	var best: Building = state.buildings[idx]
 	state.balance -= best.current_cost()
 	best.owned += 1
 	state.record_building_purchase(1)
@@ -547,6 +677,8 @@ static func reset_runtime(state) -> void:
 	state.autobuy_timer = 0.0
 	state.mechanic_autobuys = 0
 	state.accountant_autobuys = 0
+	state.accountant_order_idx = -1
+	state.mechanic_order_ready = false
 	state.broker_retry_cd = 0.0
 	state.smuggler_timer = 0.0
 	state.smuggler_notified.clear()
@@ -567,7 +699,9 @@ static func employee_status(state, idx: int) -> Dictionary:
 			"The Mechanic":
 				if not manager_autobuy_unlocked(state):
 					return {"text": purchase_autobuy_gate_text(), "color": GameTheme.TEXT_MUTED, "badge_kind": "gated"}
-				return {"text": "Auto-buying Chop Shops", "color": GameTheme.GREEN, "badge_kind": "auto"}
+				if state.mechanic_order_ready:
+					return {"text": "Chop Shop order ready — Approve on Buildings", "color": GameTheme.GOLD_BRIGHT, "badge_kind": "ready"}
+				return {"text": "Watching Chop Shop — order when affordable", "color": GameTheme.GOLD, "badge_kind": "working"}
 			"The Collector":
 				var shield: float = collector_shield_fraction(state)
 				if shield >= 1.0:
@@ -585,7 +719,14 @@ static func employee_status(state, idx: int) -> Dictionary:
 			"The Accountant":
 				if not manager_autobuy_unlocked(state):
 					return {"text": purchase_autobuy_gate_text(), "color": GameTheme.TEXT_MUTED, "badge_kind": "gated"}
-				return {"text": "Auto-buying", "color": GameTheme.GREEN, "badge_kind": "auto"}
+				if state.accountant_order_idx >= 0 and state.accountant_order_idx < state.buildings.size():
+					var b: Building = state.buildings[state.accountant_order_idx]
+					return {
+						"text": "Order ready: %s — Approve on Buildings" % b.display_name,
+						"color": GameTheme.GOLD_BRIGHT,
+						"badge_kind": "ready",
+					}
+				return {"text": "Scanning for best buy", "color": GameTheme.GOLD, "badge_kind": "working"}
 			"The Promoter":
 				var tgt: int = int(promoter_heat_target(state))
 				return {"text": "Maintaining heat ≤ %d%%" % tgt, "color": GameTheme.RED, "badge_kind": "auto"}

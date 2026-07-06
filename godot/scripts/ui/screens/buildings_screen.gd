@@ -5,6 +5,7 @@ extends ScreenBase
 
 const BUILDING_ROW := preload("res://scenes/building_row.tscn")
 const _TutorialSystem = preload("res://scripts/systems/tutorial_system.gd")
+const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 
 var stage: Node = null   # set by the shell for feedback-in-world flashes
 
@@ -14,6 +15,8 @@ var _sils: Array[Control] = []
 var _sil_names: Array[Label] = []
 var _sil_costs: Array[Label] = []
 var _footer: Label
+var _header: HBoxContainer
+var _approve: Button
 var _seg: SegmentedControl
 
 
@@ -34,6 +37,18 @@ func _ready() -> void:
 	_footer.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	_footer.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 	_list.add_child(_footer)
+
+	_header = HBoxContainer.new()
+	_header.add_theme_constant_override("separation", 6)
+	_approve = Button.new()
+	_approve.visible = false
+	_approve.custom_minimum_size = Vector2(108, 48)
+	_approve.pressed.connect(_on_approve_order)
+	_header.add_child(_approve)
+	_seg = SegmentedControl.new()
+	_header.add_child(_seg)
+
+	GameState.stats_changed.connect(_refresh_header)
 	refresh_slow()
 
 
@@ -42,10 +57,7 @@ func screen_title() -> String:
 
 
 func header_control() -> Control:
-	if _seg == null or not is_instance_valid(_seg):
-		_seg = SegmentedControl.new()
-		_seg.visible = true
-	return _seg
+	return _header
 
 
 func refresh_slow() -> void:
@@ -62,7 +74,24 @@ func refresh_slow() -> void:
 	_footer.visible = hidden > 0
 	if hidden > 0:
 		_footer.text = "%d more discovered as you grow" % hidden
-	# Buy multiplier control is itself disclosure-gated (§6.2).
+	_refresh_header()
+
+
+func _refresh_header() -> void:
+	var order := _ManagerSystem.pending_manager_order(GameState)
+	if order.is_empty():
+		_approve.visible = false
+	else:
+		_approve.visible = true
+		var qty: int = maxi(1, int(order.get("qty", 1)))
+		var qty_txt := "" if qty <= 1 else " ×%d" % qty
+		var cost_str := FormatUtil.format_money(float(order.get("cost", 0.0)))
+		_approve.text = "APPROVE\n%s%s · %s" % [order.get("building_name", ""), qty_txt, cost_str]
+		var can: bool = bool(order.get("can_approve", false))
+		_approve.disabled = not can
+		if GameConfig.UI_SHELL_V3:
+			Affordance.apply_action_button(
+				_approve, Affordance.READY if can else Affordance.APPROACHING)
 	if _seg != null and is_instance_valid(_seg):
 		_seg.visible = Disclosure.buy_mult_visible(GameState)
 
@@ -92,6 +121,26 @@ func _make_silhouette(index: int) -> Control:
 	return card
 
 
+func _on_approve_order() -> void:
+	var order := _ManagerSystem.pending_manager_order(GameState)
+	if order.is_empty():
+		return
+	var idx: int = int(order.get("index", -1))
+	var before: int = GameState.total_buildings_owned()
+	if not GameState.approve_manager_order():
+		if idx >= 0 and idx < GameState.buildings.size():
+			var b = GameState.buildings[idx]
+			var qty: int = maxi(1, int(order.get("qty", 1)))
+			GameState.notification.emit(
+				"Need %s for %s ×%d" % [
+					FormatUtil.format_money(b.cost_for_n(qty)), b.display_name, qty,
+				],
+				GameTheme.TEXT_MUTED,
+			)
+		return
+	_finish_building_buy(idx, before)
+
+
 func _on_buy(index: int, qty: int) -> void:
 	var before: int = GameState.total_buildings_owned()
 	if not GameState.buy_building(index, qty):
@@ -104,11 +153,14 @@ func _on_buy(index: int, qty: int) -> void:
 				GameTheme.TEXT_MUTED,
 			)
 		return
+	_finish_building_buy(index, before)
+
+
+func _finish_building_buy(index: int, before: int) -> void:
 	var ms := GameState.record_first_building_buy_ms()
 	if ms >= 0:
 		Telemetry.log_event("ui_first_building_buy_ms", {"ms": ms})
 	if GameState.tutorial_step == 1 and GameState.total_buildings_owned() > before:
 		_TutorialSystem.advance_tutorial(GameState)
-	# Feedback in the world (rule 8) — the stage is the progress bar.
 	if stage != null and stage.has_method("flash_building"):
 		stage.flash_building(GameState.buildings[index].icon_key)

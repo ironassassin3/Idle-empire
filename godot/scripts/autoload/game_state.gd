@@ -576,9 +576,22 @@ func buy_building(index: int, qty: int = 1) -> bool:
 	buildings[index].owned += qty
 	record_building_purchase(qty)
 	BuildingDefs.sync_racket_multiplier(buildings)
+	_ManagerSystem.on_building_purchased(self, index)
 	_mark_ips_dirty()
 	stats_changed.emit()
 	_play_sfx("purchase")
+	return true
+
+
+func approve_manager_order() -> bool:
+	var result: Dictionary = _ManagerSystem.approve_manager_order(self)
+	if not bool(result.get("ok", false)):
+		return false
+	var src: String = str(result.get("source_label", "Manager"))
+	var name: String = str(result.get("building_name", ""))
+	var qty: int = int(result.get("qty", 1))
+	var qty_txt := "" if qty <= 1 else " ×%d" % qty
+	notification.emit("%s order filled — %s%s" % [src, name, qty_txt], GameTheme.GOLD_BRIGHT)
 	return true
 
 

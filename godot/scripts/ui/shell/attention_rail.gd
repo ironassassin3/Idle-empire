@@ -74,6 +74,8 @@ func _on_attention(item: Dictionary) -> void:
 			accent = GameTheme.GOLD_BRIGHT
 		"op_collect":
 			accent = GameTheme.GREEN
+		"manager_order":
+			accent = GameTheme.GOLD_BRIGHT
 	var sb := _panel.get_theme_stylebox("normal") as StyleBoxFlat
 	if sb != null:
 		sb.border_color = accent
@@ -85,6 +87,8 @@ func _on_tapped() -> void:
 	var kind := str(_item.get("kind", ""))
 	Telemetry.log_event("ui_rail_tap", {"kind": kind})
 	UiEvents.rail_action.emit(kind)
+	if kind == "manager_order" and GameState.approve_manager_order():
+		return
 	var target := str(_item.get("target", ""))
 	match target:
 		"prestige":

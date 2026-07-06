@@ -32,7 +32,8 @@ const TERRITORY_ECONOMY_SCALE_MAX := 0.30
 const TERRITORY_INCOME_BONUS_CAP := 0.18
 
 const MANAGER_INCOME_MULT := 1.5
-# Purchase automation (Accountant, Mechanic, Talent Scout) unlocks after first prestige.
+# Manager purchase orders (Accountant, Mechanic) unlock after first prestige.
+# Full silent auto-buy remains a prestige perk choice (Talent Scout / Monopoly).
 const MANAGER_AUTOBUY_REQUIRES_PRESTIGE := true
 const MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT := 1
 const AUTOSAVE_INTERVAL := 30.0
