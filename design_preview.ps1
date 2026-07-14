@@ -47,8 +47,20 @@ New-Item -ItemType Directory -Force -Path $ShotsDir | Out-Null
 $name = [IO.Path]::GetFileNameWithoutExtension($Scene)
 $failed = $false
 
-$stdoutLog = Join-Path $ShotsDir "_last_stdout.log"
-$stderrLog = Join-Path $ShotsDir "_last_stderr.log"
+# Per-invocation log names: parallel agents rendering at once would otherwise
+# fight over one file handle and fail the render, not just the log.
+$stdoutLog = Join-Path $ShotsDir ("_{0}_{1}_stdout.log" -f $name, $PID)
+$stderrLog = Join-Path $ShotsDir ("_{0}_{1}_stderr.log" -f $name, $PID)
+
+# Viewport readback needs a real window, so only one Godot render may run at a
+# time on this machine; concurrent callers queue here instead of colliding.
+$renderLock = New-Object System.Threading.Mutex($false, "Global\CriminalEmpire_GodotRender")
+if (-not $renderLock.WaitOne([TimeSpan]::FromMinutes(15))) {
+    Write-Error "Timed out waiting for the Godot render lock (another render is stuck)."
+    exit 1
+}
+
+try {
 
 foreach ($size in $Sizes) {
     $parts = $size.ToLower().Split("x")
@@ -74,5 +86,12 @@ foreach ($size in $Sizes) {
     } else {
         Write-Host "shot: $png" -ForegroundColor Green
     }
+}
+
+}
+finally {
+    $renderLock.ReleaseMutex()
+    $renderLock.Dispose()
+    Remove-Item $stdoutLog, $stderrLog -ErrorAction SilentlyContinue
 }
 if ($failed) { exit 1 }

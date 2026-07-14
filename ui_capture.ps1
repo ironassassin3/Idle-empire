@@ -68,20 +68,35 @@ if ($Spec) {
     if ($DebugRects) { $userArgs += "--debug-rects" }
 }
 
-$stdoutLog = Join-Path $ShotsDir "_cap_stdout.log"
-$stderrLog = Join-Path $ShotsDir "_cap_stderr.log"
+# Per-invocation logs + a shared render lock: parallel callers would otherwise
+# collide on one file handle and on the single readback window.
+$stdoutLog = Join-Path $ShotsDir ("_cap_{0}_stdout.log" -f $PID)
+$stderrLog = Join-Path $ShotsDir ("_cap_{0}_stderr.log" -f $PID)
 $godotArgs = @(
     "--path", ('"{0}"' -f $GodotProject),
     "--resolution", "320x240",
     "-s", "res://scripts/tools/ui_capture.gd", "--"
 ) + $userArgs
-$p = Start-Process -FilePath $godot -ArgumentList $godotArgs -Wait -PassThru `
-    -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
-Get-Content $stdoutLog | Where-Object { $_ -match '^\{' } | ForEach-Object {
-    Write-Host $_ -ForegroundColor Green
-}
-if ($p.ExitCode -ne 0) {
-    Write-Host "ui_capture FAILED (exit $($p.ExitCode))" -ForegroundColor Red
-    Get-Content $stderrLog | Select-Object -First 20
+
+$renderLock = New-Object System.Threading.Mutex($false, "Global\CriminalEmpire_GodotRender")
+if (-not $renderLock.WaitOne([TimeSpan]::FromMinutes(15))) {
+    Write-Error "Timed out waiting for the Godot render lock (another render is stuck)."
     exit 1
+}
+try {
+    $p = Start-Process -FilePath $godot -ArgumentList $godotArgs -Wait -PassThru `
+        -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+    Get-Content $stdoutLog | Where-Object { $_ -match '^\{' } | ForEach-Object {
+        Write-Host $_ -ForegroundColor Green
+    }
+    if ($p.ExitCode -ne 0) {
+        Write-Host "ui_capture FAILED (exit $($p.ExitCode))" -ForegroundColor Red
+        Get-Content $stderrLog | Select-Object -First 20
+        exit 1
+    }
+}
+finally {
+    $renderLock.ReleaseMutex()
+    $renderLock.Dispose()
+    Remove-Item $stdoutLog, $stderrLog -ErrorAction SilentlyContinue
 }
