@@ -45,8 +45,22 @@ func _ready() -> void:
 	_buy10.pressed.connect(func(): buy_pressed.emit(building_index, 10))
 	_buy_max.pressed.connect(_on_buy_max)
 	GameState.stats_changed.connect(_refresh)
+	var events: Node = get_node_or_null("/root/UiEvents")
+	if events != null:
+		events.building_purchased.connect(_on_any_purchase)
 	if building_index >= 0:
 		_refresh()
+
+
+## Same beat as the city facade: this row's medallion acknowledges the purchase.
+func _on_any_purchase(key: String) -> void:
+	if _building == null or str(_building.icon_key) != key:
+		return
+	if DisplayServer.get_name() == "headless" or GameTheme.ui_reduced_motion():
+		return
+	var tw := create_tween()
+	tw.tween_property(_medal, "modulate", GameTheme.GOLD_BRIGHT, 0.12)
+	tw.tween_property(_medal, "modulate", Color.WHITE, 0.45).set_ease(Tween.EASE_OUT)
 
 
 func _apply_label_scale() -> void:
