@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "explore-prestige-backdrop",
+  "prompt": "/godot-design explore a bolder prestige ceremony backdrop — the current prestige climax is a gold full-screen overlay; push past the current kit if it earns it. Design scene only under godot/design/.",
+  "assertions": [
+    "scene-created-in-design-dir: a new design .tscn exists under godot/design/ with the assigned prefix, and no file under godot/scenes/ was modified",
+    "render-produced: at least one PNG render of the design scene exists at 720x1280",
+    "min-two-critique-rounds: the transcript/report shows at least 2 render-then-critique cycles before the final render",
+    "non-kit-values-marked: any non-kit color/type values are listed in a comment block at the top of the design .gd (explore-mode marking rule)",
+    "fiction-guardrail: the report names the chosen tone and justifies it against the criminal-empire-noir fiction in one sentence",
+    "kit-amendments-deliverable: REPORT.md proposes kit amendments (token name, value, role, rendered evidence) instead of port notes, for values that survived the loop",
+    "no-generated-assets: the design uses code-built visuals only (no imported image assets beyond the licensed fonts/icons)"
+  ]
+}

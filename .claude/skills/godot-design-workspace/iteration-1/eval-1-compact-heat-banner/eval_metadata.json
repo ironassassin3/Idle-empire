@@ -1,0 +1,14 @@
+{
+  "eval_id": 1,
+  "eval_name": "compact-heat-banner",
+  "prompt": "Design a compact heat warning banner that slides in over the masthead when heat crosses 60% (the police-raid threshold). It needs to read as danger without using the gold accent. Design scene only under godot/design/; do not modify real game scenes.",
+  "assertions": [
+    "scene-created-in-design-dir: a new design .tscn exists under godot/design/ with the assigned prefix, and no file under godot/scenes/ was modified",
+    "render-produced: at least one PNG render of the design scene exists at 720x1280",
+    "multi-res-final: final renders exist at both 720x1280 and 1080x1920",
+    "min-two-critique-rounds: the transcript/report shows at least 2 render-then-critique cycles before the final render",
+    "no-gold-on-danger: the banner's danger signal uses RED/non-gold tokens; GOLD/GOLD_BRIGHT do not carry the warning",
+    "motion-declared: the design declares its slide-in motion (tween in the design .gd and/or explicit motion choreography in the report's port notes)",
+    "deliverable-format: REPORT.md contains a stated design intent, a rationale, and port notes including what animates vs stays still"
+  ]
+}

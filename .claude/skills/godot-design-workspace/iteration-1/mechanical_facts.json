@@ -1,0 +1,183 @@
+{
+  "real_scenes_or_scripts_modified": [],
+  "runs": {
+    "eval-0-legacy-overlay-reskin/with_skill": {
+      "prefix": "ev0s_",
+      "design_files": [
+        "ev0s_wheel.gd",
+        "ev0s_wheel_dial.gd"
+      ],
+      "design_files_exist": true,
+      "shots_in_shots_dir": [],
+      "renders_copied_to_outputs": [],
+      "render_sizes": [],
+      "has_720x1280": false,
+      "has_1080x1920": false,
+      "uses_GameTheme": true,
+      "uses_GameFonts": true,
+      "raw_hex_color_hits": 0,
+      "raw_float_color_hits": 1,
+      "gold_token_hits": 12,
+      "has_tween": true,
+      "report_exists": false,
+      "report_chars": 0,
+      "report_mentions_intent": false,
+      "report_mentions_port_notes": false,
+      "report_mentions_kit_amendment": false,
+      "report_mentions_motion": false
+    },
+    "eval-0-legacy-overlay-reskin/without_skill": {
+      "prefix": "ev0b_",
+      "design_files": [
+        "ev0b_legacy_before.gd",
+        "ev0b_legacy_before.tscn",
+        "ev0b_wheel.gd",
+        "ev0b_wheel.tscn",
+        "ev0b_wheel_track.gd"
+      ],
+      "design_files_exist": true,
+      "shots_in_shots_dir": [
+        "ev0b_wheel_empty_720x1280.png",
+        "ev0b_wheel_ready_720x1280.png",
+        "ev0b_wheel_sweep_720x1280.png",
+        "ev0b_wheel_win_720x1280.png"
+      ],
+      "renders_copied_to_outputs": [],
+      "render_sizes": [
+        "720x1280"
+      ],
+      "has_720x1280": true,
+      "has_1080x1920": false,
+      "uses_GameTheme": true,
+      "uses_GameFonts": true,
+      "raw_hex_color_hits": 0,
+      "raw_float_color_hits": 5,
+      "gold_token_hits": 23,
+      "has_tween": false,
+      "report_exists": false,
+      "report_chars": 0,
+      "report_mentions_intent": false,
+      "report_mentions_port_notes": false,
+      "report_mentions_kit_amendment": false,
+      "report_mentions_motion": false
+    },
+    "eval-1-compact-heat-banner/with_skill": {
+      "prefix": "ev1s_",
+      "design_files": [
+        "ev1s_heat.gd",
+        "ev1s_heat.tscn"
+      ],
+      "design_files_exist": true,
+      "shots_in_shots_dir": [
+        "ev1s_heat_720x1280.png"
+      ],
+      "renders_copied_to_outputs": [],
+      "render_sizes": [
+        "720x1280"
+      ],
+      "has_720x1280": true,
+      "has_1080x1920": false,
+      "uses_GameTheme": true,
+      "uses_GameFonts": true,
+      "raw_hex_color_hits": 2,
+      "raw_float_color_hits": 2,
+      "gold_token_hits": 1,
+      "has_tween": true,
+      "report_exists": false,
+      "report_chars": 0,
+      "report_mentions_intent": false,
+      "report_mentions_port_notes": false,
+      "report_mentions_kit_amendment": false,
+      "report_mentions_motion": false
+    },
+    "eval-1-compact-heat-banner/without_skill": {
+      "prefix": "ev1b_",
+      "design_files": [
+        "ev1b_heat.gd",
+        "ev1b_heat.tscn"
+      ],
+      "design_files_exist": true,
+      "shots_in_shots_dir": [
+        "ev1b_heat_720x1280.png"
+      ],
+      "renders_copied_to_outputs": [],
+      "render_sizes": [
+        "720x1280"
+      ],
+      "has_720x1280": true,
+      "has_1080x1920": false,
+      "uses_GameTheme": true,
+      "uses_GameFonts": true,
+      "raw_hex_color_hits": 15,
+      "raw_float_color_hits": 3,
+      "gold_token_hits": 10,
+      "has_tween": true,
+      "report_exists": false,
+      "report_chars": 0,
+      "report_mentions_intent": false,
+      "report_mentions_port_notes": false,
+      "report_mentions_kit_amendment": false,
+      "report_mentions_motion": false
+    },
+    "eval-2-explore-prestige-backdrop/with_skill": {
+      "prefix": "ev2s_",
+      "design_files": [
+        "ev2s_ascend_a.gd",
+        "ev2s_ascend_a.tscn",
+        "ev2s_ascend_b.gd"
+      ],
+      "design_files_exist": true,
+      "shots_in_shots_dir": [],
+      "renders_copied_to_outputs": [],
+      "render_sizes": [],
+      "has_720x1280": false,
+      "has_1080x1920": false,
+      "uses_GameTheme": true,
+      "uses_GameFonts": true,
+      "raw_hex_color_hits": 54,
+      "raw_float_color_hits": 5,
+      "gold_token_hits": 19,
+      "has_tween": true,
+      "report_exists": false,
+      "report_chars": 0,
+      "report_mentions_intent": false,
+      "report_mentions_port_notes": false,
+      "report_mentions_kit_amendment": false,
+      "report_mentions_motion": false
+    },
+    "eval-2-explore-prestige-backdrop/without_skill": {
+      "prefix": "ev2b_",
+      "design_files": [
+        "ev2b_ascend.gd",
+        "ev2b_ascend.tscn"
+      ],
+      "design_files_exist": true,
+      "shots_in_shots_dir": [
+        "ev2b_f120.png",
+        "ev2b_f160.png",
+        "ev2b_f190.png",
+        "ev2b_f30.png",
+        "ev2b_f48.png",
+        "ev2b_f75.png"
+      ],
+      "renders_copied_to_outputs": [],
+      "render_sizes": [
+        "720x1280"
+      ],
+      "has_720x1280": true,
+      "has_1080x1920": false,
+      "uses_GameTheme": true,
+      "uses_GameFonts": true,
+      "raw_hex_color_hits": 8,
+      "raw_float_color_hits": 12,
+      "gold_token_hits": 47,
+      "has_tween": false,
+      "report_exists": false,
+      "report_chars": 0,
+      "report_mentions_intent": false,
+      "report_mentions_port_notes": false,
+      "report_mentions_kit_amendment": false,
+      "report_mentions_motion": false
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "eval_id": 0,
+  "eval_name": "legacy-overlay-reskin",
+  "prompt": "Redesign the gambling overlay (the Luck Wheel, currently godot/scenes/gambling_overlay.tscn) to match the gilded Stage & Ledger shell look — it still uses the old un-styled scene and sticks out. Build it as a design scene only; do not modify the real overlay or any scene under godot/scenes/.",
+  "assertions": [
+    "scene-created-in-design-dir: a new design .tscn exists under godot/design/ with the assigned prefix, and no file under godot/scenes/ was modified",
+    "render-produced: at least one PNG render of the design scene exists at 720x1280",
+    "multi-res-final: final renders exist at both 720x1280 and 1080x1920",
+    "min-two-critique-rounds: the transcript/report shows at least 2 render-then-critique cycles before the final render",
+    "no-hex-literals: the design .tscn/.gd use GameTheme tokens and kit helpers, not raw color literals",
+    "touch-targets-44px: every button/clickable control in the design is at least 44px tall (verified via ui_capture -DebugRects rects.json or scene min-sizes)",
+    "deliverable-format: REPORT.md contains a stated design intent, a rationale, and port notes naming target nodes/styles in gambling_overlay.tscn"
+  ]
+}
