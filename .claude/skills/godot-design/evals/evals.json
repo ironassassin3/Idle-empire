@@ -1,0 +1,53 @@
+{
+  "skill_name": "godot-design",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "legacy-overlay-reskin",
+      "prompt": "Redesign the gambling overlay (the Luck Wheel, currently godot/scenes/gambling_overlay.tscn) to match the gilded Stage & Ledger shell look — it still uses the old un-styled scene and sticks out. Build it as a design scene only; do not modify the real overlay or any scene under godot/scenes/. Name your design scene with the prefix given in your task instructions.",
+      "expected_output": "A design .tscn (+ .gd) under godot/design/ using GameTheme tokens/components, rendered PNGs at 720x1280 and 1080x1920 after at least 2 critique rounds, and a final report with intent, rationale, and port notes into gambling_overlay.tscn.",
+      "files": [],
+      "assertions": [
+        "scene-created-in-design-dir",
+        "render-produced",
+        "multi-res-final",
+        "min-two-critique-rounds",
+        "no-hex-literals",
+        "touch-targets-44px",
+        "deliverable-format: intent + rationale + port notes"
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "compact-heat-banner",
+      "prompt": "Design a compact heat warning banner for the game that slides in over the masthead when heat crosses 60% (the police-raid threshold). It needs to read as danger without using the gold accent. Build it as a design scene only under godot/design/; do not modify real game scenes. Name your design scene with the prefix given in your task instructions.",
+      "expected_output": "A compact banner design scene rendered on a full-rect BG for context, danger conveyed via RED/non-gold tokens, declared slide-in motion (tween in the design script or explicit motion notes), multi-res final renders, report with intent + port notes.",
+      "files": [],
+      "assertions": [
+        "scene-created-in-design-dir",
+        "render-produced",
+        "multi-res-final",
+        "min-two-critique-rounds",
+        "no-gold-on-danger",
+        "motion-declared",
+        "deliverable-format: intent + rationale + port notes incl. motion"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "explore-prestige-backdrop",
+      "prompt": "/godot-design explore a bolder prestige ceremony backdrop — the current prestige climax is a gold full-screen overlay; push past the current kit if it earns it. Design scene only under godot/design/. Name your design scene with the prefix given in your task instructions.",
+      "expected_output": "An explore-mode design scene that may use marked non-kit values (header comment block listing them), stays inside the criminal-empire-noir fiction, renders through the critique loop, and delivers kit amendments (proposed token name/value/role + rendered evidence) instead of port notes.",
+      "files": [],
+      "assertions": [
+        "scene-created-in-design-dir",
+        "render-produced",
+        "min-two-critique-rounds",
+        "non-kit-values-marked",
+        "fiction-guardrail",
+        "kit-amendments-deliverable",
+        "no-generated-assets"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[
+	{"shell": true, "tab": 0, "cash": 500, "no_overlays": true, "frames": 68,
+	 "inputs": [{"at": 60, "type": "drag", "x": 360, "y": 507, "to_x": 360, "to_y": 880, "frames": 14}],
+	 "out": "D:/2d_game/godot/design/shots/gx_middrag.png"}
+]

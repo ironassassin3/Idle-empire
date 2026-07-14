@@ -1,0 +1,16 @@
+[
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "offline_hours": 8, "frames": 30,
+	 "out": "D:/2d_game/godot/design/shots/v2b_lights.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "offline_hours": 8, "frames": 110,
+	 "out": "D:/2d_game/godot/design/shots/v2b_midcount.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "offline_hours": 8, "frames": 380,
+	 "out": "D:/2d_game/godot/design/shots/v2b_settled.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "offline_hours": 14, "frames": 200,
+	 "inputs": [{"at": 20, "type": "tap", "x": 360, "y": 120}],
+	 "out": "D:/2d_game/godot/design/shots/v2b_skip_capped.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "offline_hours": 8, "frames": 120,
+	 "inputs": [{"at": 20, "type": "tap", "x": 360, "y": 120}, {"at": 60, "type": "tap", "x": 360, "y": 120}],
+	 "out": "D:/2d_game/godot/design/shots/v2b_dismissed.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "offline_hours": 8, "reduced_motion": true, "frames": 40,
+	 "out": "D:/2d_game/godot/design/shots/v2b_reduced_instant.png"}
+]

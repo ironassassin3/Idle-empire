@@ -1,0 +1,10 @@
+[
+	{"shell": true, "tab": 0, "cash": 500, "no_overlays": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/gx_rest.png"},
+	{"shell": true, "tab": 0, "cash": 500, "no_overlays": true, "frames": 110,
+	 "inputs": [{"at": 60, "type": "tap", "x": 360, "y": 507}],
+	 "out": "D:/2d_game/godot/design/shots/gx_full_after_tap.png"},
+	{"shell": true, "tab": 0, "cash": 500, "no_overlays": true, "frames": 110,
+	 "inputs": [{"at": 60, "type": "drag", "x": 360, "y": 507, "to_x": 360, "to_y": 880, "frames": 14}],
+	 "out": "D:/2d_game/godot/design/shots/gx_peek_after_drag.png"}
+]

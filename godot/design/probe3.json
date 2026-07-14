@@ -1,0 +1,6 @@
+[
+	{"shell": true, "tab": 0, "cash": 2000, "city_tier": 2, "text_scale": 2, "no_overlays": true, "debug_rects": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/p3_a.png"},
+	{"shell": true, "tab": 6, "cash": 500, "city_tier": 2, "text_scale": 2, "no_overlays": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/p3_b.png"}
+]

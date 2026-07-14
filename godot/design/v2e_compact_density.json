@@ -1,0 +1,6 @@
+[
+	{"shell": true, "tab": 0, "cash": 5000000, "city_tier": 4, "all_buildings_owned": 20, "compact_rows": true, "no_overlays": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/v2e_compact_density.png"},
+	{"shell": true, "tab": 0, "cash": 5000000, "city_tier": 4, "all_buildings_owned": 20, "compact_rows": false, "no_overlays": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/v2e_normal_density.png"}
+]

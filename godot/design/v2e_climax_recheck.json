@@ -1,0 +1,10 @@
+[
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "no_overlays": true, "trigger_prestige_at": 20, "frames": 70,
+	 "out": "D:/2d_game/godot/design/shots/v2e_climax_dim.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "no_overlays": true, "trigger_prestige_at": 20, "frames": 220,
+	 "out": "D:/2d_game/godot/design/shots/v2e_climax_hold.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "no_overlays": true, "trigger_prestige_at": 20, "frames": 330,
+	 "out": "D:/2d_game/godot/design/shots/v2e_climax_lift.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "no_overlays": true, "reduced_motion": true, "trigger_prestige_at": 20, "frames": 40,
+	 "out": "D:/2d_game/godot/design/shots/v2e_climax_reduced.png"}
+]

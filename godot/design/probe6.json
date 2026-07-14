@@ -1,0 +1,10 @@
+[
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "no_overlays": true, "reduced_motion": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/p6_rm.png"},
+	{"shell": true, "tab": 0, "cash": 500, "city_tier": 2, "heat": 70, "no_overlays": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/p6_heat.png"},
+	{"shell": true, "tab": 0, "cash": 2000, "city_tier": 2, "text_scale": 2, "no_overlays": true, "debug_rects": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/p6_bldgs.png"},
+	{"shell": true, "tab": 6, "cash": 500, "city_tier": 2, "text_scale": 2, "no_overlays": true, "frames": 60,
+	 "out": "D:/2d_game/godot/design/shots/p6_stats.png"}
+]
