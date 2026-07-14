@@ -162,5 +162,4 @@ func _finish_building_buy(index: int, before: int) -> void:
 		Telemetry.log_event("ui_first_building_buy_ms", {"ms": ms})
 	if GameState.tutorial_step == 1 and GameState.total_buildings_owned() > before:
 		_TutorialSystem.advance_tutorial(GameState)
-	if stage != null and stage.has_method("flash_building"):
-		stage.flash_building(GameState.buildings[index].icon_key)
+	UiEvents.building_purchased.emit(GameState.buildings[index].icon_key)

@@ -52,6 +52,10 @@ func _ready() -> void:
 	_build_tap_chip()
 	_build_coin()
 
+	var events: Node = get_node_or_null("/root/UiEvents")
+	if events != null:
+		events.building_purchased.connect(flash_building)
+
 
 func _process(delta: float) -> void:
 	_t += delta
@@ -181,18 +185,17 @@ func play_raid() -> void:
 	tw.tween_property(_raid_flash, "color:a", 0.0, 0.9).set_ease(Tween.EASE_OUT)
 
 
-## Gold glint at the skyline when a building purchase lands (feedback-in-world).
-func flash_building(_key: String) -> void:
-	if DisplayServer.get_name() == "headless" or GameTheme.ui_reduced_motion():
+## A purchase lights that business's own facade in the skyline. This used to
+## fade one gold ColorRect over the ENTIRE screen and ignore its key, which is
+## why every purchase felt identical and the city felt dead.
+func flash_building(key: String) -> void:
+	# The pulse table is drawn STATE, not an allocated node — safe to set even
+	# headless (city_view._draw/_process are headless-gated; _draw_facade_pulse
+	# gates reduced-motion). Only reduced-motion suppresses the reaction here.
+	if GameTheme.ui_reduced_motion():
 		return
-	var glint := ColorRect.new()
-	glint.color = Color(0.925, 0.792, 0.49, 0.16)
-	glint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(glint)
-	var tw := create_tween()
-	tw.tween_property(glint, "color:a", 0.0, 0.5).set_ease(Tween.EASE_OUT)
-	tw.tween_callback(glint.queue_free)
+	if _city != null and _city.has_method("pulse_facade"):
+		_city.call("pulse_facade", key)
 
 
 # ------------------------------------------------- diegetic gap objects (Z2)
