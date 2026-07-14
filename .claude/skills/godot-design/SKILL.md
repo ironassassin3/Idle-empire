@@ -96,7 +96,9 @@ Read the PNG. Check, in order:
    If anything looks collapsed or misplaced, re-render via `ui_capture.ps1
    -DebugRects` before guessing.
 4. Hierarchy — one focal point; balance/CTA reads first; muted metadata.
-5. Intent check — does the render deliver the step-2 commitment? Would a
+5. Copy — every label and button honest (see Words). A render cannot catch a
+   button that goes nowhere; only you can. Grep before you ship it.
+6. Intent check — does the render deliver the step-2 commitment? Would a
    player describe the memorable thing, or is it a competent grid of
    correctly-tokened boxes? If the latter, the fix is composition (density,
    asymmetry, the gold budget), not more polish on parts.
@@ -110,9 +112,34 @@ is really 1080×1421 is a silently wrong deliverable. Verify the dimensions.
 Report with: final PNG path(s), scene/script paths, a 2–4 bullet design
 rationale (the step-2 intent and which tokens/components carried it), and
 **port notes** — exactly which nodes/styles move into which real scene, what
-animates (tween choreography) vs. stays still, and any new token the port
-should add to `GameTheme`. Do not port into game scenes unless asked; design
-scenes in `godot/design/` are the deliverable.
+animates (tween choreography) vs. stays still, any new token the port should
+add to `GameTheme`, and any **unimplemented dependency** the copy assumes (a
+CTA whose action does not exist yet — say what would have to be built). Do not
+port into game scenes unless asked; design scenes in `godot/design/` are the
+deliverable.
+
+## Words
+
+Copy is design material, not filler — and it is the one thing the render loop
+is blind to. A button that promises an action the game does not have renders
+perfectly.
+
+- **Every CTA must name an action that exists in code.** Before you label a
+  button, grep for the thing it promises (a system method, an op, a manager).
+  If it doesn't exist, either use a verb that does, or keep the label and
+  flag it in the port notes as an **unimplemented dependency** — naming what
+  would have to be built. Never let a dead verb ship silently. (A real case:
+  a heat banner shipped a `LAY LOW` button; the game has no lay-low action,
+  only the Political Bribery op and The Promoter as heat sinks.)
+- **One name per action, all the way through.** The button that says COOL OFF
+  produces a notification that says cooled off — label, toast, and tooltip use
+  the same verb, or the player learns two words for one thing.
+- **Say the stake, not the system.** "$12.3K can be seized" beats "heat 68%":
+  name what the player controls and loses, in their vocabulary, not the
+  simulation's. Numbers pulled from real constants (`HeatSystem`, `GameConfig`)
+  beat invented ones — a mock that lies about the rules teaches the wrong feel.
+- **Let each element do one job.** A label labels; a value shows the number.
+  Nothing quietly does double duty.
 
 ## Variations
 When the user asks to explore ("try a few directions"), build 2–3 sibling
