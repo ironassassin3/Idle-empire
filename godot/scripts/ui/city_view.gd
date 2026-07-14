@@ -44,6 +44,12 @@ var _rank_idx: int = 0
 var _top_building_keys: Array = []
 var _top_building_counts: Array = []
 var _district_slots: Array = []
+## How long a purchase keeps its facade lit (seconds).
+const FACADE_PULSE_TIME := 1.6
+## key -> remaining seconds. Reactions are drawn STATE, never stacked nodes:
+## this canvas is immediate-mode, so a node layered over it cannot know where
+## anything is — which is exactly how the old full-screen wash happened.
+var _facade_pulse: Dictionary = {}
 # Neon reflection anchors collected during the skyline pass, painted into the
 # wet street afterwards (street is drawn on top of the buildings).
 var _reflect_points: Array = []
@@ -117,6 +123,19 @@ func _mark_dirty() -> void:
 	_dirty = true
 
 
+## A business was bought — light ITS facade. No-op if that business has no
+## facade on screen (only the top 5 owned types get one).
+func pulse_facade(key: String) -> void:
+	if not _top_building_keys.has(key):
+		return
+	_facade_pulse[key] = FACADE_PULSE_TIME
+	_dirty = true
+
+
+func is_facade_pulsing(key: String) -> bool:
+	return float(_facade_pulse.get(key, 0.0)) > 0.0
+
+
 func _process(delta: float) -> void:
 	if _is_headless() or _overlay_occluded:
 		return
@@ -125,6 +144,14 @@ func _process(delta: float) -> void:
 		return
 	_anim_accum = 0.0
 	_t += REDRAW_INTERVAL
+	if not _facade_pulse.is_empty():
+		for k in _facade_pulse.keys():
+			var left: float = float(_facade_pulse[k]) - REDRAW_INTERVAL
+			if left <= 0.0:
+				_facade_pulse.erase(k)
+			else:
+				_facade_pulse[k] = left
+		_dirty = true
 	var animating := not GameTheme.ui_reduced_motion()
 	if animating or _dirty:
 		queue_redraw()
@@ -295,6 +322,9 @@ func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: flo
 		if i == 0 and not keys.is_empty():
 			base_h *= 1.3
 		_draw_building_signature(key, cx, ground_y, base_h, tier, i, t)
+		var pulse: float = float(_facade_pulse.get(key, 0.0))
+		if pulse > 0.0:
+			_draw_facade_pulse(cx, ground_y, base_h, i, pulse)
 	# Tier 3+ — bridge connector.
 	if tier >= 3 and count >= 2:
 		var bx0 := slot_w * 0.5
@@ -398,6 +428,19 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 	# business's own colour. Static (no drift/flicker) so it reads as signage.
 	if tier >= 2:
 		_draw_marquee(bx + bw + 1.0, by + maxf(5.0, bh * 0.22), minf(18.0, bh * 0.4), neon, bx + bw)
+
+
+## The bought business's facade lights up — the empire acknowledging a purchase
+## in the world, not a tint over the player's whole screen.
+func _draw_facade_pulse(cx: float, ground_y: float, bh: float, seed: int, pulse: float) -> void:
+	if GameTheme.ui_reduced_motion():
+		return
+	var a := clampf(pulse / FACADE_PULSE_TIME, 0.0, 1.0)
+	var bw := 52.0 + float(seed % 3) * 10.0
+	var rect := Rect2(cx - bw * 0.5, ground_y - bh, bw, bh)
+	var glow := INK_GOLD_BRIGHT
+	draw_rect(rect, Color(glow.r, glow.g, glow.b, 0.10 * a), true)
+	draw_rect(rect, Color(glow.r, glow.g, glow.b, 0.55 * a), false, 1.5)
 
 
 func _draw_marquee(mq_x: float, mq_y: float, mq_h: float, col: Color, wall_x: float) -> void:
