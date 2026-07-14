@@ -18,3 +18,10 @@ signal sheet_state_changed(state: int)
 ## Rail item of this kind was acted on (tapped) — lets AttentionDirector
 ## retire one-shot ambient offers (e.g. "compact_offer") without a direct ref.
 signal rail_action(kind: String)
+## A building was bought — carries WHICH one, so the city, its row, and the
+## masthead can all react to the same addressed beat.
+signal building_purchased(key: String)
+## Heat crossed a band boundary. level: 0 calm, 1 warn (>=60), 2 critical (>=85).
+signal heat_crossed(level: int)
+## A district changed hands. holder: "player" | "rival" | "neutral".
+signal district_changed(idx: int, holder: String)
