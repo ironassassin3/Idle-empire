@@ -45,6 +45,10 @@ var _top_building_keys: Array = []
 var _top_building_counts: Array = []
 var _top_building_shares: Array = []
 var _district_slots: Array = []
+## Heat danger read as drawn STATE (0 calm, 1 warn, 2 critical) — the street
+## turns hostile, never a wash over the player's balance.
+var _alert_level: int = 0
+var _raid_pulse: float = 0.0
 ## How long a purchase keeps its facade lit (seconds).
 const FACADE_PULSE_TIME := 1.6
 ## key -> remaining seconds. Reactions are drawn STATE, never stacked nodes:
@@ -139,6 +143,26 @@ func is_facade_pulsing(key: String) -> bool:
 	return float(_facade_pulse.get(key, 0.0)) > 0.0
 
 
+func set_alert_level(level: int) -> void:
+	if _alert_level == level:
+		return
+	_alert_level = level
+	_dirty = true
+
+
+func alert_level() -> int:
+	return _alert_level
+
+
+## A raid hits the street — a hot siren surge low in the frame, not a wash over
+## the player's balance. Decays in _process like the facade pulses.
+func play_raid_flash() -> void:
+	if GameTheme.ui_reduced_motion():
+		return
+	_raid_pulse = 1.0
+	_dirty = true
+
+
 func income_share(key: String) -> float:
 	var idx := _top_building_keys.find(key)
 	if idx < 0 or idx >= _top_building_shares.size():
@@ -161,6 +185,9 @@ func _process(delta: float) -> void:
 				_facade_pulse.erase(k)
 			else:
 				_facade_pulse[k] = left
+		_dirty = true
+	if _raid_pulse > 0.0:
+		_raid_pulse = maxf(0.0, _raid_pulse - REDRAW_INTERVAL)
 		_dirty = true
 	var animating := not GameTheme.ui_reduced_motion()
 	if animating or _dirty:
@@ -193,7 +220,7 @@ func _draw() -> void:
 	else:
 		_draw_frame()
 	_draw_back_parallax(_t, tier)
-	_draw_searchlights(_t, _rank_idx)
+	_draw_searchlights(_t, _alert_level)
 	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _top_building_counts, _t, ground_y)
 	_draw_horizon_glow(ground_y)
 	if tier == 0:
@@ -201,7 +228,9 @@ func _draw() -> void:
 	_draw_front_street(ground_y, _t)
 	_draw_reflections(ground_y, _t)
 	_draw_pedestrians(ground_y, _t, tier)
-	_draw_traffic(ground_y, _t)
+	_draw_traffic(ground_y, _t, _alert_level)
+	if _raid_pulse > 0.0:
+		_draw_raid_surge(ground_y)
 	_draw_district_strip(ground_y, _district_slots)
 	_draw_atmosphere(_heat, _rank_idx, _t, tier)
 	_draw_vignette()
@@ -576,19 +605,29 @@ func _draw_pedestrians(ground_y: float, t: float, tier: int) -> void:
 		_draw_person(px, feet, person_scale, i * 5 + 1, phase, reduced)
 
 
-func _draw_traffic(ground_y: float, t: float) -> void:
+func _draw_traffic(ground_y: float, t: float, alert_level: int = 0) -> void:
 	# Headlight streaks crossing the foreground street — the city is awake.
+	# At warn+ one lane becomes a police cruiser (alternating red/blue bar); it
+	# slows to a prowl at critical. The red+blue flash — not the red hue — is what
+	# reads as "police", so it never muddies into the static red aviation blips.
 	if GameTheme.ui_reduced_motion():
 		return
 	var sw := VIRTUAL_SIZE.x
 	for i in 2:
+		var patrol := alert_level >= 1 and i == 0
 		var dir := 1.0 if i == 0 else -1.0
 		var speed := 64.0 + float(i) * 28.0
+		if patrol and alert_level >= 2:
+			speed *= 0.6  # they slow and sweep at critical
 		var span := sw + 48.0
 		var prog := fmod(t * speed + float(i) * 150.0, span)
 		var cx: float = (prog - 24.0) if dir > 0.0 else (sw + 24.0 - prog)
 		var cy := ground_y + 14.0 + float(i) * 6.0
 		draw_rect(Rect2(cx - 7.0, cy - 3.0, 14.0, 5.0), Color8(28, 30, 44))
+		if patrol:
+			var bar := GameTheme.SIREN_RED if int(t * 6.0) % 2 == 0 else GameTheme.SIREN_BLUE
+			draw_rect(Rect2(cx - 3.0, cy - 6.0, 6.0, 3.0), bar)
+			draw_circle(Vector2(cx, cy - 5.0), 5.0, Color(bar.r, bar.g, bar.b, 0.25))
 		var lead := cx + dir * 7.0
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(lead, cy - 1.0), Vector2(lead + dir * 20.0, cy - 3.5),
@@ -596,6 +635,15 @@ func _draw_traffic(ground_y: float, t: float) -> void:
 		]), Color(1.0, 0.92, 0.6, 0.10))
 		draw_circle(Vector2(lead, cy), 2.4, Color(1.0, 0.94, 0.66, 0.55))
 		draw_circle(Vector2(cx - dir * 7.0, cy), 1.5, Color(0.92, 0.22, 0.2, 0.6))
+
+
+## Street-level raid surge — hot siren red below the ground line only, never a
+## tint over the player's whole screen (the flash_building fix, applied to raids).
+func _draw_raid_surge(ground_y: float) -> void:
+	var a := clampf(_raid_pulse, 0.0, 1.0)
+	var col := GameTheme.SIREN_RED
+	draw_rect(Rect2(0.0, ground_y - 6.0, VIRTUAL_SIZE.x, VIRTUAL_SIZE.y - ground_y + 6.0),
+			Color(col.r, col.g, col.b, 0.28 * a))
 
 
 func _draw_vignette() -> void:
@@ -627,12 +675,15 @@ func _draw_rain(t: float, heat: float) -> void:
 		draw_line(Vector2(x, y), Vector2(x - 3.0, y + 10.0), col, 1.0)
 
 
-func _draw_searchlights(t: float, rank_idx: int) -> void:
-	# Triumphant sweeping beams once you command the city (Crime Lord+).
-	if rank_idx < PrestigeScript.rank_index("Crime Lord") or GameTheme.ui_reduced_motion():
+func _draw_searchlights(t: float, alert_level: int) -> void:
+	# Sweeping police beams once they're actively hunting you (critical heat).
+	# Was gated on RANK (a triumphant gold sweep) — meaningless to the player;
+	# now it's a cold blue dragnet that only appears when the city is after you.
+	if alert_level < 2 or GameTheme.ui_reduced_motion():
 		return
 	var sw := VIRTUAL_SIZE.x
 	var base_y := VIRTUAL_SIZE.y * 0.56
+	var beam := GameTheme.SIREN_BLUE
 	for i in 2:
 		var ox := sw * (0.26 + 0.48 * float(i))
 		var ang := -PI * 0.5 + sin(t * 0.5 + float(i) * 2.1) * 0.55
@@ -640,8 +691,8 @@ func _draw_searchlights(t: float, rank_idx: int) -> void:
 		var tip := Vector2(ox + cos(ang) * length, base_y + sin(ang) * length)
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(ox - 6.0, base_y), Vector2(ox + 6.0, base_y), tip,
-		]), Color(INK_GOLD_BRIGHT.r, INK_GOLD_BRIGHT.g, INK_GOLD_BRIGHT.b, 0.06))
-		draw_circle(Vector2(ox, base_y), 3.0, Color(INK_GOLD_BRIGHT, 0.4))
+		]), Color(beam.r, beam.g, beam.b, 0.07))
+		draw_circle(Vector2(ox, base_y), 3.0, Color(beam.r, beam.g, beam.b, 0.45))
 
 
 func _draw_caption(tier: int, total: int) -> void:

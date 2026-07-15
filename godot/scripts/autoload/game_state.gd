@@ -45,6 +45,9 @@ var play_time: float = 0.0
 # timing. Not saved — measured within the current session.
 var _last_prestige_play_time: float = 0.0
 var heat: float = 0.0
+## Last emitted danger band (HeatSystem.heat_band). Runtime only — the reactive
+## city listens for heat_crossed on change, not the raw heat float.
+var _heat_band: int = 0
 var total_heat_generated: float = 0.0
 var influence: int = 0
 
@@ -223,6 +226,9 @@ const COIN_SPAWN_MAX := 60.0
 func set_simulation_active(active: bool) -> void:
 	var was_active := simulation_active
 	simulation_active = active
+	if active:
+		# Sync so a loaded high-heat save doesn't spuriously fire heat_crossed.
+		_heat_band = HeatSystem.heat_band(heat)
 	if not active:
 		_autosave_timer = 0.0
 	elif not was_active:
@@ -465,6 +471,12 @@ func _process(delta: float) -> void:
 	_check_rank_up()
 	_mark_ips_dirty()
 	stats_changed.emit()
+	# Heat has settled for the tick (rise, raid, crew decay, dragon all applied
+	# above) — now address the city if the danger band changed.
+	var band: int = HeatSystem.heat_band(heat)
+	if band != _heat_band:
+		_heat_band = band
+		UiEvents.heat_crossed.emit(band)
 
 
 func push_automation_flash(message: String, duration: float = 5.0) -> void:

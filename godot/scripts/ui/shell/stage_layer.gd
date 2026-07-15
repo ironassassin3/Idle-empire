@@ -11,7 +11,6 @@ const _MAX_FLOATS := 24
 
 var _city: Control
 var _float_layer: Control
-var _raid_flash: ColorRect
 var _tap_chip: PanelContainer
 var _tap_chip_label: Label
 var _coin_btn: Button
@@ -37,12 +36,6 @@ func _ready() -> void:
 	_city.offset_top = 0.0
 	_city.offset_bottom = 640.0
 
-	_raid_flash = ColorRect.new()
-	_raid_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_raid_flash.color = Color(0.61, 0.16, 0.16, 0.0)
-	_raid_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_raid_flash)
-
 	_float_layer = Control.new()
 	_float_layer.name = "ClickFloats"
 	_float_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -55,6 +48,7 @@ func _ready() -> void:
 	var events: Node = get_node_or_null("/root/UiEvents")
 	if events != null:
 		events.building_purchased.connect(flash_building)
+		events.heat_crossed.connect(_on_heat_crossed)
 
 
 func _process(delta: float) -> void:
@@ -184,13 +178,20 @@ func _spawn_click_float(amount: float, crit: bool, origin: Vector2) -> void:
 
 # ----------------------------------------------------------------- world FX
 
-## Raid takeover: crimson flash over the whole stage; the rail carries the text.
+## The city's danger band changed — forward it as drawn state (pure, no headless
+## guard: set_alert_level only stores an int and marks the canvas dirty).
+func _on_heat_crossed(level: int) -> void:
+	if _city != null and _city.has_method("set_alert_level"):
+		_city.call("set_alert_level", level)
+
+
+## Raid takeover: a street-level siren surge in the city, not a crimson wash over
+## the whole stage. The rail still carries the text.
 func play_raid() -> void:
 	if DisplayServer.get_name() == "headless" or GameTheme.ui_reduced_motion():
 		return
-	var tw := create_tween()
-	tw.tween_property(_raid_flash, "color:a", 0.30, 0.12)
-	tw.tween_property(_raid_flash, "color:a", 0.0, 0.9).set_ease(Tween.EASE_OUT)
+	if _city != null and _city.has_method("play_raid_flash"):
+		_city.call("play_raid_flash")
 
 
 ## A purchase lights that business's own facade in the skyline. This used to

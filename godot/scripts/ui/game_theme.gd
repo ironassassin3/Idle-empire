@@ -16,6 +16,11 @@ const TEXT := Color("e8e0d4")
 const TEXT_MUTED := Color("8a8070")
 const GREEN := Color("6a9a6a")
 const RED := Color("9a4a4a")
+## Reactive-city alert tokens (spec §Open). RED (#9a4a4a) reads as ledger loss on
+## near-black, not sirens — two design agents flagged this. These are the hot
+## siren pair for the hunted city; distinct from the city's NEON_RED aviation blip.
+const SIREN_RED := Color("ff3b30")
+const SIREN_BLUE := Color("2b6bff")
 const BLUE_BRIGHT := Color("6a9aaa")
 const ACCENT := Color("4a6a8a")
 const TAB_ACTIVE := Color("2a2030")

@@ -31,6 +31,16 @@ static func heat_click_mult(heat: float) -> float:
 	return 1.0 + bonus
 
 
+## Danger band for the reactive city: 0 calm, 1 warn (>=60, raids begin),
+## 2 critical (>=85). RAID_THRESHOLD is 60.
+static func heat_band(h: float) -> int:
+	if h >= 85.0:
+		return 2
+	if h >= RAID_THRESHOLD:
+		return 1
+	return 0
+
+
 ## Net heat change per second (rise − decay − crew − promoter), for Carl forecast UI.
 static func net_rate_per_sec(state) -> float:
 	var total_bld := 0
