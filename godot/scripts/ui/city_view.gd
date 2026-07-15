@@ -43,6 +43,7 @@ var _districts_owned: int = 0
 var _rank_idx: int = 0
 var _top_building_keys: Array = []
 var _top_building_counts: Array = []
+var _top_building_shares: Array = []
 var _district_slots: Array = []
 ## How long a purchase keeps its facade lit (seconds).
 const FACADE_PULSE_TIME := 1.6
@@ -85,7 +86,8 @@ func refresh(
 	career_tokens: int,
 	top_building_keys: Array = [],
 	district_slots: Array = [],
-	building_counts: Array = []
+	building_counts: Array = [],
+	building_shares: Array = []
 ) -> void:
 	var rank_name := PrestigeScript.get_rank(career_tokens)
 	var rank_idx := PrestigeScript.rank_index(rank_name)
@@ -109,6 +111,7 @@ func refresh(
 	_rank_idx = rank_idx
 	_top_building_keys = top_building_keys
 	_top_building_counts = building_counts
+	_top_building_shares = building_shares
 	_district_slots = district_slots
 
 	if state_changed:
@@ -134,6 +137,13 @@ func pulse_facade(key: String) -> void:
 
 func is_facade_pulsing(key: String) -> bool:
 	return float(_facade_pulse.get(key, 0.0)) > 0.0
+
+
+func income_share(key: String) -> float:
+	var idx := _top_building_keys.find(key)
+	if idx < 0 or idx >= _top_building_shares.size():
+		return 0.0
+	return float(_top_building_shares[idx])
 
 
 func _process(delta: float) -> void:
@@ -321,7 +331,11 @@ func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: flo
 		# Dominant business (most owned) towers as the empire's hero landmark.
 		if i == 0 and not keys.is_empty():
 			base_h *= 1.3
-		_draw_building_signature(key, cx, ground_y, base_h, tier, i, t)
+		var breath := 1.0
+		if not GameTheme.ui_reduced_motion():
+			var share: float = float(_top_building_shares[i]) if i < _top_building_shares.size() else 0.0
+			breath = 1.0 + sin(t * 1.4 + float(i) * 1.7) * 0.10 * share
+		_draw_building_signature(key, cx, ground_y, base_h, tier, i, t, breath)
 		var pulse: float = float(_facade_pulse.get(key, 0.0))
 		if pulse > 0.0:
 			_draw_facade_pulse(cx, ground_y, base_h, i, pulse)
@@ -348,7 +362,7 @@ func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: flo
 
 
 func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float,
-		tier: int, seed: int, t: float) -> void:
+		tier: int, seed: int, t: float, breath: float = 1.0) -> void:
 	var bw := 52.0 + float(seed % 3) * 10.0
 	var bx := cx - bw * 0.5
 	var by := ground_y - bh
@@ -418,7 +432,7 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 			var wyp := by + 14.0 + wy * 16.0
 			if wyp + 8.0 > ground_y - 6.0:
 				continue
-			draw_rect(Rect2(wxp, wyp, 7.0, 9.0), Color(neon, 0.92))
+			draw_rect(Rect2(wxp, wyp, 7.0, 9.0), Color(neon, clampf(0.92 * breath, 0.0, 1.0)))
 	# Rim light — separates facades from haze band at small portrait sizes.
 	draw_line(Vector2(bx, by), Vector2(bx, ground_y - bh), Color(SILHOUETTE_RIM, 0.35), 1.0)
 	draw_rect(Rect2(bx, ground_y - bh - 5.0, bw, 4.0), Color(neon, 0.65 + 0.3 * sin(t * 2.0 + seed)))

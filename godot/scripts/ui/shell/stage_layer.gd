@@ -87,9 +87,11 @@ func refresh(overlay_blocking: bool) -> void:
 	var top := _top_buildings()
 	var keys: Array = []
 	var counts: Array = []
+	var shares: Array = []
 	for entry in top:
 		keys.append(str(entry["key"]))
 		counts.append(int(entry["owned"]))
+		shares.append(float(entry["share"]))
 	_city.call(
 		"refresh",
 		GameState.total_buildings_owned(),
@@ -99,6 +101,7 @@ func refresh(overlay_blocking: bool) -> void:
 		keys,
 		_district_slots(),
 		counts,
+		shares,
 	)
 
 
@@ -106,12 +109,17 @@ func _top_buildings() -> Array:
 	# Most-owned first; the city draws up to 5 hero facades and scales each by
 	# its owned count, so the skyline keeps growing with every purchase.
 	var ranked: Array = []
+	var total_ips := 0.0
 	for b in GameState.buildings:
 		if b.owned > 0:
-			ranked.append({"key": b.icon_key, "owned": b.owned})
+			var ips: float = b.income_per_second()  # already × owned (building.gd:40)
+			total_ips += ips
+			ranked.append({"key": b.icon_key, "owned": b.owned, "ips": ips})
 	ranked.sort_custom(func(a, b): return int(a["owned"]) > int(b["owned"]))
 	if ranked.size() > 5:
 		ranked = ranked.slice(0, 5)
+	for e in ranked:
+		e["share"] = (float(e["ips"]) / total_ips) if total_ips > 0.0 else 0.0
 	return ranked
 
 
