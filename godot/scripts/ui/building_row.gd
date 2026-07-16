@@ -31,6 +31,7 @@ func setup(index: int) -> void:
 
 
 func _ready() -> void:
+	set_process(false)  # armed only while a wipe runs
 	for btn in [_buy1, _buy10, _buy_max]:
 		GameTheme.apply_row_buy_button(btn)
 	# Genre convention (AdCap): ONE fat buy button per row; quantity comes
@@ -97,12 +98,44 @@ func _apply_special_line() -> void:
 # Rule 10 (Stage & Ledger): progress-to-afford underbar while APPROACHING.
 var _afford := 0.0
 
+## Unlock ink-wipe: normalized progress, -1 = idle. Starts ONLY on a genuine
+## false->true affordability transition during play — never on row
+## instantiation (rows are rebuilt on every tab entry).
+var _wipe := -1.0
+var _prev_ready := false
+var _ready_init := false
+const _WIPE_TIME := 0.35
+
+
+func _process(delta: float) -> void:
+	if _wipe < 0.0:
+		set_process(false)
+		return
+	_wipe = minf(_wipe + delta / _WIPE_TIME, 1.0)
+	queue_redraw()
+	if _wipe >= 1.0:
+		_wipe = -1.0
+
+
+func is_unlock_wiping() -> bool:
+	return _wipe >= 0.0
+
 
 func _draw() -> void:
 	GameTheme.draw_row_wax_seal(self, _affordance)
 	if _afford > 0.0 and _afford < 1.0:
 		draw_rect(Rect2(0, size.y - 3.0, size.x, 3.0), Color(GameTheme.GOLD, 0.14))
 		draw_rect(Rect2(0, size.y - 3.0, size.x * _afford, 3.0), GameTheme.GOLD)
+	if _wipe >= 0.0 and _wipe < 1.0:
+		# Left -> right gold ink-wipe: faint fill behind a bright leading edge,
+		# both fading as the wipe completes (same drawn-state idiom as the
+		# afford underbar above).
+		var lead_x := size.x * _wipe
+		draw_rect(Rect2(0.0, 0.0, lead_x, size.y),
+				Color(GameTheme.GOLD.r, GameTheme.GOLD.g, GameTheme.GOLD.b, 0.08 * (1.0 - _wipe)))
+		draw_rect(Rect2(lead_x - 6.0, 0.0, 6.0, size.y),
+				Color(GameTheme.GOLD_BRIGHT.r, GameTheme.GOLD_BRIGHT.g, GameTheme.GOLD_BRIGHT.b,
+						0.35 * (1.0 - _wipe * 0.5)))
 
 
 func _refresh() -> void:
@@ -141,6 +174,16 @@ func _refresh() -> void:
 	var max_n := GameState.max_affordable_building(building_index)
 	_buy_max.text = "Max (%d)" % max_n if max_n > 0 else "Max"
 	var can_primary := GameState.can_buy_building(building_index, qty)
+	if not _ready_init:
+		_ready_init = true
+		_prev_ready = can_primary
+	elif can_primary and not _prev_ready:
+		_prev_ready = true
+		if not GameTheme.ui_reduced_motion():
+			_wipe = 0.0
+			set_process(true)
+	elif not can_primary:
+		_prev_ready = false
 	_buy1.disabled = not can_primary
 	_buy10.disabled = not GameState.can_buy_building(building_index, 10)
 	_buy_max.disabled = max_n <= 0
