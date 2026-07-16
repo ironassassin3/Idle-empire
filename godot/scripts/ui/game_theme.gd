@@ -1156,6 +1156,7 @@ static func apply_row_buy_button(btn: Button) -> void:
 	btn.add_theme_color_override("font_hover_color", GOLD_TEXT_DARK)
 	btn.add_theme_color_override("font_pressed_color", GOLD_TEXT_DARK)
 	btn.add_theme_color_override("font_disabled_color", TEXT_MUTED)
+	DecoMotion.attach_press(btn)
 
 
 static func draw_row_wax_seal(control: Control, affordance: int) -> void:
