@@ -49,6 +49,7 @@ func _ready() -> void:
 	if events != null:
 		events.building_purchased.connect(flash_building)
 		events.heat_crossed.connect(_on_heat_crossed)
+		events.district_changed.connect(_on_district_changed)
 
 
 func _process(delta: float) -> void:
@@ -183,6 +184,12 @@ func _spawn_click_float(amount: float, crit: bool, origin: Vector2) -> void:
 func _on_heat_crossed(level: int) -> void:
 	if _city != null and _city.has_method("set_alert_level"):
 		_city.call("set_alert_level", level)
+
+
+## A district changed hands — forward it as drawn state (pure, no headless guard).
+func _on_district_changed(idx: int, holder: String) -> void:
+	if _city != null and _city.has_method("set_district"):
+		_city.call("set_district", idx, holder)
 
 
 ## Raid takeover: a street-level siren surge in the city, not a crimson wash over

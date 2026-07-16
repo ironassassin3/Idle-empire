@@ -55,6 +55,11 @@ const FACADE_PULSE_TIME := 1.6
 ## this canvas is immediate-mode, so a node layered over it cannot know where
 ## anything is — which is exactly how the old full-screen wash happened.
 var _facade_pulse: Dictionary = {}
+## How long a captured/claimed block stays flashing (seconds).
+const DISTRICT_PULSE_TIME := 1.4
+## territory idx -> {"t": seconds_left, "holder": String}. Drawn state, like the
+## facade pulses — never a node stacked over the immediate-mode canvas.
+var _district_pulse: Dictionary = {}
 # Neon reflection anchors collected during the skyline pass, painted into the
 # wet street afterwards (street is drawn on top of the buildings).
 var _reflect_points: Array = []
@@ -143,6 +148,17 @@ func is_facade_pulsing(key: String) -> bool:
 	return float(_facade_pulse.get(key, 0.0)) > 0.0
 
 
+## A district changed hands — flash THAT block (gold for a capture, siren red for
+## a rival claim). Drawn state; no-op-safe headless like the facade pulses.
+func set_district(idx: int, holder: String) -> void:
+	_district_pulse[idx] = {"t": DISTRICT_PULSE_TIME, "holder": holder}
+	_dirty = true
+
+
+func is_district_pulsing(idx: int) -> bool:
+	return _district_pulse.has(idx) and float(_district_pulse[idx].get("t", 0.0)) > 0.0
+
+
 func set_alert_level(level: int) -> void:
 	if _alert_level == level:
 		return
@@ -188,6 +204,14 @@ func _process(delta: float) -> void:
 		_dirty = true
 	if _raid_pulse > 0.0:
 		_raid_pulse = maxf(0.0, _raid_pulse - REDRAW_INTERVAL)
+		_dirty = true
+	if not _district_pulse.is_empty():
+		for k in _district_pulse.keys():
+			var left: float = float(_district_pulse[k]["t"]) - REDRAW_INTERVAL
+			if left <= 0.0:
+				_district_pulse.erase(k)
+			else:
+				_district_pulse[k]["t"] = left
 		_dirty = true
 	var animating := not GameTheme.ui_reduced_motion()
 	if animating or _dirty:
@@ -729,6 +753,14 @@ func _draw_district_strip(ground_y: float, slots: Array) -> void:
 				var fs := 7
 				draw_string(font, Vector2(bx + 1.0, by + 11.0), short_lbl.substr(0, 3),
 						HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(col, 0.7))
+		if _district_pulse.has(i):
+			var dp: float = float(_district_pulse[i]["t"])
+			if dp > 0.0:
+				var holder := str(_district_pulse[i]["holder"])
+				var fc := GameTheme.SIREN_RED if holder == "rival" else INK_GOLD_BRIGHT
+				var da := clampf(dp / DISTRICT_PULSE_TIME, 0.0, 1.0)
+				draw_rect(Rect2(bx, by, block_w, 12.0), Color(fc.r, fc.g, fc.b, 0.18 * da), true)
+				draw_rect(Rect2(bx, by, block_w, 12.0), Color(fc.r, fc.g, fc.b, 0.55 * da), false, 1.5)
 
 
 func _draw_atmosphere(heat: float, rank_idx: int, t: float, tier: int) -> void:

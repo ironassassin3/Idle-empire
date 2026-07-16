@@ -169,11 +169,13 @@ static func release_rival_territories(territories: Array, rival_name: String) ->
 
 
 static func rival_claim_unclaimed(territories: Array, rival_name: String) -> String:
-	for t in territories:
+	for i in territories.size():
+		var t = territories[i]
 		if typeof(t) != TYPE_DICTIONARY:
 			continue
 		if str(t.get("owner", "unclaimed")) == "unclaimed" and not bool(t.get("unlocked", false)):
 			t["owner"] = rival_name
+			UiEvents.district_changed.emit(i, "rival")
 			return str(t.get("name", ""))
 	return ""
 
@@ -184,24 +186,30 @@ static func rival_claim_preferred(
 	preferred_names: Array = [],
 	preferred_types: Array = [],
 ) -> String:
-	var unclaimed: Array = []
-	for t in territories:
+	var unclaimed: Array = []  # indices into territories
+	for i in territories.size():
+		var t = territories[i]
 		if typeof(t) != TYPE_DICTIONARY:
 			continue
 		if str(t.get("owner", "unclaimed")) == "unclaimed" and not bool(t.get("unlocked", false)):
-			unclaimed.append(t)
+			unclaimed.append(i)
 	if unclaimed.is_empty():
 		return ""
-	for t in unclaimed:
-		if str(t.get("name", "")) in preferred_names:
-			t["owner"] = rival_name
-			return str(t.get("name", ""))
-	for t in unclaimed:
-		if str(t.get("district_type", "")) in preferred_types:
-			t["owner"] = rival_name
-			return str(t.get("name", ""))
-	unclaimed[0]["owner"] = rival_name
-	return str(unclaimed[0].get("name", ""))
+	var pick := -1
+	for i in unclaimed:
+		if str(territories[i].get("name", "")) in preferred_names:
+			pick = i
+			break
+	if pick < 0:
+		for i in unclaimed:
+			if str(territories[i].get("district_type", "")) in preferred_types:
+				pick = i
+				break
+	if pick < 0:
+		pick = int(unclaimed[0])
+	territories[pick]["owner"] = rival_name
+	UiEvents.district_changed.emit(pick, "rival")
+	return str(territories[pick].get("name", ""))
 
 
 static func get_city_control(territories: Array, _rivals: Array) -> Array:
@@ -414,7 +422,7 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 
 	if action == "attack":
 		if success:
-			_seize_territory(state, t)
+			_seize_territory(state, idx, t)
 			var gain: int = _apply_respect_gain(state, 8)
 			state.influence += gain
 			state.heat = minf(100.0, state.heat + 15.0)
@@ -430,7 +438,7 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 			return "Need %s to bribe officials." % FormatUtil.format_money(cost)
 		state.balance = maxf(0.0, state.balance - cost)
 		if success:
-			_seize_territory(state, t)
+			_seize_territory(state, idx, t)
 			state.heat = maxf(0.0, state.heat - 5.0)
 			return "Bribed your way into %s! -5 heat" % t["name"]
 		state.heat = minf(100.0, state.heat + 6.0)
@@ -438,7 +446,7 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 
 	if action == "negotiate":
 		if success:
-			_seize_territory(state, t)
+			_seize_territory(state, idx, t)
 			var gain: int = _apply_respect_gain(state, 5)
 			state.influence += gain
 			state.heat = maxf(0.0, state.heat - 3.0)
@@ -452,7 +460,7 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 			return "Need %s for sabotage supplies." % FormatUtil.format_money(cost)
 		state.balance = maxf(0.0, state.balance - cost)
 		if success:
-			_seize_territory(state, t)
+			_seize_territory(state, idx, t)
 			state.heat = minf(100.0, state.heat + 8.0)
 			var gain: int = _apply_respect_gain(state, 6)
 			state.influence += gain
@@ -463,9 +471,10 @@ static func perform_action(state, idx: int, action: String, rng: RandomNumberGen
 	return "Unknown action."
 
 
-static func _seize_territory(state, t: Dictionary) -> void:
+static func _seize_territory(state, idx: int, t: Dictionary) -> void:
 	t["unlocked"] = true
 	t["owner"] = "player"
 	t["contested"] = false
 	state.total_territories_captured += 1
 	_DragonSystem.on_territory_captured(state)
+	UiEvents.district_changed.emit(idx, "player")
