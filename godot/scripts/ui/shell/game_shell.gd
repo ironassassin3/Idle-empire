@@ -10,6 +10,7 @@ const DeckScript = preload("res://scripts/ui/shell/content_deck.gd")
 const DockScript = preload("res://scripts/ui/shell/nav_dock.gd")
 const DirectorScript = preload("res://scripts/ui/shell/attention_director.gd")
 const OverlayHostScript = preload("res://scripts/ui/shell/overlay_host.gd")
+const FxLayerScript = preload("res://scripts/ui/shell/fx_layer.gd")
 const BossSheetScript = preload("res://scripts/ui/shell/boss_sheet.gd")
 const PrestigeClimaxScript = preload("res://scripts/ui/shell/prestige_climax.gd")
 const FilmGrain = preload("res://scripts/ui/film_grain_overlay.gd")
@@ -131,6 +132,12 @@ func _build_stage_and_chrome() -> void:
 	_director.name = "AttentionDirector"
 	add_child(_director)
 	_director.call("set_stage", _stage)
+
+	# Transient deco garnish (coin arcs, sparks, ripples). Sits above the
+	# chrome column so coins can travel deck -> masthead, and BEFORE the
+	# notification/tutorial/overlay children so garnish never draws over a
+	# modal scrim (spec: below OverlayHost).
+	add_child(FxLayerScript.new())
 
 	var bldgs: Control = BuildingsScreen.new()
 	bldgs.set("stage", _stage)

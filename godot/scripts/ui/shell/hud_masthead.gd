@@ -81,6 +81,7 @@ func _ready() -> void:
 	_balance.add_theme_constant_override("shadow_offset_y", 3)
 	_balance.text = "$0"
 	_balance.resized.connect(func(): _balance.pivot_offset = _balance.size * 0.5)
+	_balance.add_to_group("ledger_balance")  # FxLayer.ledger_point() launch pad
 	v.add_child(_balance)
 
 	_ips = Label.new()
