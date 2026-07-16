@@ -118,8 +118,10 @@ The ★ coin is a diegetic city object; tap latency + z-order behave differently
 - [ ] Raise heat to ≥60% → a **patrol cruiser** (red/blue roof bar) appears on the street; ≥85% → police **searchlights sweep** the sky
 - [ ] Trigger a police raid → a **street-level red siren surge** (below the skyline), NOT a red wash over your balance
 - [ ] Capture a district → **that block flashes gold** in the strip. A rival claiming an unclaimed district → **that block flashes red**
+- [ ] BUY press → button visibly **sinks and springs back**; a gold ring ripples from the button
+- [ ] Purchase → **1–3 coins fall from the balance INTO the bought row's medallion** (never into the ledger — a purchase is a spend)
 - [ ] Config → Reduced motion ON → all of the above go still, nothing flickers
-- [ ] FPS overlay stays **green ≥30** through a burst of purchases (manager purchase orders fire these rapidly)
+- [ ] FPS overlay stays **green ≥30** through a burst of purchases and a 20cps click storm (manager purchase orders + spark trails fire rapidly)
 
 **Fail:** any reaction that covers the whole screen, two different purchases looking the same, FPS dip during a purchase burst, or motion continuing with reduced-motion ON.
 
