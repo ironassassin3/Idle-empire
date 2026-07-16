@@ -32,6 +32,12 @@ var _suffix_init := false
 var _prev_shown := 0.0
 var _breath_t := 0.0
 var _pop_tween: Tween
+## Windfall sheen: normalized sweep progress, -1 = idle. Keyed to the SAME
+## windfall detector as _pulse_gain — NEVER to "_shown < truth", which is true
+## every frame under passive income and would run the sweep permanently.
+var _sheen_t := -1.0
+var _sheen: Control
+const _SHEEN_TIME := 0.45  # = DecoMotion.T_ARC
 
 const _TICKER_TAU := 0.12       # exponential catch-up ≈ 400ms to settle
 const _SNAP_FRACTION := 0.01    # snap when within 1% of truth
@@ -83,6 +89,11 @@ func _ready() -> void:
 	_balance.resized.connect(func(): _balance.pivot_offset = _balance.size * 0.5)
 	_balance.add_to_group("ledger_balance")  # FxLayer.ledger_point() launch pad
 	v.add_child(_balance)
+	_sheen = Control.new()
+	_sheen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_sheen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sheen.draw.connect(_draw_sheen)
+	_balance.add_child(_sheen)
 
 	_ips = Label.new()
 	_ips.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -139,6 +150,11 @@ func shown_balance() -> float:
 func _process(delta: float) -> void:
 	_tick_balance(delta)
 	_tick_income_breath(delta)
+	if _sheen_t >= 0.0:
+		_sheen_t += delta / _SHEEN_TIME
+		_sheen.queue_redraw()
+		if _sheen_t >= 1.0:
+			_sheen_t = -1.0
 
 
 func _tick_balance(delta: float) -> void:
@@ -162,6 +178,8 @@ func _tick_balance(delta: float) -> void:
 	var expected: float = GameState.income_per_second() * delta
 	if _synced and jump > expected * 4.0 + 1.0 and _last_truth > 0.0:
 		_pulse_gain()
+		if not GameTheme.ui_reduced_motion():
+			_sheen_t = 0.0
 	_last_truth = truth
 
 	var txt := FormatUtil.format_money(_shown)
@@ -416,3 +434,26 @@ func _prestige_tooltip() -> String:
 	if gain > 0:
 		lines.append("+%d Influence at prestige" % gain)
 	return "\n".join(lines)
+
+
+func is_sheen_active() -> bool:
+	return _sheen_t >= 0.0
+
+
+## Gold parallelogram band sweeping left -> right across the digits — the
+## deco glint of money landing. Drawn on the overlay child, clipped by alpha
+## falloff at the edges of the sweep window.
+func _draw_sheen() -> void:
+	if _sheen_t < 0.0:
+		return
+	var w := _sheen.size.x
+	var h := _sheen.size.y
+	var band := w * 0.18
+	var x := lerpf(-band, w + band, _sheen_t)
+	var skew := h * 0.35
+	var a := 0.16 * sin(PI * clampf(_sheen_t, 0.0, 1.0))
+	var col := GameTheme.GOLD_BRIGHT
+	_sheen.draw_colored_polygon(PackedVector2Array([
+		Vector2(x + skew, 0.0), Vector2(x + band + skew, 0.0),
+		Vector2(x + band, h), Vector2(x, h),
+	]), Color(col.r, col.g, col.b, a))
