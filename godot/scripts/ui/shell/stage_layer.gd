@@ -151,6 +151,9 @@ func handle_tap(pos: Vector2) -> void:
 
 
 func _spawn_click_float(amount: float, crit: bool, origin: Vector2) -> void:
+	var fx: Node = get_tree().get_first_node_in_group("fx_layer")
+	if fx != null:
+		fx.call("sparks", origin, 6 if crit else 3, crit)
 	if DisplayServer.get_name() == "headless":
 		return
 	if _float_layer.get_child_count() >= _MAX_FLOATS:

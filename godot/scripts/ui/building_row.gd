@@ -53,9 +53,21 @@ func _ready() -> void:
 
 
 ## Same beat as the city facade: this row's medallion acknowledges the purchase.
+## NEW: the spend arcs as coins from the ledger down INTO this business —
+## direction matters, a purchase is a spend (the masthead dips; ADR-001).
+## The medallion flare below is the coins' landing beat.
 func _on_any_purchase(key: String) -> void:
 	if _building == null or str(_building.icon_key) != key:
 		return
+	# Arc only when this row is actually on screen: manager purchase orders
+	# fire while the row may be scrolled away or on a hidden tab. State-only
+	# under headless (probe-able); FxLayer gates reduced-motion itself.
+	if is_visible_in_tree() and get_global_rect().intersects(get_viewport_rect()):
+		var fx: Node = get_tree().get_first_node_in_group("fx_layer")
+		if fx != null:
+			var n: int = clampi(GameState.buy_mult_mode + 1, 1, 3)  # x1/x10/Max -> 1/2/3 coins
+			fx.call("coin_arc", fx.call("ledger_point"),
+					_medal.get_global_rect().get_center(), n)
 	if DisplayServer.get_name() == "headless" or GameTheme.ui_reduced_motion():
 		return
 	var tw := create_tween()
@@ -151,6 +163,9 @@ func _refresh() -> void:
 
 
 func _on_buy_primary() -> void:
+	var fx: Node = get_tree().get_first_node_in_group("fx_layer")
+	if fx != null:
+		fx.call("ripple", _buy1.get_global_rect().get_center())
 	var qty := GameState.effective_buy_qty(building_index)
 	if qty > 0:
 		buy_pressed.emit(building_index, qty)
