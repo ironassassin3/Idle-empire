@@ -110,6 +110,21 @@ The ★ coin is a diegetic city object; tap latency + z-order behave differently
 
 ---
 
+## Living city (reactive city — new this build)
+
+- [ ] Buy a business → **that** business's tower lights up in the skyline (not a flash over the whole screen), and **its** row medallion flares at the same moment
+- [ ] Buy a different type → a **different** tower lights. Two purchases must never look identical
+- [ ] Watch the skyline idle → the biggest earner visibly works hardest (windows breathe strongest on the facade carrying the most income/sec)
+- [ ] Raise heat to ≥60% → a **patrol cruiser** (red/blue roof bar) appears on the street; ≥85% → police **searchlights sweep** the sky
+- [ ] Trigger a police raid → a **street-level red siren surge** (below the skyline), NOT a red wash over your balance
+- [ ] Capture a district → **that block flashes gold** in the strip. A rival claiming an unclaimed district → **that block flashes red**
+- [ ] Config → Reduced motion ON → all of the above go still, nothing flickers
+- [ ] FPS overlay stays **green ≥30** through a burst of purchases (manager purchase orders fire these rapidly)
+
+**Fail:** any reaction that covers the whole screen, two different purchases looking the same, FPS dip during a purchase burst, or motion continuing with reduced-motion ON.
+
+---
+
 ## 11:00–14:00 — Stress skim (P8 regression)
 
 - [ ] Stats tab scrolls to bottom without freeze
