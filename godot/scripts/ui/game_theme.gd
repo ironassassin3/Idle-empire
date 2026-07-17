@@ -7,11 +7,14 @@ const RusticTextureBaker = preload("res://scripts/ui/rustic_texture_baker.gd")
 const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 const GameIcons = preload("res://scripts/ui/game_icons.gd")
 
-const BG := Color("08070a")
-const BG_PANEL := Color("121018")
-const BG_CARD := Color("1a1520")
+const BG := Color("06070c")
+const BG_PANEL := Color("0c0f18")
+const BG_CARD := Color("11151f")
 const GOLD := Color("c8a35a")
 const GOLD_BRIGHT := Color("ecca7d")
+# Neon Noir jewel accents (2026-07-17 kit amendment — direction study `b`).
+const JEWEL_TEAL := Color("2fd6c6")
+const JEWEL_MAGENTA := Color("e5457e")
 const TEXT := Color("e8e0d4")
 const TEXT_MUTED := Color("8a8070")
 const GREEN := Color("6a9a6a")
@@ -23,20 +26,20 @@ const SIREN_RED := Color("ff3b30")
 const SIREN_BLUE := Color("2b6bff")
 const BLUE_BRIGHT := Color("6a9aaa")
 const ACCENT := Color("4a6a8a")
-const TAB_ACTIVE := Color("2a2030")
-const TAB_IDLE := Color("141018")
+const TAB_ACTIVE := Color("1e2130")
+const TAB_IDLE := Color("0e111a")
 const BADGE_BG := Color("3a2a18")
 const BADGE_BORDER := Color("c8a35a")
-const CHIP_BG := Color("1e1828")
+const CHIP_BG := Color("141824")
 const CHIP_BORDER := Color("6a5a40")
 
 # Gilded-ledger surface system (/godot-design v3 port). High-contrast layer:
 # lifted card fills, 2px edges, INVERTED gold CTAs (gold fill · dark text).
 const GOLD_TEXT_DARK := Color("1a1208")
-const INK_DEEP := Color("140e1c")
+const INK_DEEP := Color("0e101a")
 const CARD_LIFT := Color("221a2e")
 const CARD_EDGE := Color("4a3c2a")
-const PLATE := Color("1f1626")
+const PLATE := Color("141824")
 
 # ── Stage & Ledger semantic surface tokens (UI_OVERHAUL §7; V3 token lint law:
 # shell/screens/components reference THESE, never raw hex) ──────────────────
@@ -76,10 +79,10 @@ const FONT_TAB := 13
 # P14 row affordance — code-drawn wax seal + border tints.
 enum RowAffordance { LOCKED, BUYABLE, PETE, OWNED }
 
-const ROW_BG_BUYABLE := Color("1a221c")
-const ROW_BG_LOCKED := Color("121018")
-const ROW_BG_OWNED := Color("161e16")
-const ROW_BG_PETE := Color("221e14")
+const ROW_BG_BUYABLE := Color("12161f")
+const ROW_BG_LOCKED := Color("0e111a")
+const ROW_BG_OWNED := Color("10141c")
+const ROW_BG_PETE := Color("1c1810")
 
 # Material Maker export hooks (empty until P14.1 graphs land).
 const TEX_PANEL := "res://assets/ui/textures/panel_9slice.png"
