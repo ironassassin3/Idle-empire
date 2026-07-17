@@ -127,6 +127,19 @@ The ★ coin is a diegetic city object; tap latency + z-order behave differently
 
 ---
 
+## Neon Noir (whole-app cool retint — new this build)
+
+- [ ] Whole app reads **cool Neon Noir**, not warm gilded — on a real OLED the near-black ground looks deep blue-black, **not muddy or crushed to pure black**
+- [ ] Skyline shows **teal rooftop neon signs** (bloom + bright core) and faint **wet-street neon streaks** below them — legible at arm's length, not lost in the haze
+- [ ] Business rows are **gradient cards** (lit top → dark base) with a **per-business accent bar**; two different businesses are distinguishable at a glance by colour (dealer amber, betting/dock blue, casino magenta, club violet…)
+- [ ] Buyable row's accent frame is **brighter** than a locked row's; BUY button + wax seal stay legible on top of the gradient
+- [ ] Pop **each overlay** (dragon patron, gambling wheel, an event) → panel chrome reads **cool** against the city, no **warm brown** panel fighting the ground; all body text legible
+- [ ] Gold is **demoted, not gone** — BUY buttons and the balance still read gold; gold no longer dominates the whole screen
+
+**Fail:** ground muddy/warm on device, neon signs invisible, rows indistinguishable by business, any overlay panel reading warm-brown against the cool city, or unreadable text on the retinted ground.
+
+---
+
 ## 11:00–14:00 — Stress skim (P8 regression)
 
 - [ ] Stats tab scrolls to bottom without freeze
