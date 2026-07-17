@@ -8,13 +8,13 @@ const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
 
-const INK := Color(0.031, 0.039, 0.098)
+const INK := Color("06070c")
 const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
 const INK_GOLD_BRIGHT := Color(0.925, 0.792, 0.49)
 const INK_CRIMSON := Color(0.608, 0.157, 0.157)
-const SKY_BACK := Color8(14, 18, 38)
-const SKY_MID := Color8(26, 32, 58)
-const SKY_HAZE := Color8(46, 50, 78)
+const SKY_BACK := Color8(14, 24, 38)
+const SKY_MID := Color8(20, 30, 52)
+const SKY_HAZE := Color8(38, 46, 72)
 const SKY_GLOW := Color8(72, 82, 118)
 const STREET := Color8(26, 28, 42)
 const STREET_LINE := Color8(58, 62, 84)
@@ -22,8 +22,10 @@ const SILHOUETTE := Color8(52, 58, 88)
 const SILHOUETTE_RIM := Color8(78, 86, 118)
 const SILHOUETTE_BACK := Color8(36, 42, 68)
 const NEON_WARM := Color8(255, 180, 70)
-const NEON_COOL := Color8(70, 180, 255)
+const NEON_COOL := Color8(47, 214, 198)
 const NEON_RED := Color8(220, 60, 70)
+# Bright rooftop-sign / wet-street bloom (study `b` win teal).
+const NEON_SIGN := Color8(79, 224, 208)
 
 @onready var _empire_label: Label = $EmpireLabel
 
@@ -246,11 +248,13 @@ func _draw() -> void:
 	_draw_back_parallax(_t, tier)
 	_draw_searchlights(_t, _alert_level)
 	_draw_mid_skyline(_total_buildings, tier, _top_building_keys, _top_building_counts, _t, ground_y)
+	_draw_rooftop_signs(ground_y)
 	_draw_horizon_glow(ground_y)
 	if tier == 0:
 		_draw_tier0_street_detail(ground_y, _t)
 	_draw_front_street(ground_y, _t)
 	_draw_reflections(ground_y, _t)
+	_draw_neon_streaks(ground_y, _t)
 	_draw_pedestrians(ground_y, _t, tier)
 	_draw_traffic(ground_y, _t, _alert_level)
 	if _raid_pulse > 0.0:
@@ -258,6 +262,7 @@ func _draw() -> void:
 	_draw_district_strip(ground_y, _district_slots)
 	_draw_atmosphere(_heat, _rank_idx, _t, tier)
 	_draw_vignette()
+	_draw_corner_brackets()
 	_draw_rain(_t, _heat)
 	if not full_bleed:
 		_draw_caption(tier, _total_buildings)
@@ -810,3 +815,48 @@ func _hash01(seed: int, t: float) -> float:
 
 func _hash_flicker(seed: int, t: float) -> bool:
 	return _hash01(seed, t) > 0.35
+
+
+## Rooftop neon-sign blooms atop a few mid-skyline silhouettes — nightlife pop.
+func _draw_rooftop_signs(ground_y: float) -> void:
+	var w := VIRTUAL_SIZE.x
+	var horizon := ground_y * 0.9
+	var xs := [0.19, 0.44, 0.70]
+	var hts := [0.52, 0.66, 0.58]
+	for i in xs.size():
+		var sx := w * float(xs[i]) + w * 0.06
+		var sy := horizon - horizon * float(hts[i]) - 4.0
+		for k in 4:
+			draw_circle(Vector2(sx, sy), 10.0 - k * 2.0,
+					Color(NEON_SIGN.r, NEON_SIGN.g, NEON_SIGN.b, 0.06))
+		draw_circle(Vector2(sx, sy), 2.0, Color(NEON_SIGN, 0.9))
+
+
+## Vertical neon streaks bleeding down the wet street under the brightest signs.
+func _draw_neon_streaks(ground_y: float, t: float) -> void:
+	var w := VIRTUAL_SIZE.x
+	var xs := [0.19, 0.44, 0.70]
+	var flick := 0.10 + 0.04 * sin(t * 2.3)
+	for x in xs:
+		var rx := w * float(x) + w * 0.06
+		draw_line(Vector2(rx, ground_y), Vector2(rx, ground_y + VIRTUAL_SIZE.y * 0.06),
+				Color(NEON_SIGN.r, NEON_SIGN.g, NEON_SIGN.b, flick), 3.0)
+
+
+## Deco corner brackets — a thin double keyline at each frame corner.
+func _draw_corner_brackets() -> void:
+	var w := VIRTUAL_SIZE.x
+	var h := VIRTUAL_SIZE.y
+	var m := 6.0
+	var bl := 26.0
+	var g := INK_GOLD_BRIGHT
+	for corner in [[m, m, 1.0, 1.0], [w - m, m, -1.0, 1.0],
+			[m, h - m, 1.0, -1.0], [w - m, h - m, -1.0, -1.0]]:
+		var cx: float = corner[0]
+		var cy: float = corner[1]
+		var sx: float = corner[2]
+		var sy: float = corner[3]
+		draw_line(Vector2(cx, cy), Vector2(cx + sx * bl, cy), Color(g, 0.6), 2.0)
+		draw_line(Vector2(cx, cy), Vector2(cx, cy + sy * bl), Color(g, 0.6), 2.0)
+		draw_line(Vector2(cx + sx * 5, cy + sy * 5),
+				Vector2(cx + sx * (bl - 4), cy + sy * 5), Color(g, 0.3), 1.0)
