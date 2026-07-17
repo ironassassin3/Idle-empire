@@ -26,13 +26,15 @@ static func apply_action_button(b: Button, state: int) -> void:
 	sb.set_corner_radius_all(5)
 	match state:
 		READY:
-			sb.bg_color = GameTheme.GOLD
-			sb.set_border_width_all(1)
+			# Cyberpunk neon-outline CTA: faint violet-lit fill behind a bright
+			# glowing edge, neon text — reads "live" without the solid-block gold.
+			sb.bg_color = Color(GameTheme.GOLD, 0.14)
+			sb.set_border_width_all(2)
 			sb.border_width_bottom = 3
-			sb.border_color = GameTheme.GOLD_SHADOW
-			b.add_theme_color_override("font_color", GameTheme.GOLD_TEXT_DARK)
-			b.add_theme_color_override("font_pressed_color", GameTheme.GOLD_TEXT_DARK)
-			b.add_theme_color_override("font_hover_color", GameTheme.GOLD_TEXT_DARK)
+			sb.border_color = GameTheme.GOLD_BRIGHT
+			b.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+			b.add_theme_color_override("font_pressed_color", GameTheme.GOLD_BRIGHT)
+			b.add_theme_color_override("font_hover_color", GameTheme.TEXT)
 		APPROACHING:
 			sb.bg_color = Color(0, 0, 0, 0)
 			sb.border_color = Color(GameTheme.GOLD, 0.45)

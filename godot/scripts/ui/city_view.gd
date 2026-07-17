@@ -806,8 +806,8 @@ func _draw_scanlines() -> void:
 	var sh := VIRTUAL_SIZE.y
 	var y := 0.0
 	while y < sh:
-		draw_line(Vector2(0, y), Vector2(sw, y), Color(0, 0, 0, 0.04), 1.0)
-		y += 4.0
+		draw_line(Vector2(0, y), Vector2(sw, y), Color(0, 0, 0, 0.07), 1.0)
+		y += 3.0
 
 
 func _hash01(seed: int, t: float) -> float:

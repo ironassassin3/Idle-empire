@@ -2,7 +2,7 @@ extends TextureRect
 ## P14.8 film grain — procedural tileable noise, low alpha. Skipped headless / reduced motion.
 
 const TEX_GRAIN := "res://assets/ui/textures/film_grain.png"
-const GRAIN_ALPHA := 0.055
+const GRAIN_ALPHA := 0.085
 
 func _ready() -> void:
 	anchors_preset = PRESET_FULL_RECT
