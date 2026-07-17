@@ -52,13 +52,14 @@ games. Six structural defenses, most already enforced in code:
 
 **Tuning (G-TUNE-1, validated in `sim_gambling.py`):** all knobs live in
 `gambling_system.gd` (`SWEEP_SPEED` included — UI reads from there). With
-`SWEEP_SPEED = 1.7` and the 16-segment ring (mean 1.375×, single 10× band),
-measured per-spin EV is ~1.38× random / ~2.14× skilled / ~3.0× expert (60ms
-jitter). Daily faucet at 2 login spins/day: random **0.58%**, skilled **0.89%**
-of 12h offline cap; bot worst case **4.17%** (PASS). Login + ad (3 spins/day):
-bot **6.25%** (FAIL on paper — human expert **1.87%**; ad spin stays capped at
-`FREE_SPIN_CAP`). Vs daily login reward at streak 7: skilled gambling ≈ **37%**
-of streak payout — side dish, not main course.
+`SWEEP_SPEED = 1.85` and the 16-segment ring (mean 1.375×, single 10× band),
+measured per-spin EV is ~1.38× random / ~2.03× skilled / ~2.84× expert (60ms
+jitter). Daily faucet at 2 login spins/day: random **0.58%**, skilled **0.85%**
+of 12h offline cap; bot worst case **4.17%** (PASS). Sub-max login + ad (2
+spins/day, max streak blocks ad): bot **4.17%** (PASS). The old 3-spin/day
+max-streak+ad case is **disallowed in code** (`ad_spin_eligible` returns false
+when `daily_streak >= 7`). Vs daily login reward at streak 7: skilled gambling
+≈ **37%** of streak payout — side dish, not main course.
 
 ```powershell
 python sim_gambling.py
@@ -70,21 +71,24 @@ python sim_gambling.py --sweep-speed 2.0
 (`lifetime_winnings / lifetime_earnings`). Tripwire: ratio > **8%** over 7 days →
 lower `BASE_INCOME_SECONDS` by 10–15. Also watch `best_mult` and spins/session.
 
-**Guardrail decision (G-TUNE-2):** the login+ad **6.25% bot worst case** is
+**Guardrail decision (G-TUNE-2):** the login+ad **6.25% bot worst case** was originally
 **accepted as-shipped** — no `BASE_INCOME_SECONDS` cut. Rationale: it requires 0ms-perfect
 timing (physically impossible; human expert at 60ms jitter = **1.88%**), the ad spin is
 already clamped to `FREE_SPIN_CAP`, and the "inverse failure mode" below warns that
 scarcity must come from *supply*, not stingy payouts — trimming would tax every real
 player to defend against a supply-capped theoretical bot. The live `lifetime_winnings_ratio`
 tripwire (>8% / 7 days) is the governor: only real-world data reopens this, not the paper bot.
+A follow-up guardrail (`43bb862`) further **disables the ad spin on streak 7+ days** (those
+days already grant 2 login spins), trimming the worst case without touching payouts.
 
 **Monetization caution:** the rewarded-ad `+1 spin` hook routes through the
 `Monetization` autoload (`PLACEMENT_GAMBLE_SPIN`), which grants via
-`grant_gamble_ad_spin()` — capped at `FREE_SPIN_CAP`. Selling *uncapped* spins would
-break levers 1 and 6 — keep any ad/IAP spin source rate-limited. The whole safety
-model rests on supply scarcity. The `sim_gambling.py` login+ad (3 spins/day) scenario
-shows a **6.25% bot worst case** (over the 5% guardrail on paper); the cap + human
-timing keep it safe in practice, but the tripwire in **Telemetry** below governs it.
+`grant_gamble_ad_spin()` — capped at `FREE_SPIN_CAP` and **disabled on streak 7+ days**
+(gated by `can_gamble_ad_spin()`). Selling *uncapped* spins would break levers 1 and 6 —
+keep any ad/IAP spin source rate-limited. The whole safety model rests on supply scarcity.
+The `sim_gambling.py` login+ad (3 spins/day) scenario showed a **6.25% bot worst case**
+(over the 5% guardrail on paper); the cap, the streak-7+ ad disable, and human timing keep
+it safe in practice, with the tripwire in **Telemetry** below governing it.
 
 **Inverse failure mode:** don't starve it so hard nobody engages. Per-spin payout should
 *feel* generous (income-scaled + a visible 10× jackpot band); scarcity comes from supply,
@@ -99,7 +103,8 @@ A `CanvasLayer` overlay (layer 11) matching the shipped `prestige_tree_overlay` 
   shuffled segment ring. SPIN starts the marker sweep (button → STOP); STOP freezes the
   marker and calls `resolve_gamble(position)`. "Spin again" is offered while
   `gambling_free_spins() > 0`; at 0 the CTA disables and a capped watch-ad-for-spin button
-  shows (hidden when `remove_ads` is owned or already at `FREE_SPIN_CAP`). It calls
+  shows (gated by `can_gamble_ad_spin()` — hidden when `remove_ads` is owned, at
+  `FREE_SPIN_CAP`, or on streak 7+ days). It calls
   `Monetization.show_rewarded(PLACEMENT_GAMBLE_SPIN)`; the reward returns via the
   `ad_reward_granted` signal → `_on_ad_reward()` re-stages the round. The MockBackend
   grants instantly in editor/headless, so the flow is fully testable without a device.

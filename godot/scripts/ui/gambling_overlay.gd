@@ -145,7 +145,9 @@ func _refresh() -> void:
 		_spin_btn.visible = not can_wager  # hide the dead free button if betting is offered
 		_spin_btn.text = "SPIN"
 		_spin_btn.disabled = true
-		_ad_btn.visible = not GameState.remove_ads and spins < _Gambling.FREE_SPIN_CAP
+		# Guardrail (origin/master 43bb862): ad→+1 spin is ineligible at cap OR on
+		# max-streak days — can_gamble_ad_spin() covers both (was: spins < FREE_SPIN_CAP).
+		_ad_btn.visible = not GameState.remove_ads and GameState.can_gamble_ad_spin()
 
 	if _phase != Phase.DONE:
 		if spins > 0:
