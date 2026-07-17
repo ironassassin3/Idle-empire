@@ -10,8 +10,8 @@ const GameIcons = preload("res://scripts/ui/game_icons.gd")
 const BG := Color("06070c")
 const BG_PANEL := Color("0c0f18")
 const BG_CARD := Color("11151f")
-const GOLD := Color("c8a35a")
-const GOLD_BRIGHT := Color("ecca7d")
+const GOLD := Color("8a5cff")
+const GOLD_BRIGHT := Color("b18cff")
 # Neon Noir jewel accents (2026-07-17 kit amendment — direction study `b`).
 const JEWEL_TEAL := Color("2fd6c6")
 const JEWEL_MAGENTA := Color("e5457e")
@@ -28,17 +28,17 @@ const BLUE_BRIGHT := Color("6a9aaa")
 const ACCENT := Color("4a6a8a")
 const TAB_ACTIVE := Color("1e2130")
 const TAB_IDLE := Color("0e111a")
-const BADGE_BG := Color("3a2a18")
-const BADGE_BORDER := Color("c8a35a")
+const BADGE_BG := Color("2a1a3a")
+const BADGE_BORDER := Color("8a5cff")
 const CHIP_BG := Color("141824")
-const CHIP_BORDER := Color("6a5a40")
+const CHIP_BORDER := Color("4a3a6a")
 
 # Gilded-ledger surface system (/godot-design v3 port). High-contrast layer:
 # lifted card fills, 2px edges, INVERTED gold CTAs (gold fill · dark text).
-const GOLD_TEXT_DARK := Color("1a1208")
+const GOLD_TEXT_DARK := Color("160a26")
 const INK_DEEP := Color("0e101a")
 const CARD_LIFT := Color("221a2e")
-const CARD_EDGE := Color("4a3c2a")
+const CARD_EDGE := Color("3a2a4a")
 const PLATE := Color("141824")
 
 # ── Stage & Ledger semantic surface tokens (UI_OVERHAUL §7; V3 token lint law:
@@ -46,12 +46,12 @@ const PLATE := Color("141824")
 const INK_FIELD := Color("0c0c14")          # surface.field — rail/dock chrome
 const SHEET_GLASS := Color(0.047, 0.047, 0.078, 0.9)  # surface.sheet — content deck
 const STATE_READY_BG := Color("1a1520")
-const STATE_READY_EDGE := Color("c8a35a", 0.65)
+const STATE_READY_EDGE := Color("8a5cff", 0.65)
 const STATE_APPROACH_BG := Color("14101c")
 const STATE_APPROACH_EDGE := Color("2e2638")
 const STATE_LOCKED_BG := Color("100c16")
 const STATE_LOCKED_EDGE := Color("221c2c")
-const GOLD_SHADOW := Color("8a6f3c")        # READY button bottom bevel
+const GOLD_SHADOW := Color("5a3a9a")        # READY button bottom bevel
 # MM 9-slice card/tab textures are too low-contrast for the gilded pass —
 # flat factories below are the live surfaces while this is true.
 const UI_GILDED := true

@@ -9,8 +9,8 @@ const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 const REDRAW_INTERVAL := 1.0 / 30.0
 
 const INK := Color("06070c")
-const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
-const INK_GOLD_BRIGHT := Color(0.925, 0.792, 0.49)
+const INK_GOLD := Color(0.541, 0.361, 1.0, 0.157)
+const INK_GOLD_BRIGHT := Color(0.694, 0.549, 1.0)
 const INK_CRIMSON := Color(0.608, 0.157, 0.157)
 const SKY_BACK := Color8(14, 24, 38)
 const SKY_MID := Color8(20, 30, 52)
@@ -26,6 +26,8 @@ const NEON_COOL := Color8(47, 214, 198)
 const NEON_RED := Color8(220, 60, 70)
 # Bright rooftop-sign / wet-street bloom (study `b` win teal).
 const NEON_SIGN := Color8(79, 224, 208)
+# Cyberpunk mixed-neon skyline: violet lead, magenta + cyan support.
+const NEON_SET := [Color8(138, 92, 255), Color8(229, 69, 126), Color8(47, 214, 198)]
 
 @onready var _empire_label: Label = $EmpireLabel
 
@@ -826,10 +828,11 @@ func _draw_rooftop_signs(ground_y: float) -> void:
 	for i in xs.size():
 		var sx := w * float(xs[i]) + w * 0.06
 		var sy := horizon - horizon * float(hts[i]) - 4.0
+		var neon: Color = NEON_SET[i % NEON_SET.size()]
 		for k in 4:
 			draw_circle(Vector2(sx, sy), 10.0 - k * 2.0,
-					Color(NEON_SIGN.r, NEON_SIGN.g, NEON_SIGN.b, 0.06))
-		draw_circle(Vector2(sx, sy), 2.0, Color(NEON_SIGN, 0.9))
+					Color(neon.r, neon.g, neon.b, 0.07))
+		draw_circle(Vector2(sx, sy), 2.0, Color(neon, 0.95))
 
 
 ## Vertical neon streaks bleeding down the wet street under the brightest signs.
@@ -837,10 +840,11 @@ func _draw_neon_streaks(ground_y: float, t: float) -> void:
 	var w := VIRTUAL_SIZE.x
 	var xs := [0.19, 0.44, 0.70]
 	var flick := 0.10 + 0.04 * sin(t * 2.3)
-	for x in xs:
-		var rx := w * float(x) + w * 0.06
+	for i in xs.size():
+		var rx := w * float(xs[i]) + w * 0.06
+		var neon: Color = NEON_SET[i % NEON_SET.size()]
 		draw_line(Vector2(rx, ground_y), Vector2(rx, ground_y + VIRTUAL_SIZE.y * 0.06),
-				Color(NEON_SIGN.r, NEON_SIGN.g, NEON_SIGN.b, flick), 3.0)
+				Color(neon.r, neon.g, neon.b, flick), 3.0)
 
 
 ## Deco corner brackets — a thin double keyline at each frame corner.
