@@ -121,7 +121,31 @@ func is_unlock_wiping() -> bool:
 	return _wipe >= 0.0
 
 
+## Study `_CardBg`: a code-drawn vertical-gradient body + left accent bar, giving
+## the row depth a flat StyleBox can't. Drawn FIRST (behind wax seal / underbar /
+## ink-wipe). Opaque — it overpaints the panel stylebox; corners read square,
+## matching the mock. Accent = the business signature color (same as the medallion).
+func _draw_card_gradient() -> void:
+	var w := size.x
+	var h := size.y
+	var buyable := _affordance != GameTheme.RowAffordance.LOCKED
+	var accent := GameTheme.building_neon(_building.icon_key) if _building != null else GameTheme.GOLD
+	var top := GameTheme.BG_CARD.lerp(Color.WHITE, 0.05 if buyable else 0.02)
+	var bot := GameTheme.BG_CARD.lerp(GameTheme.BG, 0.55)
+	var steps := 14
+	for i in steps:
+		var t := float(i) / float(steps)
+		draw_rect(Rect2(0, t * h, w, h / steps + 1.0), top.lerp(bot, t))
+	draw_rect(Rect2(0, 0, 3.0, h), Color(accent, 0.9 if buyable else 0.3))
+	if buyable:
+		draw_rect(Rect2(0, 0, w, h), Color(accent.r, accent.g, accent.b, 0.03))
+	draw_rect(Rect2(0, 0, w, h), Color(accent, 0.42 if buyable else 0.16), false, 1.0)
+	draw_rect(Rect2(0, 0, w, 1.0), Color(accent, 0.20 if buyable else 0.07))
+
+
 func _draw() -> void:
+	if _building != null:
+		_draw_card_gradient()
 	GameTheme.draw_row_wax_seal(self, _affordance)
 	if _afford > 0.0 and _afford < 1.0:
 		draw_rect(Rect2(0, size.y - 3.0, size.x, 3.0), Color(GameTheme.GOLD, 0.14))

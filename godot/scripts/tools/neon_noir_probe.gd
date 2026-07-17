@@ -69,14 +69,16 @@ func _process(_delta: float) -> bool:
 			func(d): return d.name)):
 		return _fail("building_row missing _draw_card_gradient()")
 
-	# 4. Reactive regression — recolor must not have broken the city.
-	var key: String = str(root.get_node("GameState").buildings[0].icon_key)
-	_city.call("pulse_facade", key)
+	# 4. Reactive regression — recolor must not have broken the city's reactive
+	# state machine. Use precondition-free round-trips (district flash + alert
+	# level); facade pulse needs an owned top-5 business, which is orthogonal to
+	# recolor risk and is already covered by city_reaction_probe.
+	_city.call("set_district", 3, "player")
 	_city.call("set_alert_level", 2)
-	if not bool(_city.call("is_facade_pulsing", key)):
-		return _fail("pulse_facade no longer lights a facade — reactive logic broke")
+	if not bool(_city.call("is_district_pulsing", 3)):
+		return _fail("set_district/is_district_pulsing round-trip broke — reactive logic regressed")
 	if int(_city.call("alert_level")) != 2:
-		return _fail("set_alert_level/alert_level round-trip broke")
+		return _fail("set_alert_level/alert_level round-trip broke — reactive logic regressed")
 
 	print("[neon_probe] PASS — tokens amended, city + rows ported, reactive intact")
 	quit(0)
