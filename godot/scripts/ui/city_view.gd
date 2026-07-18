@@ -396,6 +396,28 @@ func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: flo
 	var count := mini(maxi(keys.size(), 1), 5)
 	var slot_w := sw / maxf(1.0, float(count))
 	var neon_keys: Array = keys if not keys.is_empty() else ["dealer"]
+	# Dark-city floor — the skyline is always fully built. Unowned blocks wait
+	# near-black; each business type the player buys converts a dark block into
+	# a lit hero facade (the buy loop, drawn on the horizon).
+	var floor_slots := 7
+	var under_col := Color8(22, 26, 42)
+	for j in floor_slots:
+		var ux := sw * (float(j) + 0.5) / float(floor_slots)
+		var near_hero := false
+		for i in count:
+			if absf(ux - slot_w * (float(i) + 0.5)) < sw * 0.5 / float(floor_slots) + 26.0:
+				near_hero = true
+				break
+		if near_hero:
+			continue
+		var uw := 26.0 + float(j % 3) * 8.0
+		var uh := 30.0 + float((j * 13) % 4) * 12.0 + float(tier) * 6.0
+		draw_rect(Rect2(ux - uw * 0.5, ground_y - uh, uw, uh), under_col)
+		draw_line(Vector2(ux - uw * 0.5, ground_y - uh), Vector2(ux + uw * 0.5, ground_y - uh),
+				Color(SILHOUETTE_RIM, 0.22), 1.0)
+		# One or two dim windows so the dark block reads as sleeping, not dead.
+		if j % 2 == 0:
+			draw_rect(Rect2(ux - 2.0, ground_y - uh + 8.0, 2.0, 3.0), Color(SILHOUETTE_RIM, 0.25))
 	for i in count:
 		var key: String = neon_keys[i] if i < neon_keys.size() else "dealer"
 		var owned: int = int(counts[i]) if i < counts.size() else 1
