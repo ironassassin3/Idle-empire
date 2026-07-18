@@ -328,7 +328,7 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 	var far_base := sh * 0.52
 	var far_h := 26.0 + tier * 8.0
 	var far_drift := fmod(drift * 0.18, sw)
-	var far_col := Color(SILHOUETTE_BACK.r * 0.8, SILHOUETTE_BACK.g * 0.8, SILHOUETTE_BACK.b * 0.85, 0.7)
+	var far_col := Color(SILHOUETTE_BACK.r * 1.15, SILHOUETTE_BACK.g * 1.15, SILHOUETTE_BACK.b * 1.2, 0.85)
 	for i in 11 + tier * 2:
 		var fw := 12.0 + float(i % 5) * 9.0
 		var fh := far_h * (0.4 + float((i * 7) % 4) * 0.18)
@@ -336,7 +336,7 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		draw_rect(Rect2(fx, far_base - fh, fw, fh), far_col)
 		# Faint lit windows scattered through the distant towers.
 		if (i * 13) % 3 == 0:
-			draw_rect(Rect2(fx + fw * 0.35, far_base - fh * 0.55, 2.0, 2.0), Color(NEON_WARM, 0.28))
+			draw_rect(Rect2(fx + fw * 0.35, far_base - fh * 0.55, 2.0, 2.0), Color(NEON_WARM, 0.22))
 	# Three tall distant skyscrapers punching into the upper sky — gives the
 	# empty top third a believable downtown ridge even at tier 0.
 	var anchor_x := [sw * 0.2, sw * 0.52, sw * 0.82]
@@ -346,6 +346,7 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		var atop: float = anchor_top[a]
 		var aw := 16.0 + float(a % 2) * 6.0
 		draw_rect(Rect2(ax - aw * 0.5, atop, aw, far_base - atop), far_col)
+		draw_line(Vector2(ax - aw * 0.5, atop), Vector2(ax + aw * 0.5, atop), Color(SILHOUETTE_RIM, 0.5), 1.0)
 		# Slim antenna mast + red aviation blip on the crown.
 		draw_line(Vector2(ax, atop), Vector2(ax, atop - 10.0), Color(SILHOUETTE_RIM, 0.4), 1.0)
 		if _hash01(a * 41 + 3, t * 1.5) > 0.5:
@@ -353,7 +354,7 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		# A sparse column of lit windows so the tower reads as inhabited.
 		for wy in 4:
 			if _hash_flicker(a * 19 + wy * 7, t):
-				draw_rect(Rect2(ax - aw * 0.25, atop + 10.0 + wy * 14.0, 2.0, 3.0), Color(NEON_WARM, 0.3))
+				draw_rect(Rect2(ax - aw * 0.25, atop + 10.0 + wy * 14.0, 2.0, 3.0), Color(NEON_WARM, 0.24))
 	# Distant mid-parallax silhouettes (always present, density grows with tier).
 	var back_h := 44.0 + tier * 18.0
 	var back_y := sh * 0.58 - back_h
