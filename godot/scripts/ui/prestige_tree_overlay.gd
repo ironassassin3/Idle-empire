@@ -43,7 +43,7 @@ func _process(delta: float) -> void:
 	_ui_time += delta
 	if _prestige_dialog.visible and not GameTheme.ui_reduced_motion():
 		var pulse: float = 0.85 + 0.15 * sin(_ui_time * 4.0)
-		_prestige_dialog.modulate = Color(1.0, 0.92, 0.55, pulse)
+		_prestige_dialog.modulate = Color(GameTheme.GOLD_BRIGHT, pulse)
 	else:
 		_prestige_dialog.modulate = Color.WHITE
 

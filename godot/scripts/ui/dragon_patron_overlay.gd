@@ -2,6 +2,7 @@ extends CanvasLayer
 ## Dragon Patron selection — port of DragonPatronState.
 
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
+const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 
 @onready var _dim: ColorRect = $Dim
 @onready var _panel: PanelContainer = $Panel
@@ -24,11 +25,35 @@ var _card_buttons: Dictionary = {}
 func _ready() -> void:
 	layer = 11
 	visible = false
+	_apply_ink_theme()
 	_build_cards()
 	_back.pressed.connect(close)
 	_confirm_yes.pressed.connect(_on_confirm_yes)
 	_confirm_no.pressed.connect(_on_confirm_no)
 	GameState.stats_changed.connect(_refresh)
+
+
+func _apply_ink_theme() -> void:
+	if GameTheme.is_city_v2_active():
+		_panel.add_theme_stylebox_override("panel", GameTheme.overlay_ledger_style())
+		_confirm.add_theme_stylebox_override("panel", GameTheme.overlay_ledger_style())
+	_title.add_theme_font_override("font", GameFonts.heading())
+	_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
+	_stage.add_theme_font_override("font", GameFonts.mono(false))
+	_stage.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_prompt.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_locked.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_locked.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_confirm_title.add_theme_font_override("font", GameFonts.heading())
+	_confirm_title.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+	_confirm_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
+	_confirm_body.add_theme_color_override("font_color", GameTheme.TEXT)
+	_confirm_body.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	GameTheme.apply_overlay_cta(_confirm_yes, true)
+	GameTheme.apply_overlay_cta(_confirm_no, false)
+	GameTheme.apply_ink_chip_button(_back, false, 14, GameTheme.TEXT)
 
 
 func open() -> void:
@@ -146,13 +171,29 @@ func _refresh() -> void:
 		if is_current:
 			btn.text = "ACTIVE PATRON"
 			btn.disabled = true
-			card.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			card.modulate = Color.WHITE
 		elif current.is_empty():
 			btn.text = "Choose"
 			btn.disabled = false
 		else:
 			btn.text = "Switch (−%d Inf)" % _DragonSystem.DRAGON_CHANGE_COST
 			btn.disabled = false
+		var accent: Color = meta.get("color", GameTheme.GOLD)
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(GameTheme.INK_FIELD, 0.92)
+		sb.border_color = Color(accent, 0.85 if is_current else 0.45)
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(6)
+		sb.content_margin_left = 10
+		sb.content_margin_right = 10
+		sb.content_margin_top = 8
+		sb.content_margin_bottom = 8
+		card.add_theme_stylebox_override("panel", sb)
+		GameTheme.apply_overlay_cta(btn, not btn.disabled and current.is_empty())
+		if btn.disabled:
+			GameTheme.apply_ink_chip_button(btn, false, 12, GameTheme.TEXT_MUTED)
+		elif not current.is_empty():
+			GameTheme.apply_overlay_cta(btn, false)
 
 
 func _card_row_interactive(enabled: bool) -> void:

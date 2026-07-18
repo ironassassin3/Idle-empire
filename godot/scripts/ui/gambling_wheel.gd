@@ -84,12 +84,12 @@ func _seg_color(mult: float) -> Color:
 	if mult >= _Gambling.JACKPOT_MULT:
 		return GameTheme.GOLD_BRIGHT
 	if mult <= 0.0:
-		return Color(0.32, 0.16, 0.16)  # bust
+		return Color(0.28, 0.12, 0.18)  # bust — cool crimson ink
 	if mult >= 2.0:
 		return GameTheme.GREEN
 	if mult >= 1.0:
-		return Color(0.42, 0.46, 0.36)
-	return Color(0.30, 0.30, 0.26)  # < 1× consolation
+		return Color(0.22, 0.24, 0.36)  # ink plate
+	return Color(0.16, 0.17, 0.26)  # < 1× consolation
 
 
 func _seg_label(mult: float) -> String:
@@ -118,7 +118,7 @@ func _draw() -> void:
 		var x := float(i) * seg_w
 		draw_rect(Rect2(x + 1.0, 0.0, seg_w - 2.0, h), _seg_color(mult))
 		var label := _seg_label(mult)
-		var col := Color(0.08, 0.07, 0.05) if mult >= 2.0 else GameTheme.TEXT
+		var col := GameTheme.GOLD_TEXT_DARK if mult >= 2.0 else GameTheme.TEXT
 		var ts := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
 		draw_string(
 			font, Vector2(x + (seg_w - ts.x) * 0.5, h * 0.5 + ts.y * 0.3),
@@ -133,7 +133,7 @@ func _draw() -> void:
 func _draw_wager_meter() -> void:
 	var w: float = size.x
 	var h: float = size.y
-	draw_rect(Rect2(0.0, 0.0, w, h), Color(0.14, 0.13, 0.11))
+	draw_rect(Rect2(0.0, 0.0, w, h), Color(0.10, 0.11, 0.18))
 	var tol: float = _Gambling.WAGER_SKILL_TOL
 	# Graded band: green core (full skill) fading to amber at the tolerance edge.
 	var steps := 24
