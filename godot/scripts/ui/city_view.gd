@@ -525,7 +525,7 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 	# Neon marquee on the building's shoulder — a framed blade sign lit in the
 	# business's own colour. Static (no drift/flicker) so it reads as signage.
 	if tier >= 2:
-		_draw_marquee(bx + bw + 1.0, by + maxf(5.0, bh * 0.22), minf(18.0, bh * 0.4), neon, bx + bw)
+		_draw_marquee(bx + bw + 1.0, by + maxf(5.0, bh * 0.22), minf(18.0, bh * 0.4), neon, bx + bw, key)
 
 
 ## The bought business's facade lights up — the empire acknowledging a purchase
@@ -541,7 +541,7 @@ func _draw_facade_pulse(cx: float, ground_y: float, bh: float, seed: int, pulse:
 	draw_rect(rect, Color(glow.r, glow.g, glow.b, 0.55 * a), false, 1.5)
 
 
-func _draw_marquee(mq_x: float, mq_y: float, mq_h: float, col: Color, wall_x: float) -> void:
+func _draw_marquee(mq_x: float, mq_y: float, mq_h: float, col: Color, wall_x: float, key: String = "") -> void:
 	var mq_w := 8.0
 	# Bracket arm tying the blade to the wall.
 	draw_line(Vector2(wall_x, mq_y + 3.0), Vector2(mq_x, mq_y + 3.0), Color(SILHOUETTE_RIM, 0.6), 1.0)
@@ -549,7 +549,11 @@ func _draw_marquee(mq_x: float, mq_y: float, mq_h: float, col: Color, wall_x: fl
 	draw_rect(Rect2(mq_x - 1.5, mq_y - 1.5, mq_w + 3.0, mq_h + 3.0), Color(col, 0.16))
 	draw_rect(Rect2(mq_x, mq_y, mq_w, mq_h), Color8(14, 16, 26))
 	draw_rect(Rect2(mq_x, mq_y, mq_w, mq_h), Color(col, 0.95), false, 1.0)
-	# Lit "letter" segments stacked down the blade.
+	# Business glyph when the blade is tall enough; else stacked letter segments.
+	if not key.is_empty() and mq_h >= 12.0:
+		SigilGlyphs.draw_glyph(self, key, Vector2(mq_x + mq_w * 0.5, mq_y + mq_h * 0.5),
+			minf(mq_w, mq_h) * 0.48, Color(col, 0.95))
+		return
 	var seg_n := maxi(1, int((mq_h - 3.0) / 5.0))
 	for s in seg_n:
 		var sy := mq_y + 3.0 + float(s) * 5.0
@@ -844,7 +848,7 @@ func _hash_flicker(seed: int, t: float) -> bool:
 	return _hash01(seed, t) > 0.35
 
 
-## Rooftop neon-sign blooms atop a few mid-skyline silhouettes — nightlife pop.
+## Rooftop neon signs — empire identity on the skyline (SigilGlyphs + building neon).
 func _draw_rooftop_signs(ground_y: float) -> void:
 	var w := VIRTUAL_SIZE.x
 	var horizon := ground_y * 0.9
@@ -853,11 +857,17 @@ func _draw_rooftop_signs(ground_y: float) -> void:
 	for i in xs.size():
 		var sx := w * float(xs[i]) + w * 0.06
 		var sy := horizon - horizon * float(hts[i]) - 4.0
-		var neon: Color = NEON_SET[i % NEON_SET.size()]
+		var key := str(_top_building_keys[i]) if i < _top_building_keys.size() else ""
+		var neon: Color = GameTheme.building_neon(key) if not key.is_empty() else NEON_SET[i % NEON_SET.size()]
 		for k in 4:
 			draw_circle(Vector2(sx, sy), 10.0 - k * 2.0,
 					Color(neon.r, neon.g, neon.b, 0.07))
-		draw_circle(Vector2(sx, sy), 2.0, Color(neon, 0.95))
+		if key.is_empty():
+			draw_circle(Vector2(sx, sy), 2.0, Color(neon, 0.95))
+			continue
+		draw_circle(Vector2(sx, sy), 7.5, Color8(14, 16, 26, 230))
+		draw_arc(Vector2(sx, sy), 7.5, 0, TAU, 24, Color(neon, 0.95), 1.3)
+		SigilGlyphs.draw_glyph(self, key, Vector2(sx, sy), 7.5, neon.lightened(0.2))
 
 
 ## Vertical neon streaks bleeding down the wet street under the brightest signs.
@@ -867,7 +877,8 @@ func _draw_neon_streaks(ground_y: float, t: float) -> void:
 	var flick := 0.10 + 0.04 * sin(t * 2.3)
 	for i in xs.size():
 		var rx := w * float(xs[i]) + w * 0.06
-		var neon: Color = NEON_SET[i % NEON_SET.size()]
+		var key := str(_top_building_keys[i]) if i < _top_building_keys.size() else ""
+		var neon: Color = GameTheme.building_neon(key) if not key.is_empty() else NEON_SET[i % NEON_SET.size()]
 		draw_line(Vector2(rx, ground_y), Vector2(rx, ground_y + VIRTUAL_SIZE.y * 0.06),
 				Color(neon.r, neon.g, neon.b, flick), 3.0)
 
