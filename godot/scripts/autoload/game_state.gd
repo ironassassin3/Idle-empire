@@ -227,8 +227,12 @@ func set_simulation_active(active: bool) -> void:
 	var was_active := simulation_active
 	simulation_active = active
 	if active:
-		# Sync so a loaded high-heat save doesn't spuriously fire heat_crossed.
+		# Sync, then tell the city its CURRENT band — a loaded high-heat save
+		# must start hunted, not calm until the next crossing. Deferred because
+		# the shell activates the sim BEFORE building the stage; a direct emit
+		# would fire with no listener and be lost.
 		_heat_band = HeatSystem.heat_band(heat)
+		UiEvents.emit_signal.call_deferred(&"heat_crossed", _heat_band)
 	if not active:
 		_autosave_timer = 0.0
 	elif not was_active:

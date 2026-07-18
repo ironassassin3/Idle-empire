@@ -514,6 +514,12 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 		var bk_on := true if GameTheme.ui_reduced_motion() else int(t * 5.0 + float(seed)) % 2 == 0
 		if bk_on:
 			draw_circle(Vector2(cx, ground_y - bh - 9.0), 2.0, Color(NEON_RED, 0.85))
+	# Critical: the dragnet's light catches the towers — alternating siren rim.
+	if _alert_level >= 2:
+		var siren := GameTheme.SIREN_RED
+		if not GameTheme.ui_reduced_motion() and int(t * 4.0 + float(seed)) % 2 == 1:
+			siren = GameTheme.SIREN_BLUE
+		draw_rect(Rect2(bx, ground_y - bh, bw, bh), Color(siren.r, siren.g, siren.b, 0.28), false, 2.0)
 	# Remember this facade's neon so it can bleed into the wet street later.
 	_reflect_points.append([cx, neon])
 	# Neon marquee on the building's shoulder — a framed blade sign lit in the
@@ -691,7 +697,7 @@ func _draw_traffic(ground_y: float, t: float, alert_level: int = 0) -> void:
 func _draw_raid_surge(ground_y: float) -> void:
 	var a := clampf(_raid_pulse, 0.0, 1.0)
 	var col := GameTheme.SIREN_RED
-	draw_rect(Rect2(0.0, ground_y - 6.0, VIRTUAL_SIZE.x, VIRTUAL_SIZE.y - ground_y + 6.0),
+	draw_rect(Rect2(0.0, ground_y - 20.0, VIRTUAL_SIZE.x, VIRTUAL_SIZE.y - ground_y + 20.0),
 			Color(col.r, col.g, col.b, 0.28 * a))
 
 
