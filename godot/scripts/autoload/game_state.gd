@@ -757,6 +757,9 @@ func can_prestige() -> bool:
 func do_prestige() -> bool:
 	if not can_prestige():
 		return false
+	# Capture the gate just satisfied BEFORE incrementing the count, so the next
+	# gate ladders off it (not off however far this run overshot).
+	var _prev_gate: float = Prestige.prestige_earnings_required(prestige_count, next_prestige_earnings)
 	var raw_gain: float = float(Prestige.calc_influence_gain(lifetime_earnings))
 	raw_gain *= _ManagerSystem.influence_gain_mult(self)
 	raw_gain *= _PrestigeTree.influence_gain_mult(self)
@@ -766,7 +769,7 @@ func do_prestige() -> bool:
 	lifetime_tokens += gain
 	influence += gain
 	prestige_count += 1
-	next_prestige_earnings = prestige_route_earnings * GameConfig.PRESTIGE_EARNINGS_GROWTH
+	next_prestige_earnings = _prev_gate * GameConfig.PRESTIGE_EARNINGS_GROWTH
 	var _tele_cycle: float = play_time - _last_prestige_play_time
 	var _tele_route: float = float(prestige_route_earnings)
 	var _tele_branch: String = str(prestige_branch)
