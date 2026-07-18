@@ -6,6 +6,7 @@ const _TerritorySystem = preload("res://scripts/systems/territory_system.gd")
 
 var territory_index: int = -1
 
+@onready var _medal: IdentityMedallion = $Margin/VBox/Top/Medal
 @onready var _name: Label = $Margin/VBox/Top/NameLabel
 @onready var _owner: Label = $Margin/VBox/Top/OwnerLabel
 @onready var _desc: Label = $Margin/VBox/DescLabel
@@ -55,16 +56,19 @@ func _refresh() -> void:
 	_perk.text = perk
 	_perk.visible = not perk.is_empty()
 	var owner := str(t.get("owner", "unclaimed"))
+	var unlocked: bool = bool(t.get("unlocked", false))
+	_medal.glyph_key = str(t.get("district_type", ""))
+	_medal.tint = t.get("color", GameTheme.GOLD)
+	_medal.dimmed = not unlocked and owner == "unclaimed"
 	if owner == "player":
 		_owner.text = "YOU"
-		_owner.add_theme_color_override("font_color", GameTheme.GREEN)
+		_owner.add_theme_color_override("font_color", GameTheme.GOLD)
 	elif owner == "unclaimed":
 		_owner.text = "UNCLAIMED"
 		_owner.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	else:
 		_owner.text = owner.substr(0, 14)
-		_owner.add_theme_color_override("font_color", Color(0.86, 0.39, 0.31))
-	var unlocked: bool = bool(t.get("unlocked", false))
+		_owner.add_theme_color_override("font_color", GameTheme.SIREN_RED)
 	var can_act := _TerritorySystem.can_act_on(GameState, territory_index)
 	if unlocked:
 		var bonuses: PackedStringArray = []
@@ -79,7 +83,7 @@ func _refresh() -> void:
 		_actions.visible = false
 	elif owner != "player" and owner != "unclaimed":
 		_status.text = "Held by %s — weaken them in Rivals first." % owner
-		_status.add_theme_color_override("font_color", Color(0.86, 0.39, 0.31))
+		_status.add_theme_color_override("font_color", GameTheme.SIREN_RED)
 		_actions.visible = false
 	else:
 		var unlock_cost := int(t.get("unlock_cost", 0))
