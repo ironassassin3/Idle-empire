@@ -72,22 +72,27 @@ with `previous_gate * PRESTIGE_EARNINGS_GROWTH`.
 the lab proves 8.0 still walls will a lower value be proposed — reported back to the owner
 as a separate decision, not silently bundled in.
 
-## Validation (sims-first, per CLAUDE.md)
+## Validation (sims-first, per CLAUDE.md) — FINDINGS
 
-The strategy sim's cadence reporting is already correct (blank P2/P3 = only one prestige
-occurred) — no sim fix needed. Baseline: at growth 8.0, current formula, P2 never lands
-in 300 min.
+**The "P2 never lands" wall was a sim artifact, not a game balance bug.**
+`sim_prestige_strategies.py` never selected a prestige branch, so the count≥1 branch
+requirement in `check_requirements` was unsatisfiable and NO second prestige could ever
+fire — at any growth value, with or without B. Real players (and Godot) pick a branch via
+the prestige-tree UI, so they already reach P2+. Growth 8.0 is fine and is NOT changed.
 
-1. Apply the B formula in pygame (`src/prestige.py`).
-2. Run `sim_prestige_strategies.py --active 0.33 --minutes 300 --prestiges 6` at growth
-   8.0 and read the now-populated P1→P2→P3 columns and cadence-gap table.
-3. Acceptance: P2 and P3 now land within the 300-min horizon, and the gap between
-   consecutive prestiges grows gently (a stretch, not a cliff). If P2 still never lands
-   at 8.0, report the growth value that does — a separate owner decision, not a silent
-   bundle.
-4. Port the validated formula to Godot; `shell_smoke` PASS; a Godot prestige in the live
-   shell produces a next-gate value equal to `previous_gate × 8`, not `route_earnings × 8`
-   (verified by a headless assertion, see plan).
+Fix applied to the lab: model branch commitment + first-perk purchase after each prestige
+(`sim_prestige_strategies.py`, Kingpin branch). With that, at growth 8.0 **and** the B
+formula, cadence is healthy: P1 ~47–58 min, then P1→P2 ~10–15 min, stabilizing at ~13–27
+min gaps that grow gently (no cliff); final Influence ~650–800 over 300 min.
+
+B's own effect is invisible in this sim because the sim auto-prestiges the instant it is
+eligible (route ≈ gate, ~zero overshoot). B is a **fairness fix for real play**: a player
+who banks earnings well past the gate before pressing prestige would otherwise get a next
+gate of `route × 8` instead of `gate × 8`. That behavior change is proven by the unit test
+`tests/test_prestige_gate.py` (9× overshoot → next gate 800M, not 7.2B).
+
+Remaining step: port the formula to Godot for parity; `shell_smoke` PASS; a Godot prestige
+produces `previous_gate × 8`, not `route_earnings × 8` (headless probe, see plan).
 
 ## Save compatibility
 

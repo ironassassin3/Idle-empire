@@ -29,6 +29,7 @@ pygame.init()
 pygame.display.set_mode((900, 720))
 
 import src.prestige as prestige
+import src.prestige_tree as ptree
 import src.territory as terr_mod
 import src.upgrades as upg
 from src.state_base import StateManager
@@ -217,6 +218,18 @@ def run_strategy(
             ips_before = ps.income_per_second
             gain = prestige.calc_influence_gain(ps.lifetime_earnings)
             prestige.PrestigeManager.execute(ps)
+            # A real player commits to a prestige branch and buys its first perk
+            # via the tree UI each cycle. Without this the count>=1 branch
+            # requirement (check_requirements) is never met and NO second
+            # prestige can ever fire — model it so cadence past P1 is measurable.
+            # (Kingpin = the income branch; owned perks persist across cycles.)
+            ptree.select_branch(ps, ptree.KINGPIN)
+            for _key, _n, _cost, _e, _tier in ptree.BRANCH_PERKS[ptree.KINGPIN]:
+                ok, _reason = ptree.can_buy_perk(ps, _key)
+                if ok:
+                    ps.prestige_tokens -= ptree.PERK_COST[_key]
+                    ps.perks_purchased.append(_key)
+                    break
             done += 1
             result.prestige_events.append(
                 PrestigeEvent(
