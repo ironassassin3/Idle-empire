@@ -346,7 +346,12 @@ func refresh() -> void:
 	# Track live text-scale changes from Settings without a scene rebuild.
 	custom_minimum_size.y = HEIGHT * GameTheme.text_scale_mult()
 	# Balance text is owned by the ticker (_tick_balance) — do not set it here.
-	_ips.text = "+ %s / SEC" % FormatUtil.format_money(GameState.income_per_second())
+	var ips: float = GameState.income_per_second()
+	var ips_txt := FormatUtil.format_money(ips)
+	if ips > 0.0 and ips_txt != "$0":
+		_ips.text = "▲  + %s / SEC" % ips_txt
+	else:
+		_ips.text = "+ %s / SEC" % ips_txt
 	_rank.text = GameTheme.truncate(GameState.rank_label().to_upper(), 20)
 
 	_heat_pill.visible = Disclosure.heat_pill_visible(GameState)

@@ -6,6 +6,7 @@ extends MarginContainer
 var _panel: Button
 var _label: Label
 var _value: Label
+var _bar: UiPrims.MiniBar
 var _item: Dictionary = {}
 
 
@@ -26,19 +27,26 @@ func _ready() -> void:
 	sb.content_margin_left = 12
 	sb.content_margin_right = 12
 	sb.content_margin_top = 9
-	sb.content_margin_bottom = 9
+	sb.content_margin_bottom = 7
 	for st in ["normal", "hover", "pressed", "focus"]:
 		_panel.add_theme_stylebox_override(st, sb)
 	_panel.pressed.connect(_on_tapped)
 
+	var col := VBoxContainer.new()
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.add_theme_constant_override("separation", 4)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(col)
+
 	var h := HBoxContainer.new()
-	h.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	h.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	h.add_theme_constant_override("separation", 10)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(h)
+	col.add_child(h)
 
 	_label = Label.new()
 	_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_label.add_theme_color_override("font_color", GameTheme.TEXT)
 	_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -46,11 +54,18 @@ func _ready() -> void:
 	h.add_child(_label)
 
 	_value = Label.new()
+	_value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_value.add_theme_font_override("font", GameFonts.mono(true))
 	_value.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	_value.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 	_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(_value)
+
+	_bar = UiPrims.mini_bar(GameTheme.GOLD, 2.0)
+	_bar.custom_minimum_size = Vector2(0, 2)
+	_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_bar.visible = false
+	col.add_child(_bar)
 
 	visible = false
 	UiEvents.attention_changed.connect(_on_attention)
@@ -65,6 +80,12 @@ func _on_attention(item: Dictionary) -> void:
 	_label.text = str(item.get("text", ""))
 	_value.text = str(item.get("value", ""))
 	_value.visible = not _value.text.is_empty()
+	var frac := float(item.get("progress", -1.0))
+	if frac >= 0.0:
+		_bar.visible = true
+		_bar.progress = frac
+	else:
+		_bar.visible = false
 	var kind := str(item.get("kind", ""))
 	var accent := GameTheme.GOLD
 	match kind:
@@ -76,9 +97,14 @@ func _on_attention(item: Dictionary) -> void:
 			accent = GameTheme.GREEN
 		"manager_order":
 			accent = GameTheme.GOLD_BRIGHT
-	var sb := _panel.get_theme_stylebox("normal") as StyleBoxFlat
-	if sb != null:
-		sb.border_color = accent
+		"hint", "afford":
+			accent = Color(GameTheme.GOLD, 0.55)
+		"goal":
+			accent = GameTheme.GOLD
+	var style := _panel.get_theme_stylebox("normal") as StyleBoxFlat
+	if style != null:
+		style.border_color = accent
+		_bar.fill = accent
 
 
 func _on_tapped() -> void:

@@ -183,22 +183,49 @@ func _ambient_item() -> Dictionary:
 		var val := "APPROVE" if bool(order.get("can_approve", false)) else ""
 		return {
 			"kind": "manager_order", "prio": PRIO_AFFORD_HINT + 5,
-			"text": "▸ %s" % _ManagerSystem.pending_order_hint(GameState),
+			"text": _ManagerSystem.pending_order_hint(GameState),
 			"value": val, "target": "bldgs",
+		}
+	# Real Phase-55 goals beat soft coaching — the rail used to mislabel
+	# next_focus_hint as "GOAL" while actual goals only lived in Stats.
+	var goals: Array = _GoalSystem.current_goals(GameState, 1)
+	if not goals.is_empty() and typeof(goals[0]) == TYPE_DICTIONARY:
+		var g: Dictionary = goals[0]
+		var prog: Dictionary = _GoalSystem.progress_for(GameState, g)
+		var cur := float(prog.get("current", 0.0))
+		var tgt := float(prog.get("target", 1.0))
+		var frac := clampf(cur / tgt, 0.0, 1.0) if tgt > 0.0 else 0.0
+		return {
+			"kind": "goal", "prio": PRIO_GOAL_HINT,
+			"text": str(g.get("label", "Goal")),
+			"value": _format_goal_progress(g, cur, tgt),
+			"progress": frac,
+			"target": "stats",
 		}
 	var hint := _GoalSystem.next_focus_hint(GameState)
 	if not hint.is_empty():
 		return {
-			"kind": "goal", "prio": PRIO_GOAL_HINT,
-			"text": "▸ GOAL — %s" % hint, "value": "", "target": "",
+			"kind": "hint", "prio": PRIO_GOAL_HINT,
+			"text": hint, "value": "", "target": "",
 		}
 	hint = GameState.next_purchase_hint()
 	if not hint.is_empty():
 		return {
 			"kind": "afford", "prio": PRIO_AFFORD_HINT,
-			"text": "▸ NEXT — %s" % hint, "value": "", "target": "bldgs",
+			"text": hint, "value": "", "target": "bldgs",
 		}
 	return {}
+
+
+func _format_goal_progress(g: Dictionary, cur: float, tgt: float) -> String:
+	var kind := str(g.get("progress_kind", ""))
+	if kind in ["balance", "route", "lifetime"]:
+		return "%s/%s" % [FormatUtil.format_money(cur), FormatUtil.format_money(tgt)]
+	if tgt >= 1.0:
+		return "%d/%d" % [int(cur), int(tgt)]
+	if tgt > 0.0:
+		return "%.0f%%" % (clampf(cur / tgt, 0.0, 1.0) * 100.0)
+	return ""
 
 
 func _publish() -> void:
