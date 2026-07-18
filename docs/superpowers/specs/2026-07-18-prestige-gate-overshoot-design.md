@@ -11,10 +11,14 @@ and left at 8.0 unless the lab proves B-alone still walls.
 
 The prestige gate is the mid/late-game wall. Sim evidence (this session):
 
-- First prestige lands ~40–65 min; a second prestige is effectively unreachable in a
-  normal session, and lowering `PRESTIGE_EARNINGS_GROWTH` from 8.0 → 3.0 barely changed
-  long-horizon progression (final Influence at 300 min: 137 vs 137 vs 146 for 2.5/3.0/3.5).
-  Growth is the weak lever.
+- First prestige lands ~40–65 min; a **second prestige never occurs** even over a
+  300-minute run, at any growth value swept (2.5 / 3.0 / 3.5). The strategy sim's blank
+  P2/P3 columns are correct — only one prestige happens. (The final Influence of ~137 is
+  NOT many prestiges: `prestige_tokens` is also minted by non-prestige faucets — goals
+  `src/goals.py:262`, operations `:252`, rivals `:572+`, buildings `:282`, events, dragon
+  — so tokens climb ~12 → 137 across the run on one real prestige plus faucet income.)
+- Lowering `PRESTIGE_EARNINGS_GROWTH` from 8.0 → 2.5 did not make P2 reachable, so growth
+  is the weak lever.
 - Root cause is the formula, not the constant. Both runtimes compute the next gate as
   `prestige_route_earnings × GROWTH` (Godot `game_state.gd:769`, pygame
   `src/prestige.py:457`). Idle players overshoot the gate heavily — they keep earning
@@ -70,18 +74,20 @@ as a separate decision, not silently bundled in.
 
 ## Validation (sims-first, per CLAUDE.md)
 
-1. Fix `sim_prestige_strategies.py`'s per-prestige timestamp reporting — the P2/P3
-   columns and cadence-gap table are currently blank despite prestiges occurring (final
-   Influence of 137 with 12 at P1 proves ~10 prestiges happened). Without this the
-   cadence is unmeasurable.
-2. With the reporting fixed and the B formula in pygame, run the strategy sim at a long
-   horizon (≥300 min) and read the real P1→P2→P3 gaps at growth 8.0.
-3. Acceptance: P2 and P3 are reached within a long-but-finite session, and the gap
-   between consecutive prestiges grows gently (a stretch, not a cliff). If not met at
-   8.0, report the growth value that does meet it.
-4. Port the (validated) formula to Godot; `shell_smoke` PASS; a Godot prestige in the
-   live shell produces a next-gate value equal to `previous_gate × 8`, not
-   `route_earnings × 8`.
+The strategy sim's cadence reporting is already correct (blank P2/P3 = only one prestige
+occurred) — no sim fix needed. Baseline: at growth 8.0, current formula, P2 never lands
+in 300 min.
+
+1. Apply the B formula in pygame (`src/prestige.py`).
+2. Run `sim_prestige_strategies.py --active 0.33 --minutes 300 --prestiges 6` at growth
+   8.0 and read the now-populated P1→P2→P3 columns and cadence-gap table.
+3. Acceptance: P2 and P3 now land within the 300-min horizon, and the gap between
+   consecutive prestiges grows gently (a stretch, not a cliff). If P2 still never lands
+   at 8.0, report the growth value that does — a separate owner decision, not a silent
+   bundle.
+4. Port the validated formula to Godot; `shell_smoke` PASS; a Godot prestige in the live
+   shell produces a next-gate value equal to `previous_gate × 8`, not `route_earnings × 8`
+   (verified by a headless assertion, see plan).
 
 ## Save compatibility
 
