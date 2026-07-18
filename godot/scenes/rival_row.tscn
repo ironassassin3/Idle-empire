@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://rivalrow001"]
+[gd_scene load_steps=3 format=3 uid="uid://rivalrow001"]
 
 [ext_resource type="Script" path="res://scripts/ui/rival_row.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/identity_medallion.gd" id="2"]
 
 [node name="RivalRow" type="PanelContainer"]
 custom_minimum_size = Vector2(0, 130)
@@ -21,6 +22,11 @@ theme_override_constants/separation = 4
 
 [node name="Top" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
+
+[node name="Medal" type="Control" parent="Margin/VBox/Top"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+script = ExtResource("2")
 
 [node name="NameLabel" type="Label" parent="Margin/VBox/Top"]
 layout_mode = 2

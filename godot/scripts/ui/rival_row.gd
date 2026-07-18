@@ -5,7 +5,9 @@ signal action_pressed(index: int, action: String)
 const _RivalSystem = preload("res://scripts/systems/rival_system.gd")
 
 var rival_index: int = -1
+var _accent := Color(0, 0, 0, 0)
 
+@onready var _medal: IdentityMedallion = $Margin/VBox/Top/Medal
 @onready var _name: Label = $Margin/VBox/Top/NameLabel
 @onready var _badge: Label = $Margin/VBox/Top/BadgeLabel
 @onready var _leader: Label = $Margin/VBox/LeaderLabel
@@ -51,11 +53,21 @@ func _refresh() -> void:
 	if rival_index < 0 or rival_index >= GameState.rivals.size():
 		return
 	var r: Dictionary = GameState.rivals[rival_index]
-	var symbol: String = str(r.get("symbol", ""))
 	var status: String = str(r.get("status", "Active"))
 	var eliminated: bool = status == "Eliminated"
 	var at_war: bool = bool(r.get("at_war", false))
-	_name.text = "%s %s" % [symbol, r.get("name", "?")] if not symbol.is_empty() else str(r.get("name", "?"))
+	_name.text = str(r.get("name", "?"))
+	var fac_color: Color = r.get("color", GameTheme.GOLD)
+	_medal.glyph_key = str(r.get("faction_key", ""))
+	_medal.tint = fac_color
+	_medal.dimmed = eliminated
+	_name.add_theme_color_override(
+		"font_color",
+		GameTheme.TEXT_MUTED if eliminated else fac_color.lerp(Color.WHITE, 0.35))
+	var new_accent := Color(GameTheme.CHIP_BORDER, 0.6) if eliminated else Color(fac_color, 0.9)
+	if new_accent != _accent:
+		_accent = new_accent
+		queue_redraw()
 	if eliminated:
 		_badge.text = "ELIMINATED"
 		_badge.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
@@ -111,3 +123,10 @@ func _set_action_labels() -> void:
 		_negotiate.text = "Needs\n5 heat"
 	else:
 		_negotiate.text = "Negotiate"
+
+
+func _draw() -> void:
+	# Faction accent edge — same left-bar idiom as building rows' card accent.
+	if _accent.a > 0.0:
+		draw_rect(Rect2(0, 0, 3.0, size.y), _accent)
+		draw_rect(Rect2(0, 0, size.x, size.y), Color(_accent, 0.16), false, 1.0)
