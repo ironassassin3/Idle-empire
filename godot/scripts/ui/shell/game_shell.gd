@@ -158,6 +158,7 @@ func _build_stage_and_chrome() -> void:
 func _build_transient_surfaces() -> void:
 	_notif_shell = PanelContainer.new()
 	_notif_shell.visible = false
+	_notif_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
 	add_child(_notif_shell)
 	_notif_shell.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -169,6 +170,7 @@ func _build_transient_surfaces() -> void:
 	_notif_shell.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_notif = Label.new()
 	_notif.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_notif.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notif.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 	_notif_shell.add_child(_notif)
 	_notif_default_font_size = GameTheme.scaled_font(12)
@@ -317,7 +319,9 @@ func _refresh_all() -> void:
 	if not GameState.event_outcome.is_empty():
 		_notif.text = GameState.event_outcome
 		_notif.add_theme_color_override("font_color", GameTheme.GOLD)
+		_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
 		_notif_shell.visible = true
+		_position_notif()
 
 
 func _sync_gap_rect() -> void:
@@ -325,6 +329,9 @@ func _sync_gap_rect() -> void:
 	if r != _last_gap_rect:
 		_last_gap_rect = r
 		_stage.call("set_gap_rect", r)
+		_position_tutorial()
+		if _notif_shell.visible:
+			_position_notif()
 
 
 func _refresh_tutorial(blocking: bool) -> void:
@@ -332,8 +339,12 @@ func _refresh_tutorial(blocking: bool) -> void:
 		_tutorial_shell.visible = true
 		_tutorial_banner.text = _TutorialSystem.current_text(GameState) + "\n(tap to continue)"
 		_position_tutorial()
+		if _notif_shell.visible:
+			_position_notif()
 	else:
 		_tutorial_shell.visible = false
+		if _notif_shell.visible:
+			_position_notif()
 
 
 func _position_tutorial() -> void:
@@ -347,6 +358,21 @@ func _position_tutorial() -> void:
 	var below := vh - gap.end.y  # sheet-top → screen-bottom, in the CENTER_BOTTOM frame
 	_tutorial_shell.offset_bottom = -(below + 12.0)
 	_tutorial_shell.offset_top = _tutorial_shell.offset_bottom - 80.0
+
+
+func _position_notif() -> void:
+	# Same stage-gap home as the tutorial — never cover list rows or the dock.
+	var gap := _last_gap_rect
+	if gap.size.y <= 0.0:
+		return
+	var vh := float(get_viewport().get_visible_rect().size.y)
+	var below := vh - gap.end.y
+	var lift := 12.0
+	if _tutorial_shell.visible:
+		lift += 88.0
+	var h := maxf(36.0, _notif_shell.get_combined_minimum_size().y)
+	_notif_shell.offset_bottom = -(below + lift)
+	_notif_shell.offset_top = _notif_shell.offset_bottom - h
 
 
 func _on_tutorial_banner_input(event: InputEvent) -> void:
@@ -368,16 +394,25 @@ func _on_notification(message: String, color: Color) -> void:
 	_notif_shell.visible = true
 	var is_goal: bool = _is_goal_notification(message, color)
 	var is_autobuy: bool = AudioManager.is_autobuy_message(message)
+	var is_achievement := message.begins_with("Achievement:")
 	if is_goal or is_autobuy:
+		_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
 		_notif.add_theme_font_size_override("font_size", maxi(_notif_default_font_size + 2, 15))
 		_notif_timer = 4.0
 		if is_autobuy:
 			_notif.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
 		if is_goal and _director != null:
 			_director.call("announce_goal_complete", message.split("\n")[0])
+	elif is_achievement:
+		_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_achievement_toast_style())
+		_notif.add_theme_font_size_override("font_size", maxi(_notif_default_font_size + 2, 14))
+		_notif.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+		_notif_timer = 3.5
 	else:
+		_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
 		_notif.add_theme_font_size_override("font_size", _notif_default_font_size)
 		_notif_timer = 2.5
+	_position_notif()
 	var cue := AudioManager.cue_for_notification(message, color)
 	if not cue.is_empty() and cue != "rankup":
 		AudioManager.play(cue)
@@ -386,6 +421,7 @@ func _on_notification(message: String, color: Color) -> void:
 func _clear_notif() -> void:
 	_notif.text = ""
 	_notif.add_theme_font_size_override("font_size", _notif_default_font_size)
+	_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
 	_notif_shell.visible = false
 
 

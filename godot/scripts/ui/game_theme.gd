@@ -286,6 +286,18 @@ static func ink_toast_style() -> StyleBoxFlat:
 	return sb
 
 
+static func ink_achievement_toast_style() -> StyleBoxFlat:
+	var sb := ink_toast_style()
+	sb.bg_color = Color("120c1c", 0.94)
+	sb.border_color = Color(GOLD_BRIGHT, 0.85)
+	sb.set_border_width_all(1)
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 7.0
+	sb.content_margin_bottom = 7.0
+	return sb
+
+
 static func ink_overlay_modal_style() -> StyleBox:
 	var sb := _mm_slice_style(TEX_MODAL, _SLICE_MARGIN, 16.0)
 	if sb != null:
