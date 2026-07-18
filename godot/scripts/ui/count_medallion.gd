@@ -93,69 +93,7 @@ func _draw() -> void:
 			HORIZONTAL_ALIGNMENT_CENTER, -1, bfs, GameTheme.GOLD_TEXT_DARK)
 
 
-## Code-drawn business glyphs (ART_POLICY: primitives only — no bitmap/AI icons).
-## Each is a bold, single-colour mark sized to the disc so it reads at ~40px.
+## Business glyphs live in the shared SigilGlyphs library so every list
+## screen's medallion draws from one visual language.
 func _draw_business_glyph(key: String, c: Vector2, radius: float, col: Color) -> void:
-	var g := radius * 0.56
-	var lw := maxf(1.8, radius * 0.14)
-	match key:
-		"dealer":  # product packet — diamond
-			draw_colored_polygon(PackedVector2Array([
-				c + Vector2(0, -g), c + Vector2(g * 0.72, 0),
-				c + Vector2(0, g), c + Vector2(-g * 0.72, 0)]), col)
-		"racket":  # protection — shield
-			draw_colored_polygon(PackedVector2Array([
-				c + Vector2(0, -g), c + Vector2(g * 0.74, -g * 0.5),
-				c + Vector2(g * 0.74, g * 0.18), c + Vector2(0, g),
-				c + Vector2(-g * 0.74, g * 0.18), c + Vector2(-g * 0.74, -g * 0.5)]), col)
-		"chop":  # chop shop — open-end wrench
-			draw_line(c + Vector2(-g * 0.6, g * 0.6), c + Vector2(g * 0.28, -g * 0.28), col, lw * 1.3)
-			draw_arc(c + Vector2(g * 0.46, -g * 0.46), g * 0.34,
-				deg_to_rad(-40), deg_to_rad(200), 14, col, lw)
-		"betting":  # sports book — die showing three
-			draw_rect(Rect2(c - Vector2(g * 0.82, g * 0.82), Vector2(g * 1.64, g * 1.64)), col, false, lw)
-			for p in [Vector2(-g * 0.42, -g * 0.42), Vector2.ZERO, Vector2(g * 0.42, g * 0.42)]:
-				draw_circle(c + p, g * 0.17, col)
-		"pawn":  # pawnbroker — three balls
-			draw_circle(c + Vector2(-g * 0.5, -g * 0.22), g * 0.42, col)
-			draw_circle(c + Vector2(g * 0.5, -g * 0.22), g * 0.42, col)
-			draw_circle(c + Vector2(0, g * 0.46), g * 0.42, col)
-		"loan":  # loan shark — percent
-			draw_line(c + Vector2(g * 0.62, -g * 0.7), c + Vector2(-g * 0.62, g * 0.7), col, lw)
-			draw_circle(c + Vector2(-g * 0.44, -g * 0.44), g * 0.24, col)
-			draw_circle(c + Vector2(g * 0.44, g * 0.44), g * 0.24, col)
-		"casino":  # underground casino — spade
-			draw_circle(c + Vector2(-g * 0.4, g * 0.08), g * 0.42, col)
-			draw_circle(c + Vector2(g * 0.4, g * 0.08), g * 0.42, col)
-			draw_colored_polygon(PackedVector2Array([
-				c + Vector2(0, -g), c + Vector2(g * 0.72, g * 0.18),
-				c + Vector2(-g * 0.72, g * 0.18)]), col)
-			draw_colored_polygon(PackedVector2Array([
-				c + Vector2(-g * 0.16, g * 0.1), c + Vector2(g * 0.16, g * 0.1),
-				c + Vector2(g * 0.3, g * 0.72), c + Vector2(-g * 0.3, g * 0.72)]), col)
-		"club":  # nightclub — martini
-			draw_colored_polygon(PackedVector2Array([
-				c + Vector2(-g * 0.78, -g * 0.62), c + Vector2(g * 0.78, -g * 0.62),
-				c + Vector2(0, g * 0.18)]), col)
-			draw_line(c + Vector2(0, g * 0.18), c + Vector2(0, g * 0.72), col, lw)
-			draw_line(c + Vector2(-g * 0.5, g * 0.72), c + Vector2(g * 0.5, g * 0.72), col, lw)
-		"dock":  # smuggling — anchor
-			draw_arc(c + Vector2(0, -g * 0.68), g * 0.26, 0, TAU, 14, col, lw)
-			draw_line(c + Vector2(0, -g * 0.42), c + Vector2(0, g * 0.72), col, lw)
-			draw_line(c + Vector2(-g * 0.42, -g * 0.12), c + Vector2(g * 0.42, -g * 0.12), col, lw)
-			draw_arc(c + Vector2(0, g * 0.2), g * 0.7, deg_to_rad(25), deg_to_rad(155), 16, col, lw)
-		"arms":  # arms broker — crosshair
-			draw_arc(c, g * 0.74, 0, TAU, 24, col, lw)
-			draw_line(c + Vector2(0, -g), c + Vector2(0, -g * 0.36), col, lw)
-			draw_line(c + Vector2(0, g), c + Vector2(0, g * 0.36), col, lw)
-			draw_line(c + Vector2(-g, 0), c + Vector2(-g * 0.36, 0), col, lw)
-			draw_line(c + Vector2(g, 0), c + Vector2(g * 0.36, 0), col, lw)
-			draw_circle(c, g * 0.14, col)
-		"hq":  # syndicate HQ — crown
-			draw_colored_polygon(PackedVector2Array([
-				c + Vector2(-g * 0.82, g * 0.5), c + Vector2(-g * 0.82, -g * 0.15),
-				c + Vector2(-g * 0.4, g * 0.18), c + Vector2(0, -g * 0.55),
-				c + Vector2(g * 0.4, g * 0.18), c + Vector2(g * 0.82, -g * 0.15),
-				c + Vector2(g * 0.82, g * 0.5)]), col)
-		_:
-			draw_circle(c, g * 0.5, col)
+	SigilGlyphs.draw_glyph(self, key, c, radius, col)
