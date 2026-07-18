@@ -11,9 +11,10 @@ const MIN_BAND_H := 64.0
 const MIN_TAP_H := 48.0
 
 const INK := Color(0.031, 0.039, 0.098)
-const INK_GOLD := Color(0.784, 0.639, 0.353, 0.157)
-const INK_GOLD_BRIGHT := Color(0.925, 0.792, 0.49)
-const INK_GOLD_DEEP := Color(0.541, 0.439, 0.235, 0.314)
+# Violet chrome (matches city_view after 83cde69) — not warm brass.
+const INK_GOLD := Color(0.541, 0.361, 1.0, 0.157)
+const INK_GOLD_BRIGHT := Color(0.694, 0.549, 1.0)
+const INK_GOLD_DEEP := Color(0.541, 0.361, 1.0, 0.314)
 const INK_GLASS := Color(0.102, 0.118, 0.157)
 const INK_BONE := Color(0.91, 0.878, 0.831)
 

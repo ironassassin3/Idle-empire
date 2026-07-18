@@ -5,8 +5,8 @@ extends RefCounted
 
 const INK_PANEL := Color("0c0c14")
 const INK_BG := Color("08070a")
-const GOLD := Color("c8a35a")
-const GOLD_BRIGHT := Color("ecca7d")
+const GOLD := Color("8a5cff")
+const GOLD_BRIGHT := Color("b18cff")
 
 const PANEL_SIZE := 256
 const CARD_SIZE := 256
