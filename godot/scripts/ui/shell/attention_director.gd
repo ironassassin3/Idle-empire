@@ -188,13 +188,17 @@ func _ambient_item() -> Dictionary:
 		}
 	# Real Phase-55 goals beat soft coaching — the rail used to mislabel
 	# next_focus_hint as "GOAL" while actual goals only lived in Stats.
-	var goals: Array = _GoalSystem.current_goals(GameState, 1)
-	if not goals.is_empty() and typeof(goals[0]) == TYPE_DICTIONARY:
-		var g: Dictionary = goals[0]
+	for raw in _GoalSystem.current_goals(GameState, 4):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var g: Dictionary = raw
 		var prog: Dictionary = _GoalSystem.progress_for(GameState, g)
 		var cur := float(prog.get("current", 0.0))
 		var tgt := float(prog.get("target", 1.0))
 		var frac := clampf(cur / tgt, 0.0, 1.0) if tgt > 0.0 else 0.0
+		# Skip met-but-not-yet-acked goals (check_goals runs on the sim tick).
+		if frac >= 1.0:
+			continue
 		return {
 			"kind": "goal", "prio": PRIO_GOAL_HINT,
 			"text": str(g.get("label", "Goal")),
