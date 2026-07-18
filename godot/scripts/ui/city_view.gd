@@ -480,9 +480,13 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 			_draw_crown_watermark(cx, by - 6.0, t, 0.5)
 		_:
 			draw_rect(Rect2(bx, by, bw, bh), body)
-	# Neon facade trim + hash flicker windows.
-	var win_rows := 1 + tier
-	var win_cols := 2 + tier / 2
+	# Tall towers get a shaded edge so they read as massed volume, not slab.
+	if bh > 120.0:
+		draw_rect(Rect2(bx + bw * 0.8, by, bw * 0.2, bh), Color(0.0, 0.0, 0.0, 0.18))
+	# Neon facade trim + hash flicker windows. Rows follow the facade's real
+	# height (a fixed 1+tier left tall hero towers 80% blank wall).
+	var win_rows := clampi(int((bh - 24.0) / 16.0), 1, 16)
+	var win_cols := clampi(2 + tier / 2, 2, maxi(2, int(bw / 14.0)))
 	for wy in win_rows:
 		for wx in win_cols:
 			var wseed := seed * 31 + wx * 7 + wy * 13
