@@ -298,10 +298,17 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 	var sw := VIRTUAL_SIZE.x
 	var sh := VIRTUAL_SIZE.y
 	var drift := t * 4.0 if not GameTheme.ui_reduced_motion() else 0.0
-	# Layer 0 — deep haze gradient bands (wider portrait read).
-	draw_rect(Rect2(0, 0, sw, sh * 0.45), SKY_BACK)
-	draw_rect(Rect2(0, sh * 0.35, sw, sh * 0.25), SKY_MID)
-	draw_rect(Rect2(0, sh * 0.55, sw, sh * 0.25), SKY_HAZE)
+	# Layer 0 — stepped night gradient (study idiom). No flat-band seams, and
+	# the haze tail is damped to 60% so the sky stays deep, not washed.
+	var grad_h := sh * 0.8
+	var grad_steps := 24
+	for gi in grad_steps:
+		var gt := float(gi) / float(grad_steps - 1)
+		var gcol := SKY_BACK.lerp(SKY_MID, clampf(gt / 0.55, 0.0, 1.0))
+		if gt > 0.55:
+			gcol = gcol.lerp(SKY_HAZE, (gt - 0.55) / 0.45 * 0.6)
+		draw_rect(Rect2(0, grad_h * float(gi) / float(grad_steps), sw,
+				grad_h / float(grad_steps) + 1.0), gcol)
 	# Distant city glow banked on the horizon — warms the empty upper sky so
 	# even a tier-0 empire reads as "a city at night," not a flat void.
 	var glow_y := sh * 0.5
