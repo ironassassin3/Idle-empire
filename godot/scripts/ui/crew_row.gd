@@ -4,9 +4,18 @@ signal adjust_pressed(role_key: String, delta: int)
 
 const _CrewSystem = preload("res://scripts/systems/crew_system.gd")
 
+# Per-role identity hues from existing theme tokens (no new palette entries).
+const ROLE_TINTS := {
+	"protection": GameTheme.JEWEL_TEAL,
+	"collection": GameTheme.GREEN,
+	"smuggling": GameTheme.JEWEL_MAGENTA,
+	"territory": GameTheme.GOLD,
+	"heat": GameTheme.SIREN_BLUE,
+}
+
 var role_key: String = ""
 
-@onready var _icon: Label = $Margin/HBox/IconLabel
+@onready var _medal: IdentityMedallion = $Margin/HBox/Medal
 @onready var _name: Label = $Margin/HBox/Info/NameLabel
 @onready var _effect: Label = $Margin/HBox/Info/EffectLabel
 @onready var _detail: Label = $Margin/HBox/Info/DetailLabel
@@ -17,7 +26,8 @@ var role_key: String = ""
 
 func setup(key: String, icon: String, role_name: String, detail: String) -> void:
 	role_key = key
-	_icon.text = icon
+	_medal.glyph_key = "crew_%s" % key
+	_medal.tint = ROLE_TINTS.get(key, GameTheme.GOLD)
 	_name.text = role_name
 	_detail.text = detail
 	_refresh()
@@ -37,7 +47,6 @@ func _ready() -> void:
 
 
 func _apply_label_scale() -> void:
-	_icon.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	GameTheme.apply_row_title(_name, 14)
 	_effect.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 	_detail.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))

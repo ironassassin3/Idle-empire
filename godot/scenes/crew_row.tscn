@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://crewrow001"]
+[gd_scene load_steps=3 format=3 uid="uid://crewrow001"]
 
 [ext_resource type="Script" path="res://scripts/ui/crew_row.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/identity_medallion.gd" id="2"]
 
 [node name="CrewRow" type="PanelContainer"]
 custom_minimum_size = Vector2(0, 88)
@@ -17,14 +18,11 @@ theme_override_constants/margin_bottom = 6
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="IconLabel" type="Label" parent="Margin/HBox"]
-custom_minimum_size = Vector2(28, 0)
+[node name="Medal" type="Control" parent="Margin/HBox"]
+custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_colors/font_color = Color(0.925, 0.792, 0.49, 1)
-theme_override_font_sizes/font_size = 14
-text = "P"
-horizontal_alignment = 1
+script = ExtResource("2")
 
 [node name="Info" type="VBoxContainer" parent="Margin/HBox"]
 layout_mode = 2
