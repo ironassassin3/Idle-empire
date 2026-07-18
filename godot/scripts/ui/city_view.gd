@@ -349,8 +349,12 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		draw_line(Vector2(ax - aw * 0.5, atop), Vector2(ax + aw * 0.5, atop), Color(SILHOUETTE_RIM, 0.5), 1.0)
 		# Slim antenna mast + red aviation blip on the crown.
 		draw_line(Vector2(ax, atop), Vector2(ax, atop - 10.0), Color(SILHOUETTE_RIM, 0.4), 1.0)
-		if _hash01(a * 41 + 3, t * 1.5) > 0.5:
-			draw_rect(Rect2(ax - 1.0, atop - 11.0, 2.0, 2.0), Color(NEON_RED, 0.5))
+		var beacon_on := _hash01(a * 41 + 3, t * 1.5) > 0.5
+		if _alert_level >= 1 and not GameTheme.ui_reduced_motion():
+			beacon_on = int(t * 5.0 + float(a)) % 2 == 0
+		if beacon_on:
+			var beacon_a := 0.5 if _alert_level == 0 else 0.9
+			draw_rect(Rect2(ax - 1.0, atop - 11.0, 2.0, 2.0), Color(NEON_RED, beacon_a))
 		# A sparse column of lit windows so the tower reads as inhabited.
 		for wy in 4:
 			if _hash_flicker(a * 19 + wy * 7, t):
@@ -493,6 +497,10 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 			var wseed := seed * 31 + wx * 7 + wy * 13
 			if not _hash_flicker(wseed, t):
 				continue
+			# The city lies low when the police circle: a deterministic share of
+			# windows goes dark at warn (25%) and critical (50%). Never at calm.
+			if _alert_level > 0 and _hash01(wseed * 7 + 1, 0.0) < 0.25 * float(_alert_level):
+				continue
 			var wxp := bx + 8.0 + wx * ((bw - 16.0) / maxf(1.0, float(win_cols - 1)))
 			var wyp := by + 14.0 + wy * 16.0
 			if wyp + 8.0 > ground_y - 6.0:
@@ -501,6 +509,11 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 	# Rim light — separates facades from haze band at small portrait sizes.
 	draw_line(Vector2(bx, by), Vector2(bx, ground_y - bh), Color(SILHOUETTE_RIM, 0.35), 1.0)
 	draw_rect(Rect2(bx, ground_y - bh - 5.0, bw, 4.0), Color(neon, 0.65 + 0.3 * sin(t * 2.0 + seed)))
+	# Warn+: a hot aviation beacon on the crown — danger reads in a still frame.
+	if _alert_level >= 1:
+		var bk_on := true if GameTheme.ui_reduced_motion() else int(t * 5.0 + float(seed)) % 2 == 0
+		if bk_on:
+			draw_circle(Vector2(cx, ground_y - bh - 9.0), 2.0, Color(NEON_RED, 0.85))
 	# Remember this facade's neon so it can bleed into the wet street later.
 	_reflect_points.append([cx, neon])
 	# Neon marquee on the building's shoulder — a framed blade sign lit in the
@@ -785,8 +798,9 @@ func _draw_atmosphere(heat: float, rank_idx: int, t: float, tier: int) -> void:
 			var frac := float(i) / float(steps)
 			var intensity := clampf((heat - 15.0) / 85.0, 0.0, 1.0) * (1.0 - frac * 0.65)
 			var band_h := sh * 0.12
+			var band_a := 0.22 if heat < 60.0 else 0.30
 			draw_rect(Rect2(0, band_h * frac, sw, band_h),
-					Color(INK_CRIMSON.r, INK_CRIMSON.g, INK_CRIMSON.b, intensity * 0.22))
+					Color(INK_CRIMSON.r, INK_CRIMSON.g, INK_CRIMSON.b, intensity * band_a))
 	# Rotating blue siren slice at 60%+ (not pygame full-rect flash).
 	if heat >= 60.0:
 		if GameTheme.ui_reduced_motion() or int(t * 3.0) % 2 == 0:
