@@ -28,6 +28,12 @@ const NEON_RED := Color8(220, 60, 70)
 const NEON_SIGN := Color8(79, 224, 208)
 # Cyberpunk mixed-neon skyline: violet lead, magenta + cyan support.
 const NEON_SET := [Color8(138, 92, 255), Color8(229, 69, 126), Color8(47, 214, 198)]
+# Distant lit-window mix — warm amber is one voice among the city's neon,
+# not the only one. Seeded per tower, so the mix is stable frame-to-frame.
+const WINDOW_MIX := [
+	Color8(255, 180, 70), Color8(138, 92, 255), Color8(47, 214, 198),
+	Color8(229, 69, 126), Color8(255, 180, 70), Color8(138, 92, 255),
+]
 
 @onready var _empire_label: Label = $EmpireLabel
 
@@ -343,7 +349,8 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		draw_rect(Rect2(fx, far_base - fh, fw, fh), far_col)
 		# Faint lit windows scattered through the distant towers.
 		if (i * 13) % 3 == 0:
-			draw_rect(Rect2(fx + fw * 0.35, far_base - fh * 0.55, 2.0, 2.0), Color(NEON_WARM, 0.22))
+			draw_rect(Rect2(fx + fw * 0.35, far_base - fh * 0.55, 2.0, 2.0),
+					Color(WINDOW_MIX[(i * 7) % WINDOW_MIX.size()], 0.22))
 	# Three tall distant skyscrapers punching into the upper sky — gives the
 	# empty top third a believable downtown ridge even at tier 0.
 	var anchor_x := [sw * 0.2, sw * 0.52, sw * 0.82]
@@ -365,7 +372,8 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		# A sparse column of lit windows so the tower reads as inhabited.
 		for wy in 4:
 			if _hash_flicker(a * 19 + wy * 7, t):
-				draw_rect(Rect2(ax - aw * 0.25, atop + 10.0 + wy * 14.0, 2.0, 3.0), Color(NEON_WARM, 0.24))
+				draw_rect(Rect2(ax - aw * 0.25, atop + 10.0 + wy * 14.0, 2.0, 3.0),
+						Color(WINDOW_MIX[(a * 5 + wy) % WINDOW_MIX.size()], 0.24))
 	# Distant mid-parallax silhouettes (always present, density grows with tier).
 	var back_h := 44.0 + tier * 18.0
 	var back_y := sh * 0.58 - back_h
@@ -377,7 +385,8 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 		draw_rect(Rect2(bx, back_y + back_h - bh, bw, bh), Color(SILHOUETTE_BACK, 0.92))
 		# A few nearer distant towers carry a dim warm window so the ridge lives.
 		if i % 3 == 1:
-			draw_rect(Rect2(bx + bw * 0.4, back_y + back_h - bh + 4.0, 2.0, 3.0), Color(NEON_WARM, 0.35))
+			draw_rect(Rect2(bx + bw * 0.4, back_y + back_h - bh + 4.0, 2.0, 3.0),
+					Color(WINDOW_MIX[(i * 11 + 2) % WINDOW_MIX.size()], 0.35))
 
 
 func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: float, ground_y: float) -> void:
