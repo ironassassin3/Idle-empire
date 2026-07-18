@@ -439,6 +439,9 @@ class PrestigeManager:
         except Exception:
             pass
 
+        # Capture the gate just satisfied BEFORE incrementing the count, so the
+        # next gate ladders off it (not off however far this run overshot).
+        _prev_gate = prestige_earnings_required(state)
         state.prestige_tokens    += influence_gain
         state.influence          = getattr(state, 'influence', 0) + influence_gain
         state._prestige_count    = getattr(state, '_prestige_count', 0) + 1
@@ -454,7 +457,7 @@ class PrestigeManager:
         # Set the escalating bar for the NEXT prestige: a full run ahead of where
         # the player is now. This paces prestiges apart and makes each a bigger
         # goal (the head start would otherwise allow instant re-prestige).
-        state._next_prestige_earnings = prestige_route_earnings(state) * PRESTIGE_EARNINGS_GROWTH
+        state._next_prestige_earnings = _prev_gate * PRESTIGE_EARNINGS_GROWTH
 
         # Reset balance (lifetime_earnings keeps accumulating across prestiges)
         state.balance = 0.0
