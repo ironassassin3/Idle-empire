@@ -7,6 +7,7 @@ signal hire_pressed(index: int)
 var manager_index: int = -1
 var _affordance: int = GameTheme.RowAffordance.LOCKED
 
+@onready var _medal: IdentityMedallion = $Margin/VBox/Header/Medal
 @onready var _name: Label = $Margin/VBox/Header/NameLabel
 @onready var _title: Label = $Margin/VBox/Header/TitleLabel
 @onready var _badge: Label = $Margin/VBox/Header/BadgeLabel
@@ -24,6 +25,11 @@ func setup(index: int) -> void:
 	_title.text = m.title
 	_desc.text = m.flavor
 	_bonus.text = m.bonus_desc
+	var bkey := ""
+	if m.building_index >= 0 and m.building_index < SigilGlyphs.BUILDING_KEYS.size():
+		bkey = SigilGlyphs.BUILDING_KEYS[m.building_index]
+	_medal.glyph_key = bkey
+	_medal.tint = GameTheme.building_neon(bkey)
 	_refresh()
 
 
@@ -96,6 +102,7 @@ func _refresh() -> void:
 		return
 	var m := GameState.managers[manager_index]
 	modulate = Color.WHITE
+	_medal.dimmed = not m.hired
 	if m.hired:
 		var st: Dictionary = _ManagerSystem.employee_status(GameState, manager_index)
 		_status.text = st.get("text", "On payroll")
