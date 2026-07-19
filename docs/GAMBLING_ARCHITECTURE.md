@@ -124,32 +124,33 @@ helpers from the Phase 92 prototype work do **not** exist — and are not needed
 ## 5. Cash-wager casino (as built — `resolve_wager` + overlay BET path)
 
 The casino shares the wheel but is a different beast from the free spin: you **stake real
-balance and can lose it**. It exists as a deliberate **cash sink**. Its entire safety model
-is one invariant, not the six free-spin levers:
+balance and can lose it**. It exists as a deliberate **cash sink**. It is **pure RNG** —
+there is no timing/skill input — and its entire safety model is one invariant, not the six
+free-spin levers:
 
-> **Expected value < 1× at every skill level — the house always keeps an edge.**
+> **Expected value = `WAGER_RTP` = 0.90 < 1× for every player — the house always keeps a
+> fixed 10% edge.**
 
 **How the edge can't leak (the key design trick).** Payout is
-`stake × band × RTP(skill)`, split into two independent parts:
+`stake × band × WAGER_RTP`, split into two independent parts:
 
 | Part | Source | Property |
 |---|---|---|
 | **Band** (variance / jackpot) | RNG draw over `WAGER_BANDS` weighted by `WAGER_WEIGHTS` | Mean is pinned to **exactly 1.0** (`Σ band·weight = 1.0`), so the segment RNG contributes **zero** net EV — it only adds spread. |
-| **RTP** (the house edge) | `wager_rtp(s) = WAGER_RTP_BASE + WAGER_RTP_SKILL·s` | `0.80` (random) … `0.97` (perfect timing). **Capped below 1**, so EV = 1.0 × RTP(s) = RTP(s) < 1 always. |
+| **RTP** (the house edge) | `WAGER_RTP := 0.90`, a single constant | **Fixed below 1**, so EV = 1.0 × 0.90 = 0.90 always. Nothing the player does moves it. |
 
-Because EV is `1.0 × RTP(s)`, **skill nudges the odds but can never flip them** — even a
-0ms-perfect bot bleeds ~3%/wager. This is why "unlimited stakes" is safe: there is no
-aim-the-jackpot exploit (timing sets RTP, **not** which band you draw), and no positive-EV
-grind. Winnings still feed `balance`/`lifetime_earnings` but **not** `prestige_route_earnings`.
+Because EV is `1.0 × WAGER_RTP`, **no play pattern can flip the odds** — every player bleeds
+~10%/wager long-run. This is why "unlimited stakes" is safe: there is no aim-the-jackpot
+exploit (nothing the player does picks the band), and no positive-EV grind. Winnings still
+feed `balance`/`lifetime_earnings` but **not** `prestige_route_earnings`.
 
 **Validated** (`sim_gambling.py --wager`, mirrored + re-checked in-engine via
-`scripts/tools/wager_probe.gd`):
+`scripts/tools/wager_probe.gd`, which also asserts the exact payout invariant
+`payout == stake × band × 0.90` per wager):
 
 ```
-profile              EV(x)   house edge
-random tap           0.816     18.4%
-expert (60ms)        0.873     12.7%
-perfect bot (0ms)    0.971      2.9%   ← worst case, still < 1.0 → PASS
+profile                        EV(x)   house edge
+any player (no skill axis)     0.895      10.5%   ← < 1.0 → PASS
 ```
 
 ~83% of wagers return less than the stake — the mathematical consequence of a mean-1.0
@@ -157,13 +158,16 @@ shape with a fat 25× jackpot tail (bigger jackpot ⇒ more frequent small losse
 **feel** knob (`WAGER_WEIGHTS` / `WAGER_JACKPOT`), not a safety one; retune freely as long as
 `Σ band·weight` stays 1.0.
 
-**View / flow.** The overlay's `BetRow` (¼ / ½ / Max presets) sets `_stake`; **BET $X** stages
-a round via `start_wager_round()` (rolls a random sweet-spot). The wheel switches to
-**skill-meter mode** (`set_sweet_spot`) — a dim track with a graded AIM zone, *not* a payout
-ring, so it never implies an outcome. STOP → `place_wager(position, stake)` → `resolve_wager`
-debits the stake, draws the band, scales by RTP(timing), credits the payout; a loss is shown
-in red. **Telemetry:** `gamble_wager_resolve` logs `lifetime_wager_net_ratio` (net / wagered)
-— expected negative; a *positive* trend means the edge is broken and is a hard tripwire.
+**View / flow.** The overlay's `BetRow` (¼ / ½ / Max presets) sets `_stake`; **RISK $X**
+resolves instantly at press — `place_wager(stake)` → `resolve_wager` debits the stake, draws
+the band, scales by the fixed RTP, credits the payout. The wheel then shows a cosmetic band
+ring (`make_wager_display`, widths are visual only) and **auto-spins** (`spin_to_band`) to
+settle on the drawn band — an honest reveal, not an input. Toast + sfx fire in
+`notify_wager_result` only after the needle lands, so sound never spoils the spin; closing
+mid-reveal skips the toast but the money already settled. **Telemetry:**
+`gamble_wager_resolve` logs `lifetime_wager_net_ratio` (net / wagered) — expected negative;
+a *positive* trend means the edge is broken and is a hard tripwire.
 
 **Save:** `lifetime_wagered` + `lifetime_wager_net` (survive prestige, migrate via
-`merge_save_gambling`); `wager_sweet_spot` is runtime-only.
+`merge_save_gambling`); `wager_sweet_spot` is vestigial (kept at `-1.0` for save-shape
+stability; nothing writes a real value).
