@@ -1308,31 +1308,31 @@ func gambling_wager_enabled() -> bool:
 	return GameConfig.GAMBLING_ENABLED and _GamblingSystem.WAGER_ENABLED
 
 
-## Stage a casino round: roll a fresh sweet-spot target, return it for the wheel.
-func start_wager_round() -> float:
-	return _GamblingSystem.roll_sweet_spot(self, _rng)
+## Cosmetic reveal ring for the overlay (visual only; odds live in the system).
+func wager_display_segments() -> Array:
+	return _GamblingSystem.make_wager_display()
 
 
-## Place a cash wager resolved at the marker position [0,1). Returns a
-## player-facing message; empty stake/insufficient funds return the failure copy.
-func place_wager(position: float, stake: float) -> String:
-	var res := _GamblingSystem.resolve_wager(self, position, stake, _rng)
+## Place a cash wager — pure RNG, resolved instantly (the wheel animation is a
+## cosmetic reveal). Returns the result dict; on success it includes "msg" for
+## the overlay status line. Toast + sfx fire in notify_wager_result, which the
+## overlay calls AFTER the reveal lands so sound doesn't spoil the outcome.
+func place_wager(stake: float) -> Dictionary:
+	var res: Dictionary = _GamblingSystem.resolve_wager(self, stake, _rng)
 	if not res.get("ok", false):
-		return str(res.get("reason", "Cannot bet"))
+		return res
 	_mark_ips_dirty()
 	stats_changed.emit()
 	var mult: float = float(res.get("multiplier", 0.0))
 	var net: float = float(res.get("net", 0.0))
-	var stake_in: float = float(res.get("stake", 0.0))
 	var win_net_ratio := 0.0
 	var wagered: float = float(gambling.get("lifetime_wagered", 0.0))
 	if wagered > 0.0:
 		win_net_ratio = float(gambling.get("lifetime_wager_net", 0.0)) / wagered
 	Telemetry.log_event("gamble_wager_resolve", {
-		"stake": stake_in,
+		"stake": float(res.get("stake", 0.0)),
 		"mult": mult,
 		"net": net,
-		"skill": float(res.get("skill", 0.0)),
 		"rtp": float(res.get("rtp", 0.0)),
 		"jackpot": bool(res.get("jackpot", false)),
 		"lifetime_wagered": wagered,
@@ -1340,16 +1340,30 @@ func place_wager(position: float, stake: float) -> String:
 		"lifetime_wager_net_ratio": win_net_ratio,
 	})
 	if res.get("jackpot", false):
+		res["msg"] = "BIG SCORE ×%.1f\n+%s" % [mult, FormatUtil.format_money(net)]
+	elif net > 0.0:
+		res["msg"] = "Paid off ×%.2f\n+%s" % [mult, FormatUtil.format_money(net)]
+	else:
+		res["msg"] = "Deal fell through\n%s" % FormatUtil.format_money(net)
+	return res
+
+
+## Player-facing feedback for a resolved wager. Split from place_wager so the
+## overlay can delay it until the reveal animation lands.
+func notify_wager_result(res: Dictionary) -> void:
+	if not res.get("ok", false):
+		return
+	var mult: float = float(res.get("multiplier", 0.0))
+	var net: float = float(res.get("net", 0.0))
+	if res.get("jackpot", false):
 		_play_sfx("rankup")
 		notification.emit("BIG SCORE ×%.0f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GOLD_BRIGHT)
-		return "BIG SCORE ×%.1f\n+%s" % [mult, FormatUtil.format_money(net)]
-	if net > 0.0:
+	elif net > 0.0:
 		_play_sfx("coin")
 		notification.emit("Paid off ×%.2f  +%s" % [mult, FormatUtil.format_money(net)], GameTheme.GREEN)
-		return "Paid off ×%.2f\n+%s" % [mult, FormatUtil.format_money(net)]
-	_play_sfx("click")
-	notification.emit("Deal fell through  %s" % FormatUtil.format_money(net), GameTheme.RED)
-	return "Deal fell through\n%s" % FormatUtil.format_money(net)
+	else:
+		_play_sfx("click")
+		notification.emit("Deal fell through  %s" % FormatUtil.format_money(net), GameTheme.RED)
 
 
 func activate_dragon_ability(key: String) -> bool:
