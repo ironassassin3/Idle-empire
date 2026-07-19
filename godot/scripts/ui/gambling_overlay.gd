@@ -3,10 +3,12 @@ extends CanvasLayer
 ##
 ## Two ways to play the same wheel:
 ##  • FREE SPIN — spends a banked free spin, positive-EV, never a cash loss.
-##  • BET $X    — stakes real balance on the skill-nudged RNG casino; the house
-##                keeps an edge (RTP < 1) so it can lose. Timing nudges the odds.
-## SPIN/BET starts a marker sweep; the button becomes STOP. STOP freezes the
-## marker and resolves the active mode (free spin vs wager) at that position.
+##                Starts a marker sweep; the button becomes STOP and the stop
+##                position (skill/timing) decides the payout.
+##  • RISK $X   — stakes real balance on the pure-RNG casino; the house keeps a
+##                fixed edge (RTP = 0.90) so it can lose. The wager resolves at
+##                press — the auto-spin that follows is a cosmetic reveal, and
+##                closing mid-reveal only skips the toast, never the money.
 
 const _Gambling = preload("res://scripts/systems/gambling_system.gd")
 const GameFonts = preload("res://scripts/ui/game_fonts.gd")
@@ -34,7 +36,7 @@ enum Mode { FREE, WAGER }
 var _phase: int = Phase.READY
 var _mode: int = Mode.FREE
 var _stake: float = 0.0
-var _active_stake: float = 0.0  # stake locked in when a wager sweep started
+var _active_res: Dictionary = {}  # resolved wager awaiting its reveal
 
 
 func _ready() -> void:
@@ -49,6 +51,7 @@ func _ready() -> void:
 	_ad_btn.pressed.connect(_on_ad_pressed)
 	_back_btn.pressed.connect(close)
 	_wheel.stopped.connect(_on_wheel_stopped)
+	_wheel.landed.connect(_on_wheel_landed)
 	Monetization.ad_reward_granted.connect(_on_ad_reward)
 
 
@@ -116,16 +119,18 @@ func _refresh() -> void:
 	_stake = minf(_stake, GameState.balance)  # balance may have shrunk
 
 	if _phase == Phase.SWEEPING:
-		if _mode == Mode.WAGER:
-			_prompt.text = "STOP in the sweet spot — the closer you land, the bigger the cut."
-		else:
-			_prompt.text = "STOP on a high multiplier — timing is everything."
-		_spin_btn.visible = true
-		_spin_btn.text = "STOP"
-		_spin_btn.disabled = false
 		_wager_row.visible = false
 		_bet_btn.visible = false
 		_ad_btn.visible = false
+		if _mode == Mode.WAGER:
+			# Pure RNG — no input during the reveal; the outcome is already drawn.
+			_prompt.text = "The wheel decides — pure luck, no skill."
+			_spin_btn.visible = false
+		else:
+			_prompt.text = "STOP on a high multiplier — timing is everything."
+			_spin_btn.visible = true
+			_spin_btn.text = "STOP"
+			_spin_btn.disabled = false
 		return
 
 	# Idle / done state.
@@ -179,22 +184,33 @@ func _on_bet_pressed() -> void:
 	if _phase == Phase.SWEEPING or not _can_wager():
 		return
 	_stake = clampf(_stake, _Gambling.WAGER_MIN_STAKE, GameState.balance)
-	_active_stake = _stake
+	var res: Dictionary = GameState.place_wager(_stake)
+	if not res.get("ok", false):
+		_status.text = str(res.get("reason", "Cannot bet"))
+		return
+	# Cash already settled — the spin below is a cosmetic reveal only.
+	_active_res = res
 	_mode = Mode.WAGER
-	var spot: float = GameState.start_wager_round()
-	_wheel.set_sweet_spot(spot)
-	_wheel.reset()
 	_status.text = ""
-	_wheel.start_sweep()
+	_wheel.set_wager_segments(GameState.wager_display_segments())
+	_wheel.reset()
+	_wheel.spin_to_band(float(res.get("band", 0.0)))
 	_phase = Phase.SWEEPING
 	_refresh()
 
 
+func _on_wheel_landed() -> void:
+	GameState.notify_wager_result(_active_res)
+	_status.text = str(_active_res.get("msg", ""))
+	_active_res = {}
+	_phase = Phase.DONE
+	_refresh()
+
+
 func _on_wheel_stopped(position: float) -> void:
-	if _mode == Mode.WAGER:
-		_status.text = GameState.place_wager(position, _active_stake)
-	else:
-		_status.text = GameState.resolve_gamble(position)
+	if _mode != Mode.FREE:
+		return
+	_status.text = GameState.resolve_gamble(position)
 	_phase = Phase.DONE
 	_refresh()
 

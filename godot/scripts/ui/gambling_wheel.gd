@@ -1,21 +1,29 @@
 extends Control
-## Luck Wheel sweep bar — the skill/timing input for GamblingSystem.
+## Luck Wheel sweep bar — free-spin skill input + casino reveal display.
 ##
-## A marker sweeps the segment bar; the player taps to stop it. The segment under
-## the marker (normalised position 0..1) is exactly what GameState.resolve_gamble
-## reads, so what you see is what you get. Pure view: holds no payout logic, only
-## the segment layout handed to it by the overlay.
+## Free-spin mode: a marker sweeps the segment bar; the player taps to stop it.
+## The segment under the marker (normalised position 0..1) is exactly what
+## GameState.resolve_gamble reads, so what you see is what you get.
+## Wager (casino) mode: pure RNG — the outcome is already resolved before the
+## needle moves; spin_to_band() plays a cosmetic auto-spin that settles on the
+## drawn band and emits `landed`. No input, no payout logic in this view.
 
 signal stopped(position: float)
+signal landed
 
 const _Gambling = preload("res://scripts/systems/gambling_system.gd")
+
+const REVEAL_TIME := 1.6   # seconds for the cosmetic casino reveal
+const REVEAL_LOOPS := 2.5  # extra full loops before settling
 
 var _segments: Array = []
 var _position: float = 0.0
 var _sweeping: bool = false
-# Wager (casino) mode: render a timing skill-meter with a sweet-spot target band
-# instead of the payout ring. -1 = free-spin ring mode.
-var _sweet_spot: float = -1.0
+var _wager_mode := false
+var _revealing := false
+var _reveal_t := 0.0
+var _reveal_from := 0.0
+var _reveal_travel := 0.0
 
 
 func _ready() -> void:
@@ -25,37 +33,59 @@ func _ready() -> void:
 
 func set_segments(segs: Array) -> void:
 	_segments = segs
-	_sweet_spot = -1.0
+	_wager_mode = false
 	queue_redraw()
 
 
-## Switch to casino skill-meter mode with a sweet-spot target at [0,1).
-func set_sweet_spot(spot: float) -> void:
-	_sweet_spot = spot
-	_segments = []
+## Casino mode: show the cosmetic band ring the reveal needle settles on.
+func set_wager_segments(segs: Array) -> void:
+	_segments = segs
+	_wager_mode = true
 	queue_redraw()
 
 
 func is_wager_mode() -> bool:
-	return _sweet_spot >= 0.0
+	return _wager_mode
 
 
 func has_round() -> bool:
-	return not _segments.is_empty() or _sweet_spot >= 0.0
+	return not _segments.is_empty()
 
 
 func reset() -> void:
 	_sweeping = false
+	_revealing = false
 	set_process(false)
 	_position = 0.0
 	queue_redraw()
 
 
 func start_sweep() -> void:
-	if not has_round():
+	if not has_round() or _revealing:
 		return
 	_position = randf()
 	_sweeping = true
+	set_process(true)
+
+
+## Cosmetic reveal: auto-spin the needle and settle it on a segment holding
+## `band`. The outcome is already resolved — this animation only presents it.
+func spin_to_band(band: float) -> void:
+	if _segments.is_empty():
+		return
+	var candidates: Array = []
+	for i in _segments.size():
+		if is_equal_approx(float(_segments[i]), band):
+			candidates.append(i)
+	if candidates.is_empty():
+		candidates.append(0)
+	var idx: int = candidates[randi() % candidates.size()]
+	var target := (float(idx) + randf_range(0.35, 0.65)) / float(_segments.size())
+	_reveal_from = fposmod(_position, 1.0)
+	_reveal_travel = REVEAL_LOOPS + fposmod(target - _reveal_from, 1.0)
+	_reveal_t = 0.0
+	_revealing = true
+	_sweeping = false
 	set_process(true)
 
 
@@ -74,6 +104,16 @@ func stop_sweep() -> float:
 
 
 func _process(delta: float) -> void:
+	if _revealing:
+		_reveal_t = minf(_reveal_t + delta / REVEAL_TIME, 1.0)
+		var eased := 1.0 - pow(1.0 - _reveal_t, 3)
+		_position = fposmod(_reveal_from + _reveal_travel * eased, 1.0)
+		queue_redraw()
+		if _reveal_t >= 1.0:
+			_revealing = false
+			set_process(false)
+			landed.emit()
+		return
 	if not _sweeping:
 		return
 	_position = fposmod(_position + _Gambling.SWEEP_SPEED * delta, 1.0)
@@ -101,9 +141,6 @@ func _seg_label(mult: float) -> String:
 
 
 func _draw() -> void:
-	if _sweet_spot >= 0.0:
-		_draw_wager_meter()
-		return
 	var segs: Array = _segments if not _segments.is_empty() else _Gambling.SEGMENT_MULTS
 	var n: int = segs.size()
 	if n == 0:
@@ -124,36 +161,6 @@ func _draw() -> void:
 			font, Vector2(x + (seg_w - ts.x) * 0.5, h * 0.5 + ts.y * 0.3),
 			label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col,
 		)
-	_draw_needle()
-
-
-## Casino skill-meter: a dim track with a graded sweet-spot zone. Stopping the
-## needle near the centre earns full timing skill (→ higher RTP). The RNG payout
-## is revealed separately by the overlay, so this bar never implies an outcome.
-func _draw_wager_meter() -> void:
-	var w: float = size.x
-	var h: float = size.y
-	draw_rect(Rect2(0.0, 0.0, w, h), Color(0.10, 0.11, 0.18))
-	var tol: float = _Gambling.WAGER_SKILL_TOL
-	# Graded band: green core (full skill) fading to amber at the tolerance edge.
-	var steps := 24
-	for i in steps:
-		var frac := float(i) / float(steps - 1)  # 0 centre → 1 edge
-		var off := (frac - 0.0) * tol
-		var core := GameTheme.GREEN.lerp(GameTheme.GOLD, frac)
-		core.a = 0.85 - 0.5 * frac
-		for sgn in [-1.0, 1.0]:
-			var cx: float = fposmod(_sweet_spot + sgn * off, 1.0) * w
-			draw_rect(Rect2(cx - 3.0, 0.0, 6.0, h), core)
-	# Sweet-spot centre line + "AIM" cap.
-	var sx: float = _sweet_spot * w
-	draw_rect(Rect2(sx - 1.5, 0.0, 3.0, h), GameTheme.GREEN)
-	var font := get_theme_default_font()
-	var fs := GameTheme.scaled_font(11)
-	var lbl := "AIM"
-	var ts := font.get_string_size(lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
-	draw_string(font, Vector2(clampf(sx - ts.x * 0.5, 0.0, w - ts.x), ts.y + 2.0),
-		lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, GameTheme.GREEN)
 	_draw_needle()
 
 
