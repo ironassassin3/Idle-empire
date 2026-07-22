@@ -4,17 +4,14 @@ extends Control
 ## Free-spin mode: a marker sweeps the segment bar; the player taps to stop it.
 ## The segment under the marker (normalised position 0..1) is exactly what
 ## GameState.resolve_gamble reads, so what you see is what you get.
-## Wager (casino) mode: pure RNG — the outcome is already resolved before the
-## needle moves; spin_to_band() plays a cosmetic auto-spin that settles on the
-## drawn band and emits `landed`. No input, no payout logic in this view.
+## Wager (casino) mode: pure RNG — the outcome is already resolved before a card
+## moves; reveal_monte() plays a cosmetic Three-Card Monte shuffle-and-flip that
+## presents the drawn band and emits `landed`. No input, no payout logic here.
 
 signal stopped(position: float)
 signal landed
 
 const _Gambling = preload("res://scripts/systems/gambling_system.gd")
-
-const REVEAL_TIME := 1.6   # seconds for the cosmetic casino reveal
-const REVEAL_LOOPS := 2.5  # extra full loops before settling
 
 # Three-Card Monte reveal (cash-wager reskin). The outcome is already resolved;
 # these two phases are pure presentation — a shuffle, then the dealer flips the
@@ -27,11 +24,6 @@ const MONTE_CENTER_SLOT := 1
 var _segments: Array = []
 var _position: float = 0.0
 var _sweeping: bool = false
-var _wager_mode := false
-var _revealing := false
-var _reveal_t := 0.0
-var _reveal_from := 0.0
-var _reveal_travel := 0.0
 
 # Monte state. _monte_phase: 0 idle · 1 shuffle · 2 flip.
 var _monte_mode := false
@@ -47,20 +39,8 @@ func _ready() -> void:
 
 func set_segments(segs: Array) -> void:
 	_segments = segs
-	_wager_mode = false
 	_monte_mode = false
 	queue_redraw()
-
-
-## Casino mode: show the cosmetic band ring the reveal needle settles on.
-func set_wager_segments(segs: Array) -> void:
-	_segments = segs
-	_wager_mode = true
-	queue_redraw()
-
-
-func is_wager_mode() -> bool:
-	return _wager_mode
 
 
 func has_round() -> bool:
@@ -69,45 +49,23 @@ func has_round() -> bool:
 
 func reset() -> void:
 	_sweeping = false
-	_revealing = false
+	_monte_phase = 0
 	set_process(false)
 	_position = 0.0
 	queue_redraw()
 
 
 func start_sweep() -> void:
-	if not has_round() or _revealing:
+	if not has_round() or _monte_phase != 0:
 		return
 	_position = randf()
 	_sweeping = true
 	set_process(true)
 
 
-## Cosmetic reveal: auto-spin the needle and settle it on a segment holding
-## `band`. The outcome is already resolved — this animation only presents it.
-func spin_to_band(band: float) -> void:
-	if _segments.is_empty():
-		return
-	var candidates: Array = []
-	for i in _segments.size():
-		if is_equal_approx(float(_segments[i]), band):
-			candidates.append(i)
-	if candidates.is_empty():
-		candidates.append(0)
-	var idx: int = candidates[randi() % candidates.size()]
-	var target := (float(idx) + randf_range(0.35, 0.65)) / float(_segments.size())
-	_reveal_from = fposmod(_position, 1.0)
-	_reveal_travel = REVEAL_LOOPS + fposmod(target - _reveal_from, 1.0)
-	_reveal_t = 0.0
-	_revealing = true
-	_sweeping = false
-	set_process(true)
-
-
 ## Casino mode, Monte skin: stage three face-down cards (no animation yet).
 func set_monte_round() -> void:
 	_monte_mode = true
-	_wager_mode = false
 	_monte_phase = 0
 	_monte_t = 0.0
 	_monte_card = {}
@@ -116,12 +74,10 @@ func set_monte_round() -> void:
 
 ## Cosmetic reveal for the Monte skin: shuffle, then flip the centre card to the
 ## card face mapped from `band`. Outcome is already resolved — this only presents
-## it, and emits `landed` when the flip settles (same contract as spin_to_band).
+## it, and emits `landed` when the flip settles.
 func reveal_monte(band: float) -> void:
 	_monte_card = _Gambling.monte_card_for_band(band)
 	_monte_mode = true
-	_wager_mode = false
-	_revealing = false
 	_sweeping = false
 	_monte_phase = 1
 	_monte_t = 0.0
@@ -155,16 +111,6 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		if _monte_t >= 1.0:
 			_monte_phase = 0
-			set_process(false)
-			landed.emit()
-		return
-	if _revealing:
-		_reveal_t = minf(_reveal_t + delta / REVEAL_TIME, 1.0)
-		var eased := 1.0 - pow(1.0 - _reveal_t, 3)
-		_position = fposmod(_reveal_from + _reveal_travel * eased, 1.0)
-		queue_redraw()
-		if _reveal_t >= 1.0:
-			_revealing = false
 			set_process(false)
 			landed.emit()
 		return

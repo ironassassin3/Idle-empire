@@ -1308,13 +1308,8 @@ func gambling_wager_enabled() -> bool:
 	return GameConfig.GAMBLING_ENABLED and _GamblingSystem.WAGER_ENABLED
 
 
-## Cosmetic reveal ring for the overlay (visual only; odds live in the system).
-func wager_display_segments() -> Array:
-	return _GamblingSystem.make_wager_display()
-
-
-## Place a cash wager — pure RNG, resolved instantly (the wheel animation is a
-## cosmetic reveal). Returns the result dict; on success it includes "msg" for
+## Place a cash wager — pure RNG, resolved instantly (the Monte reveal is
+## cosmetic). Returns the result dict; on success it includes "msg" for
 ## the overlay status line. Toast + sfx fire in notify_wager_result, which the
 ## overlay calls AFTER the reveal lands so sound doesn't spoil the outcome.
 func place_wager(stake: float) -> Dictionary:

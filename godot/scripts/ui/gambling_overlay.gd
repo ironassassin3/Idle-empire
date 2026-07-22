@@ -1,14 +1,15 @@
 extends CanvasLayer
 ## Luck Wheel overlay — free daily skill spin + cash-wager casino.
 ##
-## Two ways to play the same wheel:
+## Two ways to play, sharing one Wheel node but with two presentations:
 ##  • FREE SPIN — spends a banked free spin, positive-EV, never a cash loss.
-##                Starts a marker sweep; the button becomes STOP and the stop
-##                position (skill/timing) decides the payout.
+##                Shows the wheel: a marker sweeps, the button becomes STOP and
+##                the stop position (skill/timing) decides the payout.
 ##  • RISK $X   — stakes real balance on the pure-RNG casino; the house keeps a
 ##                fixed edge (RTP = 0.90) so it can lose. The wager resolves at
-##                press — the auto-spin that follows is a cosmetic reveal, and
-##                closing mid-reveal only skips the toast, never the money.
+##                press — the Three-Card Monte shuffle-and-flip that follows is
+##                a cosmetic reveal, and closing mid-reveal only skips the
+##                toast, never the money.
 
 const _Gambling = preload("res://scripts/systems/gambling_system.gd")
 const GameFonts = preload("res://scripts/ui/game_fonts.gd")

@@ -90,19 +90,6 @@ static func wager_draw_band(rng: RandomNumberGenerator) -> float:
 	return float(WAGER_BANDS[WAGER_BANDS.size() - 1])
 
 
-## Cosmetic reveal ring for the casino spin: a shuffled strip of band values the
-## needle settles on. Segment counts are VISUAL ONLY — the real odds are
-## WAGER_WEIGHTS; the landing segment is chosen to match the already-drawn band.
-static func make_wager_display() -> Array:
-	var counts := {0.0: 9, 0.5: 4, 1.0: 3, 2.0: 2, 5.0: 1, 25.0: 1}
-	var segs: Array = []
-	for band in counts:
-		for i in int(counts[band]):
-			segs.append(float(band))
-	segs.shuffle()
-	return segs
-
-
 ## Resolve a cash wager. Debits `stake` from balance, draws an RNG band, scales
 ## by the fixed WAGER_RTP, credits the payout. Net can be negative (a real loss).
 ## Returns {ok, multiplier, band, rtp, stake, payout, net, jackpot, reason}.
