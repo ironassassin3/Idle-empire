@@ -17,3 +17,6 @@ graphify-out/
 /godot/addons/GodotGooglePlayBilling/
 /godot/addons/GodotPlayGameServices/
 /godot/addons/admob/
+
+# Native iOS plugin binaries (AdMob xcframeworks / .a libs) — install locally, never commit.
+/godot/ios/
