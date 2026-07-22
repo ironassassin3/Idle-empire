@@ -124,7 +124,7 @@ func _refresh() -> void:
 		_ad_btn.visible = false
 		if _mode == Mode.WAGER:
 			# Pure RNG — no input during the reveal; the outcome is already drawn.
-			_prompt.text = "The wheel decides — pure luck, no skill."
+			_prompt.text = "Watch the cards — the dealer flips. Pure luck, no skill."
 			_spin_btn.visible = false
 		else:
 			_prompt.text = "STOP on a high multiplier — timing is everything."
@@ -188,13 +188,13 @@ func _on_bet_pressed() -> void:
 	if not res.get("ok", false):
 		_status.text = str(res.get("reason", "Cannot bet"))
 		return
-	# Cash already settled — the spin below is a cosmetic reveal only.
+	# Cash already settled — the Monte reveal below is cosmetic only.
 	_active_res = res
 	_mode = Mode.WAGER
 	_status.text = ""
-	_wheel.set_wager_segments(GameState.wager_display_segments())
+	_wheel.set_monte_round()
 	_wheel.reset()
-	_wheel.spin_to_band(float(res.get("band", 0.0)))
+	_wheel.reveal_monte(float(res.get("band", 0.0)))
 	_phase = Phase.SWEEPING
 	_refresh()
 

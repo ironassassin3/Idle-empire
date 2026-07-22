@@ -53,6 +53,31 @@ const WAGER_JACKPOT := 25.0
 const WAGER_RTP := 0.90
 const WAGER_MIN_STAKE := 1.0
 
+# ── Three-Card Monte reskin (presentation only) ────────────────────────────
+# Each drawn WAGER_BANDS value maps to a card face the alley dealer flips over.
+# This is a PURE LABEL LOOKUP — index-parallel to WAGER_BANDS — so the reskin
+# can never move EV. The odds still live entirely in WAGER_WEIGHTS; changing a
+# card face here changes what the player SEES, never what they win. suit codes:
+# ""=none (bust), "C"=club, "H"=heart, "S"=spade, "D"=diamond. tier drives colour.
+const MONTE_CARDS: Array = [
+	{"rank": "X", "suit": "",  "tier": 0, "name": "Sucker card"},    # band 0.0  — bust
+	{"rank": "4", "suit": "C", "tier": 1, "name": "Low club"},       # band 0.5  — half back
+	{"rank": "Q", "suit": "H", "tier": 2, "name": "Found the Lady"}, # band 1.0  — push
+	{"rank": "Q", "suit": "S", "tier": 3, "name": "Black Lady"},     # band 2.0  — small win
+	{"rank": "K", "suit": "S", "tier": 4, "name": "King's cut"},     # band 5.0  — big win
+	{"rank": "A", "suit": "S", "tier": 5, "name": "Ace, big score"}, # band 25.0 — jackpot
+]
+
+
+## Map a resolved wager band to its Monte card face. Presentation only — a pure
+## lookup keyed off WAGER_BANDS, so it cannot alter odds or EV. Unknown bands
+## fall back to the sucker card (defensive; every real band is covered).
+static func monte_card_for_band(band: float) -> Dictionary:
+	for i in WAGER_BANDS.size():
+		if is_equal_approx(float(WAGER_BANDS[i]), band):
+			return MONTE_CARDS[i]
+	return MONTE_CARDS[0]
+
 
 ## Draw one shape band by weight. Pure RNG — nothing the player does picks it.
 static func wager_draw_band(rng: RandomNumberGenerator) -> float:
