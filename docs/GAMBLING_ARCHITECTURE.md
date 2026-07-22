@@ -1,8 +1,12 @@
 # Active Gambling — "Luck Wheel" Architecture
 
-> Two modes on one wheel:
-> 1. **Free daily spin** (§1–4) — skill/timing, positive-EV, **no cash loss**; faucet is the daily-return hook.
-> 2. **Cash-wager casino** (§5) — stake real balance, **can lose it**; a deliberate cash *sink* whose safety comes from a structural **house edge** (RTP < 1), not from supply scarcity.
+> Two modes in one overlay, sharing one model and one `Wheel` node but **two different
+> presentations**:
+> 1. **Free daily spin** (§1–4) — the literal wheel: skill/timing, positive-EV, **no cash
+>    loss**; faucet is the daily-return hook.
+> 2. **Cash-wager casino** (§5) — a **Three-Card Monte** table: stake real balance, **can lose
+>    it**; a deliberate cash *sink* whose safety comes from a structural **house edge**
+>    (RTP < 1), not from supply scarcity.
 >
 > The free spin can never become dominant (§3). The casino can be played anytime with
 > unlimited stakes; it is safe because the house always wins long-run — see §5.
@@ -123,8 +127,9 @@ helpers from the Phase 92 prototype work do **not** exist — and are not needed
 
 ## 5. Cash-wager casino (as built — `resolve_wager` + overlay BET path)
 
-The casino shares the wheel but is a different beast from the free spin: you **stake real
-balance and can lose it**. It exists as a deliberate **cash sink**. It is **pure RNG** —
+The casino shares the model and the `Wheel` node but wears a **Three-Card Monte** skin, and
+is a different beast from the free spin: you **stake real balance and can lose it**. It
+exists as a deliberate **cash sink**. It is **pure RNG** —
 there is no timing/skill input — and its entire safety model is one invariant, not the six
 free-spin levers:
 
@@ -158,13 +163,33 @@ shape with a fat 25× jackpot tail (bigger jackpot ⇒ more frequent small losse
 **feel** knob (`WAGER_WEIGHTS` / `WAGER_JACKPOT`), not a safety one; retune freely as long as
 `Σ band·weight` stays 1.0.
 
-**View / flow.** The overlay's `BetRow` (¼ / ½ / Max presets) sets `_stake`; **RISK $X**
-resolves instantly at press — `place_wager(stake)` → `resolve_wager` debits the stake, draws
-the band, scales by the fixed RTP, credits the payout. The wheel then shows a cosmetic band
-ring (`make_wager_display`, widths are visual only) and **auto-spins** (`spin_to_band`) to
-settle on the drawn band — an honest reveal, not an input. Toast + sfx fire in
-`notify_wager_result` only after the needle lands, so sound never spoils the spin; closing
-mid-reveal skips the toast but the money already settled. **Telemetry:**
+**View / flow (Three-Card Monte skin).** The overlay's `BetRow` (¼ / ½ / Max presets) sets
+`_stake`; **RISK $X** resolves instantly at press — `place_wager(stake)` → `resolve_wager`
+debits the stake, draws the band, scales by the fixed RTP, credits the payout. Only *then*
+does the table animate: `set_monte_round()` stages three face-down cards, and
+`reveal_monte(band)` shuffles (`MONTE_SHUFFLE_TIME`, slot permutations from `MONTE_PERMS`)
+before flipping the centre card (`MONTE_FLIP_TIME`) to the face mapped from the already-drawn
+band — an honest reveal, not an input. Toast + sfx fire in `notify_wager_result` only after
+the flip settles (`landed` signal → `_on_wheel_landed`), so sound never spoils the reveal;
+closing mid-reveal skips the toast but the money already settled.
+
+**The reskin cannot move EV.** `monte_card_for_band()` is a pure lookup **index-parallel to
+`WAGER_BANDS`** — it maps a resolved band to a card face and nothing else. The odds live
+entirely in `WAGER_WEIGHTS`; editing a row of `MONTE_CARDS` changes what the player *sees*,
+never what they win. The shuffle is cosmetic — the winning card is decided before the first
+card moves, so no amount of eye-tracking helps (which is exactly the real-world Monte joke).
+
+| Band | Card | Meaning |
+|---|---|---|
+| 0.0 | `X` — Sucker card | bust |
+| 0.5 | `4♣` — Low club | half back |
+| 1.0 | `Q♥` — Found the Lady | push |
+| 2.0 | `Q♠` — Black Lady | small win |
+| 5.0 | `K♠` — King's cut | big win |
+| 25.0 | `A♠` — Ace, big score | jackpot |
+
+Cards and suit pips are **code-drawn** (`_draw_monte`), per `ART_POLICY.md` — no image
+assets. **Telemetry:**
 `gamble_wager_resolve` logs `lifetime_wager_net_ratio` (net / wagered) — expected negative;
 a *positive* trend means the edge is broken and is a hard tripwire.
 
