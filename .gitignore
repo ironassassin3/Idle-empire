@@ -20,3 +20,11 @@ graphify-out/
 
 # Native iOS plugin binaries (AdMob xcframeworks / .a libs) — install locally, never commit.
 /godot/ios/
+
+# Built Windows binary (~105 MB) — rebuild via IdleEmpire.spec, ship as a release
+# artifact. Note: the copies already in history are NOT removed by this rule.
+/dist/IdleEmpire.exe
+
+# Per-machine Claude Code settings (tool permissions etc.). The shared team config
+# is .claude/settings.json, which stays tracked.
+/.claude/settings.local.json
