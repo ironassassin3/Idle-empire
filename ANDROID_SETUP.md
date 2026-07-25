@@ -170,13 +170,22 @@ Follow [`godot/addons/PLUGINS.md`](godot/addons/PLUGINS.md). Summary:
 3. **Editor → Editor Settings → Export → Android** — set **Java SDK Path** and **Android SDK Path**.
 4. **Project → Install Android Build Template**.
 5. Install plugins per §6; enable in **Project Settings → Plugins**.
-6. **Project → Export** — select preset **Android** — confirm no red errors.
+6. **Project → Export** — select preset **Android Debug** — confirm no red errors.
 7. Under **Plugins** in the export preset, enable AdMob, Billing, Play Games, LocalNotification.
 8. Connect Moto G via USB; enable **Developer options → USB debugging**.
 9. Run `adb devices` — device must show `device` (not `unauthorized`).
-10. In Export dialog: **Export & Run** (debug) — installs `godot/build/criminal-empire.apk`.
+10. In Export dialog: **Export & Run** (debug) — installs `godot/build/criminal-empire-debug.apk`.
 
-**Release AAB (later):** In export preset set `gradle_build/export_format=1`, create release keystore (gitignored `*.keystore`), export AAB for Play Console.
+**Two Android presets — pick by destination:**
+
+| Preset | Format | Output | Use for |
+|--------|--------|--------|---------|
+| **Android Debug** | APK (`export_format=0`) | `godot/build/criminal-empire-debug.apk` | device pass, `adb install` |
+| **Android** | AAB (`export_format=1`) | `godot/build/criminal-empire.aab` | Play Console upload only |
+
+Godot hard-fails on a format/extension mismatch (`Invalid filename! Android App Bundle requires the *.aab extension.`), and `adb` cannot install a bundle — so never aim one preset at the other's path. Keep SDK levels, version, package name, and permissions identical between the two; `.\device_pass.ps1 check` fails on drift.
+
+**Release AAB:** create the release keystore (gitignored `*.keystore`), then `.\device_pass.ps1 aab`.
 
 ---
 
@@ -188,8 +197,11 @@ cd d:\2d_game
 # Smoke load (must pass before/after plugin work)
 godot --headless --quit --path godot
 
-# Debug APK export
-godot --path godot --headless --export-debug Android
+# Debug APK export (APK preset — the AAB preset refuses a .apk path)
+godot --path godot --headless --export-debug "Android Debug" godot/build/criminal-empire-debug.apk
+
+# Release AAB for Play Console
+godot --path godot --headless --export-release Android godot/build/criminal-empire.aab
 
 # Parity soak
 python sim_godot_soak.py --godot "C:\Path\To\Godot_v4.6.3-stable_win64.exe"

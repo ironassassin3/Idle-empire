@@ -9,6 +9,8 @@ cd d:\2d_game
 .\device_pass.ps1 run      # device only: export + install + launch
 ```
 
+The pass installs the **debug APK** (`Android Debug` preset). `.\device_pass.ps1 aab` builds the Play Console bundle from the `Android` preset — adb cannot install that.
+
 **Godot:** `E:\Downloads\Godot_v4.6.3-stable_win64.exe` (or `$env:GODOT_BIN`).  
 **Full setup:** [`ANDROID_SETUP.md`](ANDROID_SETUP.md). **Deep reference:** [§Extended](#extended-reference) below.
 
@@ -48,6 +50,7 @@ Watch the game screen **without reading numbers**.
 - [ ] Tap prestige gate / tree entry → progress shows **route earnings near $0**, not ~$50M
 - [ ] Bottom tabs switch: **Bldgs → Upgrs → Turf → Stats** (no crash, no clip)
 - [ ] **Tutorial hint** floats **above** the building list — never covers a row or its BUY button (check at the phone's aspect / short screens)
+- [ ] **Portrait lock** (device, regression): rotate the phone to landscape → app **stays portrait**. The orientation setting was exported as landscape until `f3726fa`; verify on hardware, not desktop
 
 **Fail:** Prestige bar starts near gate max, tabs overlap notch/home bar, hustle dead, city stops changing after building 3, medallions show duplicate letters, tutorial pill sits on top of rows.
 
