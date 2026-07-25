@@ -125,14 +125,46 @@ func set_sheet_state(new_state: int, animate: bool = true) -> void:
 	Telemetry.log_event("ui_sheet_state", {"state": state})
 
 
-# Masthead + rail + dock px the sheet may never displace: FULL keeps the dock
-# on screen at every aspect ratio (fractions alone overflow at 16:9).
-const CHROME_RESERVE := 260.0
+# Floor for the chrome reserve, used only before the column has been measured
+# once (boot). The real reserve is measured — see _max_height().
+const CHROME_RESERVE_FLOOR := 200.0
+
+
+## The sheet must be measured against the VIEWPORT, never against our own
+## parent. The parent is the chrome column we live in: its size grows when our
+## min height grows, so sizing off it let each drag raise its own ceiling — a
+## ratchet that walked the nav dock off the bottom of the screen and, because
+## _snap_to_nearest divided by the same inflated number, never snapped back.
+func _viewport_height() -> float:
+	return float(get_viewport_rect().size.y)
+
+
+## Every px in the column that isn't us: masthead + rail + dock + separations,
+## taken from the column's own minimum size with our contribution removed, so
+## the result cannot move when we resize. Plus margins outside the column
+## (safe-area insets), which the old fixed 260 forgot to count.
+func _max_height() -> float:
+	var others := 0.0
+	var parent := get_parent()
+	if parent is Control:
+		others = (parent as Control).get_combined_minimum_size().y - get_combined_minimum_size().y
+	others = maxf(others, CHROME_RESERVE_FLOOR) + _outer_insets()
+	return maxf(120.0, _viewport_height() - others)
+
+
+func _outer_insets() -> float:
+	var insets := 0.0
+	var node := get_parent()
+	while node != null and node is Control:
+		if node is MarginContainer:
+			insets += float(node.get_theme_constant("margin_top")) \
+				+ float(node.get_theme_constant("margin_bottom"))
+		node = node.get_parent()
+	return insets
 
 
 func _target_height() -> float:
-	var parent_h := get_parent_area_size().y if get_parent() != null else 1280.0
-	return minf(parent_h * float(SNAP_FRACTIONS[state]), parent_h - CHROME_RESERVE)
+	return minf(_viewport_height() * float(SNAP_FRACTIONS[state]), _max_height())
 
 
 func _apply_state(animate: bool) -> void:
@@ -165,14 +197,14 @@ func _on_handle_input(event: InputEvent) -> void:
 			_dragging = false
 	elif event is InputEventMouseMotion and _dragging:
 		var dy := (event as InputEventMouseMotion).global_position.y - _drag_start_y
-		var parent_h := get_parent_area_size().y if get_parent() != null else 1280.0
-		var h := clampf(_drag_start_h - dy, parent_h * 0.24, parent_h * 0.9)
+		# Ceiling is _max_height(), the same bound the snap states honour — a
+		# drag may never reach a height the sheet cannot snap back from.
+		var h := clampf(_drag_start_h - dy, _viewport_height() * 0.24, _max_height())
 		custom_minimum_size.y = h
 
 
 func _snap_to_nearest() -> void:
-	var parent_h := get_parent_area_size().y if get_parent() != null else 1280.0
-	var frac := size.y / maxf(1.0, parent_h)
+	var frac := size.y / maxf(1.0, _viewport_height())
 	var best: int = SheetState.REST
 	var best_d := 99.0
 	for s in SNAP_FRACTIONS:

@@ -217,6 +217,13 @@ function Invoke-Smoke {
     Write-Host "Headless project load..." -ForegroundColor Cyan
     $loadExit = Invoke-Godot $godot --headless --quit --path $GodotProject
     if ($loadExit -ne 0) { throw "Godot headless load failed (exit $loadExit)" }
+    # Sheet bounds: needs a real (offscreen) window - the layout does not settle
+    # under --headless, so the check would silently pass there. Called directly
+    # rather than through Invoke-Godot: that wrapper merges stderr, which in
+    # PowerShell 5.1 swallows a native exe's run and its exit code.
+    Write-Host "Sheet bounds (nav dock stays on screen)..." -ForegroundColor Cyan
+    & $godot --path $GodotProject --resolution 320x240 --position 3000,3000 -s res://scripts/tools/deck_bounds_smoke.gd
+    if ($LASTEXITCODE -ne 0) { throw "deck_bounds_smoke failed - the content sheet overflows the viewport" }
     Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
     $python = Find-Python
     if (-not $python) { throw "Python not found (install the 'py' launcher or add python to PATH)." }
