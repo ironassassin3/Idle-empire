@@ -1,3 +1,9 @@
+# Signing keys — never commit. Losing control of an upload key means anyone can
+# publish an update to the listing; committing one is the usual way that happens.
+# Keep the real file OUTSIDE this repo; this rule is the safety net, not the plan.
+*.keystore
+*.jks
+
 save.json
 save.json.bak
 analytics.jsonl

@@ -217,7 +217,21 @@ var _ips_cached: float = 0.0
 var _autosave_timer: float = 0.0
 var _ach_check_timer: float = 0.0
 var _goal_check_timer: float = 0.0
+var _stats_emit_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
+
+# The passive income tick used to emit `stats_changed` every frame. 79 listeners
+# hang off that signal — every building/upgrade/manager/territory/rival/crew/op
+# row connects a full _refresh() to it, including rows on tabs that are not
+# visible — so one emit measured 9.3 ms of a 10.3 ms _process on desktop, and the
+# device pass saw 12–20 FPS. The simulation itself is ~26 us; the fan-out was the
+# whole cost. Idle numbers do not need 60 Hz (the shell already re-read them at
+# 10 Hz via _STATS_UI_INTERVAL, so this matches what the chrome already showed).
+#
+# This throttles ONLY the passive tick. Discrete player actions — buying,
+# prestiging, collecting — keep calling stats_changed.emit() directly and stay
+# frame-immediate, which stats_emit_rate_probe.gd asserts.
+const _STATS_EMIT_INTERVAL := 0.1
 
 const COIN_SPAWN_MIN := 30.0
 const COIN_SPAWN_MAX := 60.0
@@ -474,7 +488,10 @@ func _process(delta: float) -> void:
 	lifetime_tokens = maxi(lifetime_tokens, prestige_tokens)
 	_check_rank_up()
 	_mark_ips_dirty()
-	stats_changed.emit()
+	_stats_emit_timer -= delta
+	if _stats_emit_timer <= 0.0:
+		_stats_emit_timer = _STATS_EMIT_INTERVAL
+		stats_changed.emit()
 	# Heat has settled for the tick (rise, raid, crew decay, dragon all applied
 	# above) — now address the city if the danger band changed.
 	var band: int = HeatSystem.heat_band(heat)

@@ -51,6 +51,7 @@ var _notif: Label
 var _tutorial_shell: PanelContainer
 var _tutorial_banner: Label
 var _fps_debug: Label
+var _fps_log_timer: float = 0.0
 
 var _tab := "bldgs"
 var _stats_dirty := true
@@ -441,6 +442,17 @@ func _refresh_fps_debug() -> void:
 	_fps_debug.add_theme_color_override(
 		"font_color", GameTheme.GREEN if fps >= 30.0 else GameTheme.RED)
 	_fps_debug.text = "%.0f FPS" % fps
+	# Also emit to stdout once a second so a device pass can read real hardware
+	# numbers off `adb logcat` instead of someone squinting at the corner of a
+	# phone. Costs nothing when the debug toggle is off.
+	_fps_log_timer -= get_process_delta_time()
+	if _fps_log_timer <= 0.0:
+		_fps_log_timer = 1.0
+		print("[fps] %.1f  process_ms=%.2f draw_calls=%d" % [
+			fps,
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+		])
 
 
 ## Inset the chrome by the device safe area (notch / home bar). Stage stays
