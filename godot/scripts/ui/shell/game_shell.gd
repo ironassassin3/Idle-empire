@@ -29,6 +29,7 @@ const DRAGON_OVERLAY := preload("res://scenes/dragon_patron_overlay.tscn")
 const GAMBLING_OVERLAY := preload("res://scenes/gambling_overlay.tscn")
 
 const _STATS_UI_INTERVAL := 0.1
+const _STAGE_REFRESH_INTERVAL := 0.1
 const _MUSIC_CTX_INTERVAL := 1.0
 const _BASE_MARGIN := 0
 
@@ -56,6 +57,7 @@ var _fps_log_timer: float = 0.0
 var _tab := "bldgs"
 var _stats_dirty := true
 var _stats_ui_timer := 0.0
+var _stage_refresh_timer := 0.0
 var _music_ctx_timer := 0.0
 var _notif_timer := 0.0
 var _notif_default_font_size := 0
@@ -301,7 +303,16 @@ func _process(delta: float) -> void:
 			_clear_notif()
 	_overlays.call("refresh", delta)
 	var blocking: bool = _overlays.get("blocking")
-	_stage.call("refresh", blocking)
+	# City ranking + district slots were rebuilt every frame (income_per_second
+	# per building). Ambient skyline motion lives in CityView._process; this only
+	# needs to push empire state at chrome rate. Purchase/heat flashes still go
+	# through UiEvents immediately.
+	_stage_refresh_timer -= delta
+	if _stage_refresh_timer <= 0.0:
+		_stage_refresh_timer = _STAGE_REFRESH_INTERVAL
+		_stage.call("refresh", blocking)
+	else:
+		_stage.call("set_overlay_blocking", blocking)
 	_refresh_tutorial(blocking)
 	_sync_gap_rect()
 	_music_ctx_timer -= delta
@@ -434,17 +445,9 @@ func _is_goal_notification(message: String, color: Color) -> bool:
 
 
 func _refresh_fps_debug() -> void:
-	if not GameState.show_debug_fps:
-		_fps_debug.visible = false
-		return
-	_fps_debug.visible = true
 	var fps: float = Engine.get_frames_per_second()
-	_fps_debug.add_theme_color_override(
-		"font_color", GameTheme.GREEN if fps >= 30.0 else GameTheme.RED)
-	_fps_debug.text = "%.0f FPS" % fps
-	# Also emit to stdout once a second so a device pass can read real hardware
-	# numbers off `adb logcat` instead of someone squinting at the corner of a
-	# phone. Costs nothing when the debug toggle is off.
+	# Always emit to stdout once a second so a device pass can read hardware
+	# numbers off `adb logcat`. Overlay text stays gated by the Config toggle.
 	_fps_log_timer -= get_process_delta_time()
 	if _fps_log_timer <= 0.0:
 		_fps_log_timer = 1.0
@@ -453,6 +456,13 @@ func _refresh_fps_debug() -> void:
 			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
 		])
+	if not GameState.show_debug_fps:
+		_fps_debug.visible = false
+		return
+	_fps_debug.visible = true
+	_fps_debug.add_theme_color_override(
+		"font_color", GameTheme.GREEN if fps >= 30.0 else GameTheme.RED)
+	_fps_debug.text = "%.0f FPS" % fps
 
 
 ## Inset the chrome by the device safe area (notch / home bar). Stage stays

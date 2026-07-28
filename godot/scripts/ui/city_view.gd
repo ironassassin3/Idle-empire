@@ -6,7 +6,8 @@ const PrestigeScript = preload("res://scripts/systems/prestige.gd")
 const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 
 const VIRTUAL_SIZE := Vector2(404.0, 320.0)
-const REDRAW_INTERVAL := 1.0 / 30.0
+# Ambient city redraw. 20 Hz is enough for rain/traffic; Mali pays per redraw.
+const REDRAW_INTERVAL := 1.0 / 20.0
 
 const INK := Color("06070c")
 const INK_GOLD := Color(0.541, 0.361, 1.0, 0.157)
@@ -90,6 +91,12 @@ func _ready() -> void:
 
 func _is_headless() -> bool:
 	return DisplayServer.get_name() == "headless"
+
+
+## Mali/mobile LOD — same fantasy, fewer immediate-mode draw calls. Desktop
+## keeps the denser pass; the device pass dips below 20 were almost all here.
+func _mobile_lod() -> bool:
+	return OS.has_feature("android") or OS.has_feature("ios") or OS.has_feature("mobile")
 
 
 func set_overlay_occluded(occluded: bool) -> void:
@@ -307,7 +314,7 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 	# Layer 0 — stepped night gradient (study idiom). No flat-band seams, and
 	# the haze tail is damped to 60% so the sky stays deep, not washed.
 	var grad_h := sh * 0.8
-	var grad_steps := 24
+	var grad_steps := 8 if _mobile_lod() else 24
 	for gi in grad_steps:
 		var gt := float(gi) / float(grad_steps - 1)
 		var gcol := SKY_BACK.lerp(SKY_MID, clampf(gt / 0.55, 0.0, 1.0))
@@ -528,12 +535,19 @@ func _draw_building_signature(key: String, cx: float, ground_y: float, bh: float
 		draw_rect(Rect2(bx + bw * 0.8, by, bw * 0.2, bh), Color(0.0, 0.0, 0.0, 0.18))
 	# Neon facade trim + hash flicker windows. Rows follow the facade's real
 	# height (a fixed 1+tier left tall hero towers 80% blank wall).
+	# Mobile caps density hard: each unique draw_rect defeats compat batching
+	# on Mali, and tall towers were 16×6 = 96 rects × 5 facades per redraw.
 	var win_rows := clampi(int((bh - 24.0) / 16.0), 1, 16)
 	var win_cols := clampi(2 + tier / 2, 2, maxi(2, int(bw / 14.0)))
+	if _mobile_lod():
+		win_rows = mini(win_rows, 5)
+		win_cols = mini(win_cols, 3)
+	# Slow flicker (2 Hz bucket) — still alive, but not a new lit-set every frame.
+	var flicker_t := floorf(t * 2.0)
 	for wy in win_rows:
 		for wx in win_cols:
 			var wseed := seed * 31 + wx * 7 + wy * 13
-			if not _hash_flicker(wseed, t):
+			if not _hash_flicker(wseed, flicker_t):
 				continue
 			# The city lies low when the police circle: a deterministic share of
 			# windows goes dark at warn (25%) and critical (50%). Never at calm.
@@ -688,6 +702,8 @@ func _draw_pedestrians(ground_y: float, t: float, tier: int) -> void:
 	var sw := VIRTUAL_SIZE.x
 	var reduced := GameTheme.ui_reduced_motion()
 	var count := mini(1 + tier, 6)
+	if _mobile_lod():
+		count = mini(count, 3)
 	for i in count:
 		var dir := 1.0 if i % 2 == 0 else -1.0
 		var speed := 9.0 + float(i % 3) * 4.0
@@ -747,7 +763,7 @@ func _draw_vignette() -> void:
 	var sw := VIRTUAL_SIZE.x
 	var sh := VIRTUAL_SIZE.y
 	var depth := 32.0
-	var steps := 6
+	var steps := 3 if _mobile_lod() else 6
 	for i in steps:
 		var t := float(i) / float(steps)
 		var a := (1.0 - t) * 0.14
@@ -765,6 +781,8 @@ func _draw_rain(t: float, heat: float) -> void:
 	var sw := VIRTUAL_SIZE.x
 	var sh := VIRTUAL_SIZE.y
 	var drops := 12 + int(clampf(heat, 0.0, 100.0) / 100.0 * 28.0)
+	if _mobile_lod():
+		drops = mini(drops, 10)
 	var col := Color(0.62, 0.68, 0.86, 0.09)
 	for i in drops:
 		var x := fmod(float(i * 71 + 17), sw)
@@ -869,6 +887,10 @@ func _draw_atmosphere(heat: float, rank_idx: int, t: float, tier: int) -> void:
 
 
 func _draw_scanlines() -> void:
+	# Full-height scanline pitch is ~100 draw_line calls per city redraw — free
+	# on desktop, murder on Mali. Skip entirely on mobile; CRT hint is optional.
+	if _mobile_lod():
+		return
 	var sw := VIRTUAL_SIZE.x
 	var sh := VIRTUAL_SIZE.y
 	var y := 0.0
