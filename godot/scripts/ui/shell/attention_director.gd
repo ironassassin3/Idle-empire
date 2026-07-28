@@ -14,13 +14,11 @@ const LOG_MAX := 40
 # Priority table (high → low). Takeovers queue by priority; ambient items fill
 # the slot when no takeover is active.
 const PRIO_RAID := 100
+const PRIO_PRESTIGE_READY := 90
 const PRIO_OP_COLLECT := 80
 const PRIO_GOAL_DONE := 70
-const PRIO_PRESTIGE_READY := 60
-# One-shot onboarding beats (D5 compact-mode offer) rank above passive
-# goal/afford hints — otherwise, since those hints are near-always present
-# past prestige 1, the "offered once" promise could starve forever and never
-# actually surface. Still below anything genuinely actionable right now.
+# Prestige used to sit below ops (60) and lost the one-slot rail whenever an
+# operation was ready — device pass could not find prestige with the gate met.
 const PRIO_OFFER := 45
 const PRIO_AFFORD_HINT := 40
 const PRIO_GOAL_HINT := 30
@@ -150,6 +148,30 @@ func _refresh_ambient() -> void:
 
 
 func _ambient_item() -> Dictionary:
+	# Prestige first when eligible — the run-ending beat must not lose the
+	# one-slot rail to ops/goals (device pass 2026-07-27). Soft path/perk
+	# blockers also claim the rail: earnings at 100% with no branch looked
+	# like prestige vanished on the second climb.
+	var prestige_cta := Prestige.ascend_cta_kind(GameState)
+	if prestige_cta == "ready":
+		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
+		return {
+			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
+			"text": "▸ EMPIRE READY TO ASCEND — tap to prestige",
+			"value": "+%d INF" % gain, "target": "prestige",
+		}
+	if prestige_cta == "need_path":
+		return {
+			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
+			"text": "▸ EMPIRE GATE CLEAR — choose a prestige path",
+			"value": "PATH", "target": "prestige",
+		}
+	if prestige_cta == "need_perk":
+		return {
+			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
+			"text": "▸ PATH LOCKED — buy a tier-1 perk to ascend",
+			"value": "PERK", "target": "prestige",
+		}
 	# Ops ready to collect?
 	var ready_ops := 0
 	for op in GameState.operations:
@@ -160,13 +182,6 @@ func _ambient_item() -> Dictionary:
 			"kind": "op_collect", "prio": PRIO_OP_COLLECT,
 			"text": "▸ OPERATION COMPLETE — collect your take",
 			"value": "×%d" % ready_ops, "target": "ops",
-		}
-	if GameState.can_prestige():
-		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
-		return {
-			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
-			"text": "▸ EMPIRE READY TO ASCEND",
-			"value": "+%d INF" % gain, "target": "prestige",
 		}
 	# NOTE: _ambient_item is a first-match cascade, not a sort by "prio" — the
 	# prio fields below are cosmetic/telemetry only. Ordering here IS the

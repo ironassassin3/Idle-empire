@@ -1,7 +1,9 @@
 extends Control
 ## HudMasthead — Z1 chrome band (UI_OVERHAUL_ARCHITECTURE.md §4).
 ## Balance is the single largest text on screen; every number here appears
-## nowhere else (rule 4). Prestige progress is a filament, not a chip (kills P0%).
+## nowhere else (rule 4). Prestige progress is a filament while climbing; when
+## the gate is met a clear PRESTIGE chip appears (device pass 2026-07-27: the
+## filament alone was undiscoverable).
 
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
@@ -16,6 +18,7 @@ var _heat_label: Label
 var _heat_bar: UiPrims.MiniBar
 var _dragon_chip: Button
 var _wheel_chip: Button
+var _prestige_chip: Button
 var _filament: UiPrims.Filament
 var _filament_hit: Button
 var _shield_label: Label
@@ -69,6 +72,20 @@ func _ready() -> void:
 	var spring := Control.new()
 	spring.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(spring)
+	_prestige_chip = _build_chip_button("PRESTIGE", func(): UiEvents.overlay_requested.emit("prestige"))
+	_prestige_chip.visible = false
+	_prestige_chip.tooltip_text = "Empire ready to ascend — tap to open prestige"
+	# Gold fill so it reads as the run-ending CTA, not another muted chrome chip.
+	var p_sb := StyleBoxFlat.new()
+	p_sb.bg_color = Color(GameTheme.GOLD_BRIGHT, 0.22)
+	p_sb.border_color = GameTheme.GOLD_BRIGHT
+	p_sb.set_border_width_all(2)
+	p_sb.set_corner_radius_all(4)
+	p_sb.content_margin_left = 10
+	p_sb.content_margin_right = 10
+	for st in ["normal", "hover", "pressed"]:
+		_prestige_chip.add_theme_stylebox_override(st, p_sb)
+	top.add_child(_prestige_chip)
 	_dragon_chip = _build_chip_button("", func(): UiEvents.overlay_requested.emit("dragon"))
 	_dragon_chip.visible = false
 	top.add_child(_dragon_chip)
@@ -118,8 +135,8 @@ func _ready() -> void:
 	gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(gap)
 
-	# Prestige filament — tap target wraps the 3px thread (48dp floor met by
-	# the surrounding button height).
+	# Prestige filament — tap target wraps the progress thread. When ready the
+	# hit box grows so a thumb can find it; the PRESTIGE chip is the primary CTA.
 	_filament_hit = Button.new()
 	_filament_hit.flat = true
 	_filament_hit.custom_minimum_size = Vector2(0, 14)
@@ -387,14 +404,36 @@ func refresh() -> void:
 	_buff_label.text = "  ".join(buffs)
 	_buff_label.visible = not buffs.is_empty()
 
-	# Prestige filament (disclosure-gated).
+	# Prestige filament (disclosure-gated) + chip when ready OR soft-blocked
+	# (path/perk). Soft-block used to leave a 100% filament with no CTA —
+	# second prestige looked "missing" after earnings cleared.
+	var cta := Prestige.ascend_cta_kind(GameState)
+	var can_p := cta == "ready"
+	var soft_cta := cta == "need_path" or cta == "need_perk"
 	var show_filament := Disclosure.prestige_filament_visible(GameState)
 	_filament_hit.visible = show_filament
+	_prestige_chip.visible = can_p or soft_cta
 	if show_filament:
 		var summary: Dictionary = Prestige.gate_progress_summary(GameState)
 		_filament.progress = float(summary.get("pct", 0)) / 100.0
-		_filament.ready_pulse = GameState.can_prestige()
+		_filament.ready_pulse = can_p or soft_cta
 		_filament_hit.tooltip_text = _prestige_tooltip()
+		# Ready / soft-CTA: thicker thread + taller hit so it is not a 3px hairline.
+		if can_p or soft_cta:
+			_filament_hit.custom_minimum_size = Vector2(0, 36)
+			_filament.offset_top = -4.0
+			_filament.offset_bottom = 4.0
+		else:
+			_filament_hit.custom_minimum_size = Vector2(0, 14)
+			_filament.offset_top = -1.5
+			_filament.offset_bottom = 1.5
+	if can_p:
+		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
+		_prestige_chip.text = "PRESTIGE" if gain <= 0 else "PRESTIGE +%d" % gain
+		_prestige_chip.tooltip_text = _prestige_tooltip()
+	elif soft_cta:
+		_prestige_chip.text = "CHOOSE PATH" if cta == "need_path" else "BUY PATH PERK"
+		_prestige_chip.tooltip_text = _prestige_tooltip()
 
 	# Dragon companion chip.
 	var patron: String = _DragonSystem.active_dragon(GameState)
