@@ -50,6 +50,10 @@ func _ready() -> void:
 	_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_label.add_theme_color_override("font_color", GameTheme.TEXT)
 	_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	# Without clip_text a Label's minimum width is its full text, so the HBox
+	# overflowed and pushed the value label off the panel's right edge — the
+	# ellipsis never got a chance to fire.
+	_label.clip_text = true
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(_label)
 

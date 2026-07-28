@@ -157,19 +157,19 @@ func _ambient_item() -> Dictionary:
 		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
 		return {
 			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
-			"text": "▸ EMPIRE READY TO ASCEND — tap to prestige",
+			"text": "▸ EMPIRE READY TO ASCEND",
 			"value": "+%d INF" % gain, "target": "prestige",
 		}
 	if prestige_cta == "need_path":
 		return {
 			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
-			"text": "▸ EMPIRE GATE CLEAR — choose a prestige path",
+			"text": "▸ GATE CLEAR — choose your path",
 			"value": "PATH", "target": "prestige",
 		}
 	if prestige_cta == "need_perk":
 		return {
 			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
-			"text": "▸ PATH LOCKED — buy a tier-1 perk to ascend",
+			"text": "▸ PATH LOCKED — buy a tier-1 perk",
 			"value": "PERK", "target": "prestige",
 		}
 	# Ops ready to collect?

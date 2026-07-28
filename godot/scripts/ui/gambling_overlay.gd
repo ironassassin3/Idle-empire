@@ -54,6 +54,13 @@ func _ready() -> void:
 	_wheel.stopped.connect(_on_wheel_stopped)
 	_wheel.landed.connect(_on_wheel_landed)
 	Monetization.ad_reward_granted.connect(_on_ad_reward)
+	get_viewport().size_changed.connect(_fit_panel)
+	_fit_panel()
+
+
+## Fixed 680-wide centred box — fits a 720 phone, clips a 480 one.
+func _fit_panel() -> void:
+	GameTheme.fit_overlay_panel(_panel, Vector2(680, 520))
 
 
 func _apply_theme() -> void:
@@ -76,6 +83,7 @@ func _apply_theme() -> void:
 
 func open() -> void:
 	visible = true
+	_fit_panel()
 	_status.text = ""
 	_init_stake()
 	_stage_free_round()  # ring shown when free spins exist; harmless otherwise

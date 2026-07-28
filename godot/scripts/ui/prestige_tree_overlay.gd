@@ -62,6 +62,15 @@ func _ready() -> void:
 	_prestige_yes.pressed.connect(_confirm_prestige)
 	_prestige_no.pressed.connect(_cancel_prestige_dialog)
 	GameState.stats_changed.connect(_refresh)
+	get_viewport().size_changed.connect(_fit_panels)
+	_fit_panels()
+
+
+## Authored as fixed centred boxes (780 wide) that bleed off a 720px phone.
+func _fit_panels() -> void:
+	GameTheme.fit_overlay_panel(_panel, Vector2(780, 600))
+	GameTheme.fit_overlay_panel(_branch_dialog, Vector2(440, 240))
+	GameTheme.fit_overlay_panel(_prestige_dialog, Vector2(480, 260))
 
 
 func _apply_ink_theme() -> void:
@@ -109,6 +118,7 @@ func _apply_dialog_theme() -> void:
 
 func open() -> void:
 	visible = true
+	_fit_panels()
 	_branch_dialog.visible = false
 	_prestige_dialog.visible = false
 	_pending_branch = ""
