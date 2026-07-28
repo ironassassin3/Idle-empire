@@ -160,9 +160,9 @@ ps5._next_prestige_earnings = prestige.FIRST_PRESTIGE_EARNINGS * prestige.PRESTI
 req2 = prestige.prestige_earnings_required(ps5) + 1
 ps5.lifetime_earnings = req2
 ps5._prestige_route_earnings = req2
-ps5.buildings[0].owned = prestige.POST_PRESTIGE_DEALERS
-ps5.buildings[1].owned = prestige.POST_PRESTIGE_RACKETS
-ps5.buildings[2].owned = prestige.POST_PRESTIGE_CHOPS
+ps5.buildings[0].owned = prestige.post_building_required(1, prestige.POST_PRESTIGE_DEALERS)
+ps5.buildings[1].owned = prestige.post_building_required(1, prestige.POST_PRESTIGE_RACKETS)
+ps5.buildings[2].owned = prestige.post_building_required(1, prestige.POST_PRESTIGE_CHOPS)
 check("2nd prestige blocked with no branch", not prestige.can_prestige(ps5))
 pt.select_branch(ps5, pt.KINGPIN)
 check("still blocked: branch chosen but no perk bought", not prestige.can_prestige(ps5))

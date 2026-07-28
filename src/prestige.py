@@ -5,17 +5,9 @@ import traceback
 import config
 
 # ─── First-prestige requirements ──────────────────────────────────────────────
-# Tuned (with the rebalanced economy + non-circular Influence goals) for a first
-# prestige in the ~30-45 min window for both the optimal and casual player
-# profiles (validated in sim_prestige_gate.py / sim_harness.py).
-#
-# Pacing model:
-#   - Made Man (12 Influence) is reached at ~6-10 min purely from the starter
-#     economic goals (goals.py) — NO rival/op grind required. This breaks the
-#     old circular deadlock (see AUDIT.md).
-#   - The $20M empire-route earnings gate is the actual pacing control; with the
-#     rebalanced exponential economy it resolves at ~25-35 min (sim) depending on
-#     whether the player engages territory early (~18 min) or focuses buildings (~25 min).
+# Prestige pacing (2026-07-28): P1 target ~40–60m engaged; P1→P2 / P2→P3
+# target ~25–50m. Device pass at 50M + discounted POST rebuild cleared gates
+# too fast; growth-only ladders lose to Influence IPS snowball.
 import os as _os
 
 def _env_float(key: str, default: float) -> float:
@@ -31,26 +23,46 @@ def _env_int(key: str, default: int) -> int:
         return default
 
 # ── Tuning constants (A/B-override via env vars) ──────────────────────────────
-# Set any of these before launching to test a variant without changing code:
-#   IDLE_PRESTIGE_EARNINGS=10000000 python main.py   ← easier first prestige
-#   IDLE_PRESTIGE_GROWTH=6 python main.py            ← softer escalation
-FIRST_PRESTIGE_EARNINGS  = _env_float("IDLE_PRESTIGE_EARNINGS", 50_000_000.0)
+#   IDLE_PRESTIGE_EARNINGS=50000000 python main.py
+#   IDLE_PRESTIGE_GROWTH=8 python main.py
+FIRST_PRESTIGE_EARNINGS  = _env_float("IDLE_PRESTIGE_EARNINGS", 120_000_000.0)
 FIRST_PRESTIGE_DEALERS   = _env_int("IDLE_PRESTIGE_DEALERS",   25)
 FIRST_PRESTIGE_RACKETS   = _env_int("IDLE_PRESTIGE_RACKETS",   10)
 FIRST_PRESTIGE_CHOPS     = _env_int("IDLE_PRESTIGE_CHOPS",     5)
 FIRST_PRESTIGE_RANK      = _os.environ.get("IDLE_PRESTIGE_RANK", "Made Man")
 
-# Soft rebuild gates for 2nd+ prestige — prevents route-only snowball after P1.
-POST_PRESTIGE_DEALERS    = _env_int("IDLE_POST_PRESTIGE_DEALERS", (FIRST_PRESTIGE_DEALERS * 3) // 4)
-POST_PRESTIGE_RACKETS    = _env_int("IDLE_POST_PRESTIGE_RACKETS", (FIRST_PRESTIGE_RACKETS * 3) // 4)
-POST_PRESTIGE_CHOPS      = _env_int("IDLE_POST_PRESTIGE_CHOPS",   (FIRST_PRESTIGE_CHOPS * 3) // 4)
+# Base rebuild counts match first prestige (no discount). Scaled per cycle below.
+POST_PRESTIGE_DEALERS    = _env_int("IDLE_POST_PRESTIGE_DEALERS", FIRST_PRESTIGE_DEALERS)
+POST_PRESTIGE_RACKETS    = _env_int("IDLE_POST_PRESTIGE_RACKETS", FIRST_PRESTIGE_RACKETS)
+POST_PRESTIGE_CHOPS      = _env_int("IDLE_POST_PRESTIGE_CHOPS",   FIRST_PRESTIGE_CHOPS)
 
 # Building indices in buildings list
 _IDX_DEALER  = 0
 _IDX_RACKET  = 1
 _IDX_CHOP    = 2
 
-PRESTIGE_EARNINGS_GROWTH = _env_float("IDLE_PRESTIGE_GROWTH", 8.0)
+PRESTIGE_EARNINGS_GROWTH = _env_float("IDLE_PRESTIGE_GROWTH", 12.0)
+PRESTIGE_PACING_SECS = _env_float("IDLE_PRESTIGE_PACING_SECS", 1500.0)  # 25 min
+PRESTIGE_SNOWBALL_PAD = _env_float("IDLE_PRESTIGE_SNOWBALL_PAD", 6.0)
+PRESTIGE_REBUILD_SCALE_PER = _env_float("IDLE_PRESTIGE_REBUILD_SCALE", 0.5)
+
+
+def post_building_required(prestige_count: int, base: int) -> int:
+    """Rebuild count for prestige_count >= 1. Scales up each cycle."""
+    n = max(1, int(prestige_count))
+    return max(int(base), int(round(float(base) * (1.0 + PRESTIGE_REBUILD_SCALE_PER * float(n)))))
+
+
+def next_earnings_gate(prev_gate: float, ips: float, prestige_tokens: int) -> float:
+    """Ladder floor vs IPS-scaled floor (prices in Influence snowball)."""
+    floor = float(prev_gate) * PRESTIGE_EARNINGS_GROWTH
+    paced = (
+        max(0.0, float(ips))
+        * PRESTIGE_PACING_SECS
+        * income_mult(int(prestige_tokens))
+        * PRESTIGE_SNOWBALL_PAD
+    )
+    return max(floor, paced)
 
 
 def prestige_earnings_required(state) -> float:
@@ -102,10 +114,13 @@ def check_requirements(state) -> dict:
                          _rank_index(rank) >= _rank_index(FIRST_PRESTIGE_RANK)),
         })
     else:
+        d_need = post_building_required(n, POST_PRESTIGE_DEALERS)
+        r_need = post_building_required(n, POST_PRESTIGE_RACKETS)
+        c_need = post_building_required(n, POST_PRESTIGE_CHOPS)
         reqs.update({
-            'dealers': (dealers, POST_PRESTIGE_DEALERS, dealers >= POST_PRESTIGE_DEALERS),
-            'rackets': (rackets, POST_PRESTIGE_RACKETS, rackets >= POST_PRESTIGE_RACKETS),
-            'chops':   (chops, POST_PRESTIGE_CHOPS, chops >= POST_PRESTIGE_CHOPS),
+            'dealers': (dealers, d_need, dealers >= d_need),
+            'rackets': (rackets, r_need, rackets >= r_need),
+            'chops':   (chops, c_need, chops >= c_need),
         })
     if n >= 1:
         import src.prestige_tree as _ptree
@@ -439,9 +454,9 @@ class PrestigeManager:
         except Exception:
             pass
 
-        # Capture the gate just satisfied BEFORE incrementing the count, so the
-        # next gate ladders off it (not off however far this run overshot).
+        # Capture gate + IPS before wipe so the next bar can price in snowball.
         _prev_gate = prestige_earnings_required(state)
+        _ips_at_prestige = float(getattr(state, 'income_per_second', 0.0) or 0.0)
         state.prestige_tokens    += influence_gain
         state.influence          = getattr(state, 'influence', 0) + influence_gain
         state._prestige_count    = getattr(state, '_prestige_count', 0) + 1
@@ -454,10 +469,10 @@ class PrestigeManager:
         except Exception:
             pass
 
-        # Set the escalating bar for the NEXT prestige: a full run ahead of where
-        # the player is now. This paces prestiges apart and makes each a bigger
-        # goal (the head start would otherwise allow instant re-prestige).
-        state._next_prestige_earnings = _prev_gate * PRESTIGE_EARNINGS_GROWTH
+        # Ladder floor vs IPS-scaled floor (Influence snowball priced in).
+        state._next_prestige_earnings = next_earnings_gate(
+            _prev_gate, _ips_at_prestige, state.prestige_tokens
+        )
 
         # Reset balance (lifetime_earnings keeps accumulating across prestiges)
         state.balance = 0.0
@@ -520,13 +535,14 @@ class PrestigeManager:
         except Exception:
             pass
 
-        # ── MEMORY RESET: territory (Phase 45) ────────────────────────────────
-        # Strategic districts (South Side, Downtown, Industrial, Waterfront,
-        # City Hall) retain ownership across prestiges. Generic districts wipe.
-        # Milestones reset so they're earnable again each cycle.
+        # ── HARD RESET: territory (Godot parity) ─────────────────────────────
+        # Full wipe including strategic districts — keeping them made P2 a
+        # minutes-long cash sprint. Mirror game_state.do_prestige().
         try:
-            from src.territory import partial_territory_reset
-            partial_territory_reset(getattr(state, 'territories', []), state)
+            from src.territory import make_territories, assign_rival_territories
+            state.territories = make_territories()
+            assign_rival_territories(state.territories, getattr(state, 'rivals', []))
+            state._city_control_milestones = set()
         except Exception:
             pass
 

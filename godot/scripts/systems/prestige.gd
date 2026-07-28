@@ -57,6 +57,22 @@ static func prestige_earnings_required(prestige_count: int, next_prestige_earnin
 	return next_prestige_earnings
 
 
+static func post_building_required(prestige_count: int, base: int) -> int:
+	var n: int = maxi(1, prestige_count)
+	return maxi(base, int(round(float(base) * (1.0 + GameConfig.PRESTIGE_REBUILD_SCALE_PER * float(n)))))
+
+
+static func next_earnings_gate(prev_gate: float, ips: float, prestige_tokens: int) -> float:
+	var floor: float = prev_gate * GameConfig.PRESTIGE_EARNINGS_GROWTH
+	var paced: float = (
+		maxf(0.0, ips)
+		* GameConfig.PRESTIGE_PACING_SECS
+		* income_mult(prestige_tokens)
+		* GameConfig.PRESTIGE_SNOWBALL_PAD
+	)
+	return maxf(floor, paced)
+
+
 static func check_requirements(state) -> Dictionary:
 	var required := prestige_earnings_required(state.prestige_count, state.next_prestige_earnings)
 	var route: float = float(state.prestige_route_earnings)
@@ -80,9 +96,12 @@ static func check_requirements(state) -> Dictionary:
 		var dealers2: int = state.buildings[0].owned if state.buildings.size() > 0 else 0
 		var rackets2: int = state.buildings[1].owned if state.buildings.size() > 1 else 0
 		var chops2: int = state.buildings[2].owned if state.buildings.size() > 2 else 0
-		reqs["dealers"] = {"current": dealers2, "required": GameConfig.POST_PRESTIGE_DEALERS, "met": dealers2 >= GameConfig.POST_PRESTIGE_DEALERS}
-		reqs["rackets"] = {"current": rackets2, "required": GameConfig.POST_PRESTIGE_RACKETS, "met": rackets2 >= GameConfig.POST_PRESTIGE_RACKETS}
-		reqs["chops"] = {"current": chops2, "required": GameConfig.POST_PRESTIGE_CHOPS, "met": chops2 >= GameConfig.POST_PRESTIGE_CHOPS}
+		var d_need: int = post_building_required(state.prestige_count, GameConfig.POST_PRESTIGE_DEALERS)
+		var r_need: int = post_building_required(state.prestige_count, GameConfig.POST_PRESTIGE_RACKETS)
+		var c_need: int = post_building_required(state.prestige_count, GameConfig.POST_PRESTIGE_CHOPS)
+		reqs["dealers"] = {"current": dealers2, "required": d_need, "met": dealers2 >= d_need}
+		reqs["rackets"] = {"current": rackets2, "required": r_need, "met": rackets2 >= r_need}
+		reqs["chops"] = {"current": chops2, "required": c_need, "met": chops2 >= c_need}
 	if state.prestige_count >= 1:
 		var branch: String = str(state.prestige_branch)
 		var branch_met := not branch.is_empty()
@@ -103,6 +122,25 @@ static func can_prestige(state) -> bool:
 		if not check_requirements(state)[key]["met"]:
 			return false
 	return true
+
+
+## Soft post-P1 gates (path + perk) are easy to miss: earnings filament hits
+## 100% while can_prestige stays false. CTA kinds drive masthead/rail copy.
+## Returns "" | "need_path" | "need_perk" | "ready".
+static func ascend_cta_kind(state) -> String:
+	if can_prestige(state):
+		return "ready"
+	var reqs: Dictionary = check_requirements(state)
+	for key in reqs:
+		if bool(reqs[key].get("met", true)):
+			continue
+		if key != "branch" and key != "branch_perk":
+			return ""
+	if reqs.has("branch") and not bool(reqs["branch"].get("met", true)):
+		return "need_path"
+	if reqs.has("branch_perk") and not bool(reqs["branch_perk"].get("met", true)):
+		return "need_perk"
+	return ""
 
 
 static func gate_progress_pct(state) -> int:
