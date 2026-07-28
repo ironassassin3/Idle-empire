@@ -959,6 +959,21 @@ static func menu_ledger_style() -> StyleBox:
 	return make_menu_ledger_flat()
 
 
+## Overlays were authored as fixed-size centered boxes (840x620 for the patron
+## picker) that bleed off both edges of a 720px-wide phone. Clamp to the
+## viewport and re-centre; call on open and on viewport resize.
+static func fit_overlay_panel(panel: Control, design: Vector2, margin: float = 12.0) -> void:
+	if panel == null or not is_instance_valid(panel):
+		return
+	var vp: Vector2 = panel.get_viewport_rect().size
+	var w: float = minf(design.x, maxf(160.0, vp.x - margin * 2.0))
+	var h: float = minf(design.y, maxf(160.0, vp.y - margin * 2.0))
+	panel.offset_left = -w * 0.5
+	panel.offset_right = w * 0.5
+	panel.offset_top = -h * 0.5
+	panel.offset_bottom = h * 0.5
+
+
 static func overlay_ledger_style() -> StyleBox:
 	if is_city_v2_active():
 		return ink_overlay_modal_style()

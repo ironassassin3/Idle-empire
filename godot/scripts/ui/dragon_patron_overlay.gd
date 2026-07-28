@@ -9,7 +9,9 @@ const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 @onready var _title: Label = $Panel/Margin/VBox/Title
 @onready var _stage: Label = $Panel/Margin/VBox/StageLabel
 @onready var _prompt: Label = $Panel/Margin/VBox/PromptLabel
-@onready var _cards: HBoxContainer = $Panel/Margin/VBox/CardRow
+@onready var _scroll: ScrollContainer = $Panel/Margin/VBox/CardScroll
+## Plain BoxContainer, not HBox — Godot rejects set_vertical() on the H/V subclasses.
+@onready var _cards: BoxContainer = $Panel/Margin/VBox/CardScroll/CardRow
 @onready var _locked: Label = $Panel/Margin/VBox/LockedLabel
 @onready var _back: Button = $Panel/Margin/VBox/BackBtn
 @onready var _confirm: PanelContainer = $ConfirmDialog
@@ -31,6 +33,33 @@ func _ready() -> void:
 	_confirm_yes.pressed.connect(_on_confirm_yes)
 	_confirm_no.pressed.connect(_on_confirm_no)
 	GameState.stats_changed.connect(_refresh)
+	get_viewport().size_changed.connect(_apply_layout)
+	_apply_layout()
+
+
+## Portrait phones can't fit three 200px cards side by side, so stack them and
+## let the scroller handle the overflow; wide viewports keep the compare-at-a-
+## glance row. Panel itself is clamped to the viewport (it was a fixed 840px).
+func _apply_layout() -> void:
+	GameTheme.fit_overlay_panel(_panel, Vector2(840, 620))
+	GameTheme.fit_overlay_panel(_confirm, Vector2(460, 260))
+	# Must read the same space fit_overlay_panel clamps in — Control.get_viewport_rect
+	# is canvas units, Viewport.get_visible_rect is raw window pixels, and they
+	# differ whenever a content scale is active.
+	var vp: Vector2 = _panel.get_viewport_rect().size
+	var stacked: bool = vp.x < 700.0
+	_cards.vertical = stacked
+	_scroll.horizontal_scroll_mode = (
+		ScrollContainer.SCROLL_MODE_DISABLED if stacked else ScrollContainer.SCROLL_MODE_AUTO
+	)
+	_scroll.vertical_scroll_mode = (
+		ScrollContainer.SCROLL_MODE_AUTO if stacked else ScrollContainer.SCROLL_MODE_DISABLED
+	)
+	for key in _card_buttons:
+		var card: PanelContainer = _card_buttons[key]
+		card.custom_minimum_size = Vector2(0, 0) if stacked else Vector2(200, 280)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if stacked else Control.SIZE_FILL
 
 
 func _apply_ink_theme() -> void:
@@ -60,6 +89,7 @@ func open() -> void:
 	visible = true
 	_pending_key = ""
 	_confirm.visible = false
+	_apply_layout()
 	_refresh()
 
 
@@ -106,6 +136,11 @@ func _build_cards() -> void:
 		costs.add_theme_font_size_override("font_size", 10)
 		costs.add_theme_color_override("font_color", GameTheme.RED)
 		vbox.add_child(costs)
+		# Cards have unequal body text; this pushes every CTA to the card bottom so
+		# the row's buttons line up. Collapses to nothing when cards are stacked.
+		var spacer := Control.new()
+		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		vbox.add_child(spacer)
 		var btn := Button.new()
 		btn.name = "ChooseBtn"
 		btn.custom_minimum_size = Vector2(0, 32)
