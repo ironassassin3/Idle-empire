@@ -55,6 +55,10 @@ function Find-Adb {
     return $null
 }
 
+# Never call this script with `2>&1`: adb writes its "daemon not running" banner to
+# stderr, and PowerShell 5.1 turns a redirected native stderr into a terminating
+# ErrorRecord under $ErrorActionPreference="Stop", killing the pass mid-install.
+
 function Find-Python {
     # The bare `python` command on Windows is often the broken Store alias, so
     # prefer the `py` launcher, then a real python on PATH, then known installs.

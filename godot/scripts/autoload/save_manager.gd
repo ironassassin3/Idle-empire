@@ -11,8 +11,10 @@ func save_game() -> bool:
 	var data := GameState.to_save_data()
 	var json := JSON.stringify(data, "\t")
 	var dir := DirAccess.open("user://")
-	if dir and dir.file_exists("save.json"):
-		dir.copy("save.json", "save.json.bak")
+	# Both args must be full user:// paths: Android resolves a DirAccess-relative
+	# copy() against the process CWD, not the opened dir, and fails every autosave.
+	if dir and dir.file_exists(SAVE_PATH):
+		dir.copy(SAVE_PATH, BACKUP_PATH)
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		push_warning("Save failed: %s" % FileAccess.get_open_error())

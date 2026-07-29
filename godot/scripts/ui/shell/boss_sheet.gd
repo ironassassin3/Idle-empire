@@ -56,7 +56,7 @@ func _ready() -> void:
 	v.add_child(_make_row("gear", "Settings", func():
 		close()
 		UiEvents.overlay_requested.emit("config")))
-	_wheel_row = _make_row("", "🎯  Luck Wheel", func():
+	_wheel_row = _make_row("", "Luck Wheel", func():
 		close()
 		UiEvents.overlay_requested.emit("gambling"))
 	v.add_child(_wheel_row)
@@ -95,7 +95,7 @@ func open() -> void:
 	# Disclosure mirrors the masthead chips.
 	_wheel_row.visible = GameConfig.GAMBLING_ENABLED
 	var spins: int = GameState.gambling_free_spins()
-	_wheel_row.text = "🎯  Luck Wheel" + ("  ·  %d free spin(s)" % spins if spins > 0 else "")
+	_wheel_row.text = "Luck Wheel" + ("  ·  %d free spin(s)" % spins if spins > 0 else "")
 	_dragon_row.visible = Disclosure.dragon_chip_visible(GameState)
 	visible = true
 	Telemetry.log_event("ui_boss_sheet_open", {})

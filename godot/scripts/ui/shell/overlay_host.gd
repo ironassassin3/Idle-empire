@@ -151,7 +151,7 @@ func _build_offline() -> void:
 		func(): Monetization.show_rewarded(Monetization.PLACEMENT_OFFLINE_DOUBLE))
 	v.add_child(_offline_watch_ad)
 	_offline_spin_btn = Button.new()
-	_offline_spin_btn.text = "🎯 Spin now"
+	_offline_spin_btn.text = "Spin now"
 	_offline_spin_btn.visible = false
 	GameTheme.apply_overlay_cta(_offline_spin_btn, false)
 	_offline_spin_btn.pressed.connect(_on_offline_spin)
@@ -336,7 +336,7 @@ func _spin_grant_line() -> String:
 	if not _has_spin_grant():
 		return ""
 	var n: int = GameState.gambling_spins_granted
-	return "\n\n🎯 +%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
+	return "\n\n+%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
 
 
 func _on_offline_spin() -> void:

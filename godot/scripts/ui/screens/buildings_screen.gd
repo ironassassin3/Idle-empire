@@ -87,6 +87,7 @@ func _refresh_header() -> void:
 		var qty_txt := "" if qty <= 1 else " ×%d" % qty
 		var cost_str := FormatUtil.format_money(float(order.get("cost", 0.0)))
 		_approve.text = "APPROVE\n%s%s · %s" % [order.get("building_name", ""), qty_txt, cost_str]
+		_fit_approve_width()
 		var can: bool = bool(order.get("can_approve", false))
 		_approve.disabled = not can
 		if GameConfig.UI_SHELL_V3:
@@ -94,6 +95,19 @@ func _refresh_header() -> void:
 				_approve, Affordance.READY if can else Affordance.APPROACHING)
 	if _seg != null and is_instance_valid(_seg):
 		_seg.visible = Disclosure.buy_mult_visible(GameState)
+
+
+## A Button derives its minimum width from a single text run, so the second line of
+## "APPROVE\n<building> · <cost>" isn't counted and the price clipped mid-number on
+## device. Measure the widest line ourselves; the cost is the point of the chip.
+func _fit_approve_width() -> void:
+	var font := GameFonts.heading()
+	var px := GameTheme.scaled_font(13)
+	var widest := 0.0
+	for line in _approve.text.split("\n"):
+		widest = maxf(widest, font.get_string_size(
+			line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	_approve.custom_minimum_size.x = ceilf(widest) + 20.0
 
 
 func _make_silhouette(index: int) -> Control:

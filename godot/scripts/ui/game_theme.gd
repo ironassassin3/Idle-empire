@@ -849,7 +849,13 @@ static var _device_font_boost := -1.0
 static func device_font_boost() -> float:
 	if _device_font_boost < 0.0:
 		_device_font_boost = 1.0
-		if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
+		# Desktop captures always run at 1.0, so every row that only overflows at
+		# a phone's boost stayed invisible to ui_capture.ps1 until a device pass
+		# (2026-07-29). CE_FONT_BOOST lets the harness reproduce a real handset.
+		if OS.has_environment("CE_FONT_BOOST"):
+			_device_font_boost = clampf(
+				float(OS.get_environment("CE_FONT_BOOST")), 1.0, 1.6)
+		elif OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
 			var dpi := DisplayServer.screen_get_dpi()
 			if dpi > 200:
 				_device_font_boost = clampf(float(dpi) / 160.0, 1.0, 1.6)

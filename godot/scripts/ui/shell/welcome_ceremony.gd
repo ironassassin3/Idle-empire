@@ -107,7 +107,7 @@ func _ready() -> void:
 		func(): Monetization.show_rewarded(Monetization.PLACEMENT_OFFLINE_DOUBLE))
 	_offers.add_child(_ad_btn)
 	_spin_btn = Button.new()
-	_spin_btn.text = "🎯 Spin now"
+	_spin_btn.text = "Spin now"
 	GameTheme.apply_overlay_cta(_spin_btn, false)
 	_spin_btn.pressed.connect(_on_spin)
 	_offers.add_child(_spin_btn)

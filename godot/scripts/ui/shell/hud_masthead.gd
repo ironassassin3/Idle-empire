@@ -9,6 +9,11 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 const HEIGHT := 128.0
+const CHIP_SEP := 8.0
+const PAD_H := 12.0
+## No bundled font carries emoji and no SystemFont fallback is installed, so a
+## 🎯 renders as a blank box on device (device pass 2026-07-29). Latin only here.
+const WHEEL_LABEL := "SPIN"
 
 var _rank: Label
 var _balance: Label
@@ -23,6 +28,8 @@ var _filament: UiPrims.Filament
 var _filament_hit: Button
 var _shield_label: Label
 var _buff_label: Label
+var _top: HBoxContainer
+var _col: VBoxContainer
 
 # ── Performing ledger state (Supremacy §4.1, ADR-001) ──
 # Display NEVER exceeds truth: gains ease in, spends snap down same-frame.
@@ -58,15 +65,17 @@ func _ready() -> void:
 	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	v.add_theme_constant_override("separation", 0)
 	add_child(v)
+	_col = v
 
 	var pad := MarginContainer.new()
 	for side in ["left", "right"]:
-		pad.add_theme_constant_override("margin_" + side, 12)
+		pad.add_theme_constant_override("margin_" + side, int(PAD_H))
 	pad.add_theme_constant_override("margin_top", 8)
 	v.add_child(pad)
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 8)
 	pad.add_child(top)
+	_top = top
 
 	top.add_child(_build_rank_chip())
 	var spring := Control.new()
@@ -90,7 +99,7 @@ func _ready() -> void:
 	_dragon_chip.visible = false
 	top.add_child(_dragon_chip)
 	top.add_child(_build_heat_pill())
-	_wheel_chip = _build_chip_button("🎯", func(): UiEvents.overlay_requested.emit("gambling"))
+	_wheel_chip = _build_chip_button(WHEEL_LABEL, func(): UiEvents.overlay_requested.emit("gambling"))
 	_wheel_chip.visible = GameConfig.GAMBLING_ENABLED
 	top.add_child(_wheel_chip)
 	top.add_child(_build_gear())
@@ -360,8 +369,14 @@ func _build_gear() -> Button:
 
 
 func refresh() -> void:
-	# Track live text-scale changes from Settings without a scene rebuild.
-	custom_minimum_size.y = HEIGHT * GameTheme.text_scale_mult()
+	# Track live text-scale changes from Settings without a scene rebuild. The band
+	# must also never be shorter than its own content: a phone's 1.6 font boost grows
+	# the rank/balance/income stack past a scaled 128px, and the overflow rendered
+	# *under* the rail — the income line, the whole idle promise, was invisible on
+	# device (2026-07-29). Fixed heights cannot survive a text multiplier.
+	custom_minimum_size.y = maxf(
+		HEIGHT * GameTheme.text_scale_mult(),
+		_col.get_combined_minimum_size().y if _col != null else 0.0)
 	# Balance text is owned by the ticker (_tick_balance) — do not set it here.
 	var ips: float = GameState.income_per_second()
 	var ips_txt := FormatUtil.format_money(ips)
@@ -446,10 +461,62 @@ func refresh() -> void:
 		_dragon_chip.add_theme_color_override("font_color", meta.get("color", GameTheme.GOLD))
 		_dragon_chip.tooltip_text = "%s — tap to visit your patron" % str(meta.get("title", patron))
 
+	# Re-derived every refresh: _fit_top_row may have hidden it to save the gear.
+	_wheel_chip.visible = GameConfig.GAMBLING_ENABLED
 	if _wheel_chip.visible:
 		var spins: int = GameState.gambling_free_spins()
-		_wheel_chip.text = "🎯%d" % spins if spins > 0 else "🎯"
+		_wheel_chip.text = "%s %d" % [WHEEL_LABEL, spins] if spins > 0 else WHEEL_LABEL
 		_wheel_chip.tooltip_text = "Luck Wheel — %d free spin(s)" % spins
+
+	_fit_top_row()
+
+
+## Z1 has one hard invariant: the gear stays on screen. A Kingpin-era band
+## (rank + prestige CTA + patron mood + heat pill + wheel + gear) overflows 720px
+## and pushes Settings clean off the right edge — found on device 2026-07-29,
+## where Config was unreachable. Concede label width in priority order; never
+## concede a chip, and never the gear.
+func _fit_top_row() -> void:
+	# Measure against the width the row is ALLOWED, not the width it was granted:
+	# fit_child_in_rect never shrinks a child under its minimum, so an overflowing
+	# HBox reports size.x == its own overflow and every "does it fit" test passes.
+	var avail: float = size.x - 2.0 * PAD_H
+	if _top == null or avail <= 0.0 or _top_row_width() <= avail:
+		return
+	# Cheapest loss first: the chip's job is "you can ascend", not the exact gain.
+	if _prestige_chip.visible:
+		match _prestige_chip.text:
+			"CHOOSE PATH": _prestige_chip.text = "PATH"
+			"BUY PATH PERK": _prestige_chip.text = "PERK"
+			_:
+				if _prestige_chip.text.begins_with("PRESTIGE +"):
+					_prestige_chip.text = "PRESTIGE"
+		if _top_row_width() <= avail:
+			return
+	# Patron keeps its chip and its colour, loses the mood word.
+	if _dragon_chip.visible:
+		_dragon_chip.text = "●"
+		if _top_row_width() <= avail:
+			return
+	# Rank is repeated in the boss sheet, so it can shrink to a stub here.
+	_rank.text = GameTheme.truncate(GameState.rank_label().to_upper(), 8)
+	if _top_row_width() <= avail:
+		return
+	# Last resort: the wheel has a full row in the boss sheet, so it can go dark
+	# rather than shove Settings off the screen.
+	_wheel_chip.visible = false
+
+
+func _top_row_width() -> float:
+	var w := 0.0
+	var shown := 0
+	for child in _top.get_children():
+		var ctl := child as Control
+		if ctl == null or not ctl.visible:
+			continue
+		w += ctl.get_combined_minimum_size().x
+		shown += 1
+	return w + maxf(0.0, float(shown - 1)) * CHIP_SEP
 
 
 func _prestige_tooltip() -> String:

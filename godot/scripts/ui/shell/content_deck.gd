@@ -61,8 +61,17 @@ func _ready() -> void:
 	_title.add_theme_font_override("font", GameFonts.heading())
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	_title.add_theme_color_override("font_color", GameTheme.GOLD)
+	# At a phone's 1.6 font boost the title's full-text minimum width squeezed the
+	# header's action slot instead, clipping the APPROVE cost mid-number. The title
+	# is the redundant half of this row (the tab is lit in the dock) — it yields.
+	_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_title.clip_text = true
 	header.add_child(_title)
-	_control_slot = Control.new()
+	# A real container, not a bare Control: the slot's contents change after the tab
+	# is shown (APPROVE appears, its cost grows digits), and a Control neither sizes
+	# its children nor re-reports a minimum, so the button kept a width measured
+	# when it was still hidden and clipped its own price mid-number on device.
+	_control_slot = HBoxContainer.new()
 	_control_slot.size_flags_horizontal = Control.SIZE_SHRINK_END
 	header.add_child(_control_slot)
 
@@ -99,9 +108,6 @@ func show_screen(id: String) -> void:
 	var ctl: Control = screen.call("header_control") if screen.has_method("header_control") else null
 	if ctl != null:
 		_control_slot.add_child(ctl)
-		_control_slot.custom_minimum_size = ctl.get_combined_minimum_size()
-	else:
-		_control_slot.custom_minimum_size = Vector2.ZERO
 	if screen.has_method("on_show"):
 		screen.call("on_show")
 
