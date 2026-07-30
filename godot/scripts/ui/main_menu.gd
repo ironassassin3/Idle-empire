@@ -28,6 +28,7 @@ func _ready() -> void:
 	_version.text = GameConfig.VERSION
 	_apply_safe_area()
 	get_viewport().size_changed.connect(_apply_safe_area)
+	get_viewport().size_changed.connect(_fit_title)
 	_apply_menu_theme()
 	_continue_btn.pressed.connect(_on_continue)
 	_new_btn.pressed.connect(_on_new)
@@ -38,6 +39,27 @@ func _ready() -> void:
 	_import_btn.visible = OS.has_feature("editor")
 	_refresh_save_ui()
 	GameTheme.apply_device_font_boost.call_deferred(self)
+	# Runs after the boost pass above (both deferred, FIFO) so it measures the
+	# size the title actually ends up at.
+	_fit_title.call_deferred()
+
+
+## "CRIMINAL EMPIRE" in the display face at a phone's 1.6 font boost is wider
+## than a 720px screen. The title sits in a CenterContainer, so it stretched the
+## panel past the viewport and clipped at BOTH edges — the first thing a player
+## ever sees. Fit it to the width the panel is actually allowed.
+func _fit_title() -> void:
+	var panel := $Margin/Center/LedgerPanel as PanelContainer
+	var pad := 0.0
+	var sb: StyleBox = panel.get_theme_stylebox("panel") if panel != null else null
+	if sb != null:
+		pad = sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)
+	var avail := get_viewport().get_visible_rect().size.x - pad - float(
+		_margin.get_theme_constant("margin_left")
+		+ _margin.get_theme_constant("margin_right"))
+	var start := int(round(
+		float(GameTheme.scaled_font(GameTheme.FONT_MENU_TITLE)) * GameTheme.device_font_boost()))
+	GameTheme.fit_label_to_width(_title, avail, start)
 
 
 func _apply_safe_area() -> void:

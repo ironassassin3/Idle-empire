@@ -224,6 +224,7 @@ func _build_modal_overlays() -> void:
 	_boss_sheet = BossSheetScript.new()
 	add_child(_boss_sheet)
 	_boss_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_boss_sheet.call("set_dock", _dock)
 	# Prestige ceremony (§4.7) — own CanvasLayer above all other overlays.
 	_climax = PrestigeClimaxScript.new()
 	add_child(_climax)

@@ -23,7 +23,8 @@ extends SceneTree
 ##   --spec PATH        Batch mode: JSON array of job objects (same keys as the
 ##                      CLI flags, snake_case: shell, scene, tab, w, h, out,
 ##                      frames, cash, city_tier, heat, districts,
-##                      prestige_tokens, no_overlays, debug_rects, inputs).
+##                      prestige_tokens, no_overlays, debug_rects, inputs,
+##                      overlay: boss|config|prestige|dragon|gambling).
 ##                      One engine launch renders the whole capture matrix.
 ##
 ## Input playback (spec only): per-job "inputs" array drives synthetic touches
@@ -67,6 +68,7 @@ const _JOB_DEFAULTS := {
 	"out": "user://ui_capture.png", "frames": 60, "cash": 0.0,
 	"city_tier": "", "heat": "", "districts": "", "prestige_tokens": "",
 	"no_overlays": false, "debug_rects": false, "inputs": [],
+	"overlay": "",
 	"reduced_motion": false, "text_scale": -1, "late_cash": 0.0,
 	"offline_hours": 0.0, "compact_rows": false, "trigger_prestige_at": -1,
 	"prestige_count": 0, "all_buildings_owned": 0,
@@ -177,8 +179,14 @@ func _process(_delta: float) -> bool:
 		_seed_state()
 	if _frame == 5:
 		_select_tab()
-		if bool(_job.get("no_overlays", false)):
-			_dismiss_overlays()
+	# Seeded late-game state keeps *firing* milestones (rank-up, achievements)
+	# after the initial dismissal, which then dim the tab we came to look at —
+	# so suppression has to hold for the whole job, not just one frame.
+	if bool(_job.get("no_overlays", false)) and _frame >= 5:
+		_dismiss_overlays()
+	# One frame after the tab settles, so the modal opens over a laid-out sheet.
+	if _frame == 8:
+		_open_overlay()
 	_play_inputs()
 	# late_cash: inject a windfall shortly before capture so the balance
 	# ticker (Supremacy §4.1) is caught mid-count in the shot.
@@ -439,6 +447,17 @@ func _select_tab() -> void:
 				events.emit_signal("subtab_requested", _SHELL_SUBTABS[tab])
 	elif _scene != null and _scene.has_method("_set_tab"):
 		_scene.call("_set_tab", tab)
+
+
+## Modal overlays (boss/config/prestige/dragon/gambling) are only reachable from
+## chrome taps, so the sweep drives them through the same signal the chips use.
+func _open_overlay() -> void:
+	var kind := str(_job.get("overlay", ""))
+	if kind.is_empty():
+		return
+	var events: Node = root.get_node_or_null("UiEvents")
+	if events != null:
+		events.emit_signal("overlay_requested", kind)
 
 
 func _dismiss_overlays() -> void:

@@ -882,6 +882,25 @@ static func _boost_fonts(node: Node, f: float) -> void:
 		_boost_fonts(c, f)
 
 
+## Shrink a single-line label's font until its text fits `max_w`.
+## For headline text that must never wrap: a Label inside a centered container
+## grows its parent past the viewport instead of clipping to it, so the string
+## ends up cut at BOTH edges with no scrollbar to recover it. Always re-measures
+## from `start_px`, so it is idempotent and safe to re-run on viewport resize.
+static func fit_label_to_width(label: Label, max_w: float, start_px: int, min_px: int = 12) -> int:
+	if label == null or max_w <= 0.0 or start_px <= 0:
+		return 0
+	var font: Font = label.get_theme_font("font")
+	if font == null:
+		return 0
+	var px := start_px
+	while px > min_px and font.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > max_w:
+		px -= 1
+	label.add_theme_font_size_override("font_size", px)
+	return px
+
+
 ## Particles OFF doubles as reduced-motion (P14.7) — skip overlay pulses / heavy UI motion.
 static func ui_reduced_motion() -> bool:
 	return not GameState.show_particles

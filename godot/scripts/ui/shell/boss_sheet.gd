@@ -6,10 +6,14 @@ extends Control
 
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
+## Fallback only — used until the shell hands over the real dock.
+const _DEFAULT_DOCK_CLEARANCE := 74.0
+
 var _scrim: ColorRect
 var _panel: PanelContainer
 var _wheel_row: Button
 var _dragon_row: Button
+var _dock: Control
 
 
 func _ready() -> void:
@@ -35,15 +39,17 @@ func _ready() -> void:
 	sb.content_margin_bottom = 12
 	_panel.add_theme_stylebox_override("panel", sb)
 	add_child(_panel)
-	# Anchored to the bottom, riding just above the dock (68px + margin).
+	# Anchored to the bottom, riding just above the dock. The clearance is
+	# measured in _reposition() — see there for why it can't be a constant.
 	_panel.anchor_left = 0.0
 	_panel.anchor_right = 1.0
 	_panel.anchor_top = 1.0
 	_panel.anchor_bottom = 1.0
 	_panel.offset_left = 8.0
 	_panel.offset_right = -8.0
-	_panel.offset_bottom = -74.0
+	_panel.offset_bottom = -_DEFAULT_DOCK_CLEARANCE
 	_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	resized.connect(_reposition)
 
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
@@ -64,6 +70,25 @@ func _ready() -> void:
 		close()
 		UiEvents.overlay_requested.emit("dragon"))
 	v.add_child(_dragon_row)
+
+
+## The sheet has to clear the nav dock, and the dock is neither a fixed height
+## nor flush with the bottom of the screen: its rows grow with the device font
+## boost, and the shell holds it above a safe-area margin. A hardcoded 74px
+## clearance therefore buried the sheet's lower rows (Luck Wheel, Dragon) under
+## the dock on a handset — same tap area, two owners. Measure the dock instead.
+func set_dock(dock: Control) -> void:
+	_dock = dock
+	_reposition()
+
+
+func _reposition() -> void:
+	if _dock == null or not is_instance_valid(_dock) or size.y <= 0.0:
+		return
+	var clearance := size.y - _dock.global_position.y
+	if clearance <= 0.0:
+		return
+	_panel.offset_bottom = -(clearance + 8.0)
 
 
 func _make_row(icon: String, label: String, on_press: Callable) -> Button:
@@ -97,6 +122,7 @@ func open() -> void:
 	var spins: int = GameState.gambling_free_spins()
 	_wheel_row.text = "Luck Wheel" + ("  ·  %d free spin(s)" % spins if spins > 0 else "")
 	_dragon_row.visible = Disclosure.dragon_chip_visible(GameState)
+	_reposition()
 	visible = true
 	Telemetry.log_event("ui_boss_sheet_open", {})
 	if not GameTheme.ui_reduced_motion():

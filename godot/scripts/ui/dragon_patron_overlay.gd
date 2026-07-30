@@ -47,7 +47,12 @@ func _apply_layout() -> void:
 	# is canvas units, Viewport.get_visible_rect is raw window pixels, and they
 	# differ whenever a content scale is active.
 	var vp: Vector2 = _panel.get_viewport_rect().size
-	var stacked: bool = vp.x < 700.0
+	# Three columns need width in proportion to the text they carry. The 700px
+	# threshold was authored at a 1.0 font scale, so a 720px handset stayed in
+	# row mode while its 1.6 boost blew each card past 200px -- clipping the
+	# third patron's title, body and Choose button off the right edge.
+	var boost: float = GameTheme.device_font_boost()
+	var stacked: bool = vp.x < 700.0 * boost
 	_cards.vertical = stacked
 	_scroll.horizontal_scroll_mode = (
 		ScrollContainer.SCROLL_MODE_DISABLED if stacked else ScrollContainer.SCROLL_MODE_AUTO
@@ -57,7 +62,9 @@ func _apply_layout() -> void:
 	)
 	for key in _card_buttons:
 		var card: PanelContainer = _card_buttons[key]
-		card.custom_minimum_size = Vector2(0, 0) if stacked else Vector2(200, 280)
+		card.custom_minimum_size = (
+			Vector2(0, 0) if stacked else Vector2(200.0 * boost, 280.0 * boost)
+		)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if stacked else Control.SIZE_FILL
 
