@@ -44,6 +44,14 @@ func _ready() -> void:
 	_fit_title.call_deferred()
 
 
+## The title screen is the root of the stack, so Back leaves the app from here.
+## The engine no longer does this for us (quit_on_go_back=false, set so the game
+## screen can unwind its overlays instead of dying on the first Back press).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		get_tree().quit()
+
+
 ## "CRIMINAL EMPIRE" in the display face at a phone's 1.6 font boost is wider
 ## than a 720px screen. The title sits in a CenterContainer, so it stretched the
 ## panel past the viewport and clipped at BOTH edges — the first thing a player

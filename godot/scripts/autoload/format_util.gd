@@ -21,6 +21,14 @@ func format_number(n: float) -> String:
 			var formatted := ("%." + str(decimals) + "f") % val
 			formatted = formatted.rstrip("0").rstrip(".")
 			return ("-" if neg else "") + formatted + suffix
+	# Below 1 this used to floor to "0" via str(int(n)), so a new player holding
+	# nine Corner Dealers read "$0/s" on the row and "+ $0 / SEC" in the masthead
+	# one tutorial step after being told buildings earn passively (device pass
+	# 2026-07-30). Small values keep two decimals; the trim keeps whole numbers
+	# clean, so "$10" and "$1" are unchanged. Intentionally diverges from
+	# src/theme.py format_number, which is lab-only and never shown to a player.
+	if n < 10.0:
+		return ("-" if neg else "") + ("%.2f" % n).rstrip("0").rstrip(".")
 	return ("-" if neg else "") + str(int(n))
 
 

@@ -228,6 +228,14 @@ function Invoke-Smoke {
     Write-Host "Sheet bounds (nav dock stays on screen)..." -ForegroundColor Cyan
     & $godot --path $GodotProject --resolution 320x240 --position 3000,3000 -s res://scripts/tools/deck_bounds_smoke.gd
     if ($LASTEXITCODE -ne 0) { throw "deck_bounds_smoke failed - the content sheet overflows the viewport" }
+    # Layout invariants across every tab/overlay at BOTH font scales. Desktop
+    # renders at 1.0; a 263dpi phone applies 1.6 to the same layout, which is
+    # how the menu title, the gear chip and the boss sheet all shipped broken.
+    # No --position here: it skews get_display_safe_area(), which the shell
+    # feeds into its margins, and every rect comes out garbage.
+    Write-Host "Layout invariants (clip / overflow / chrome collision)..." -ForegroundColor Cyan
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/layout_invariants.gd
+    if ($LASTEXITCODE -ne 0) { throw "layout_invariants failed - see the violations above" }
     Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
     $python = Find-Python
     if (-not $python) { throw "Python not found (install the 'py' launcher or add python to PATH)." }

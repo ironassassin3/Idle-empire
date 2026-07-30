@@ -1,4 +1,14 @@
-# Device pass results — 2026-07-27
+# Device pass results
+
+> **Re-pass 2026-07-30 supersedes the P0 section below.** All three P0s have
+> moved: FPS measured **40–48 idle** (not 12–20), the prestige CTA shipped
+> (`4769cb3`), and the gate went 50M → 120M (`b34b8cb`). The 07-27 record is
+> kept intact underneath as the baseline that motivated those fixes.
+> Jump to: [Re-pass 2026-07-30](#re-pass-2026-07-30).
+
+---
+
+## Baseline pass — 2026-07-27
 
 **Device:** moto g (2026) · MediaTek MT6835 (Dimensity 6300, Mali-G57 MC2) · Android 16
 **Build:** debug APK, Godot 4.6.3, `gl_compatibility`
@@ -119,3 +129,88 @@ once — this partly defeats the reactive-city payoff that otherwise works.
 5. Skyline stays inside its stage at high building counts
 6. Tutorial replay path exists
 7. Free spin timing window readable as skill
+
+---
+
+# Re-pass 2026-07-30
+
+**Device:** moto g · `ZA223JN722` · 720×1604 · Android 16 · debug APK, Godot 4.6.3
+**Driven by:** `adb` (screencap + `input`), fresh New Game, plus a loaded late-game save
+**Automated smoke:** PASS — now includes `layout_invariants` (28 surfaces × 1.0/1.6 font scale)
+
+## P0 status — all three moved
+
+### 1. FPS — was 12–20, now 40–48 idle
+Measured off `adb logcat` with repaired instrumentation:
+
+```
+[fps] 43.0  frame_ms=23.3 shell_ms=0.11 draw_calls=184
+[fps] 47.0  frame_ms=21.3 shell_ms=0.09 draw_calls=184
+```
+
+Idle 40–48 fps on a fresh save; 34–44 on a 1000+ building save. Above the ≥30
+gate, still short of the 60 cap.
+
+**The old `process_ms` number was meaningless** — it printed ~68 whether the
+device was doing 26fps or 45, because a per-frame script cost cannot stay flat
+while frame time doubles. Replaced with two directly defined numbers: `frame_ms`
+(1000/fps) and `shell_ms` (measured `_process` cost). The result settles the
+diagnosis the old metric obscured: **`shell_ms` is 0.09–0.15 of a ~23ms frame —
+0.4%.** The cost is renderer-side, which supports the 07-27 `city_view`
+draw-call analysis as the place to optimise for headroom.
+
+**Not settled: the stress case.** Driving 300 clicks through `adb shell input
+tap` showed 2–3 fps, but each `input tap` spawns a process on the device, which
+starves the game regardless of its own cost. That number is an artefact of the
+measurement, not evidence. Purchase-burst and 20cps-click-storm FPS still needs
+a human thumb.
+
+### 2. Prestige discoverability — shipped
+`PRESTIGE` chip in the masthead ([`hud_masthead.gd:84`](godot/scripts/ui/shell/hud_masthead.gd#L84)),
+plus the run-ending beat winning the attention rail (`4769cb3`). Chip observed on
+device. Not yet re-tested by a player actually hunting for it at gate-met.
+
+### 3. First-prestige pacing — constants changed
+`FIRST_PRESTIGE_EARNINGS` 50M → **120M** ([`game_config.gd:23`](godot/scripts/autoload/game_config.gd#L23), `b34b8cb`).
+The 07-27 run hit 126M in 19 min, so that same curve now lands just at the gate
+rather than 2.5× past it. **Unverified by playthrough** — needs a real fresh run.
+
+## Fixed this pass
+
+- **Sub-$1 money floored to `$0`.** With nine Corner Dealers the row read `$0/s`
+  and the masthead `+ $0 / SEC`, one tutorial step after promising passive
+  income — `format_number` fell through to `str(int(n))`. Now two decimals below
+  10. Verified on device: `$0.91/s`, `$0.11/s`, `+ $1.15 / SEC`.
+- **Layout at a phone's 1.6 font boost** (`0a0f704`, `58a2e0d`): masthead
+  overflow hiding the gear, income line under the rail, APPROVE price clipped
+  mid-number, emoji tofu, menu title clipped at both edges, Dragon Patron's third
+  patron off-screen, boss sheet rows under the nav dock. All verified on hardware.
+- **Android save backup** never existed on device (`DirAccess`-relative copy).
+
+## New — open
+
+### Android Back kills the app (P1, store-relevant)
+Back exits from anywhere, including with a modal open. A GDScript handler now
+unwinds overlay → boss sheet → tab → press-again-to-exit
+([`game_shell.gd`](godot/scripts/ui/shell/game_shell.gd)), **but it does not take
+effect**: neither `application/config/quit_on_go_back=false` nor a runtime
+`get_tree().quit_on_go_back = false` stops it on Godot 4.6 / Android 16.
+
+```
+[back] go-back request received      <- our handler runs
+OnGodotTerminating
+GodotActivity: Force quitting Godot instance   <- activity kills it anyway
+```
+
+The manifest has `android:enableOnBackInvokedCallback="false"`, so this is the
+legacy `onBackPressed()` path. Closing it needs an override in the Java build
+template under `godot/android/build/` — a managed, regenerated directory, so it
+is an owner decision rather than a drive-by edit. The GDScript handler is left in
+place: correct, inert, and live the moment the engine side allows it.
+
+### Still untested on device
+Audio · touch feel / free-spin STOP timing · one-handed reach · golden coin ·
+real rewarded ads · portrait-lock rotation · offline overlay. Also open from the
+07-27 list and **not attempted this pass**: sheet drag feel (#4), scroll feel
+(#5), skyline overflow (#6), tutorial replay (#7), free spin skill-read (#8),
+base text size (#9), rows visible in portrait (#10).

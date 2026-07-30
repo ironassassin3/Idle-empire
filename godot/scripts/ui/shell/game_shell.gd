@@ -53,6 +53,12 @@ var _tutorial_shell: PanelContainer
 var _tutorial_banner: Label
 var _fps_debug: Label
 var _fps_log_timer: float = 0.0
+## Stamped at the top of _process so the fps line can report what this node's
+## own frame work actually cost, rather than an engine monitor of unclear units.
+var _process_started_us: int = 0
+
+const _BACK_EXIT_WINDOW := 2.0
+var _back_exit_armed_until: float = 0.0
 
 var _tab := "bldgs"
 var _stats_dirty := true
@@ -76,6 +82,11 @@ func _ready() -> void:
 	_build_modal_overlays()
 	_wire_events()
 
+	# The project setting alone does not hold on Android: the notification fires
+	# and GodotActivity force-quits anyway (verified on device 2026-07-30 —
+	# "[back] go-back request received" immediately followed by "Force quitting
+	# Godot instance"). Setting it on the live SceneTree is what actually sticks.
+	get_tree().quit_on_go_back = false
 	_apply_safe_area()
 	get_viewport().size_changed.connect(_apply_safe_area)
 	GameTheme.apply_device_font_boost.call_deferred(self)
@@ -258,6 +269,46 @@ func _show_tab(tab_id: String) -> void:
 	Telemetry.log_event("ui_tab_open", {"tab": tab_id})
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		_on_back_requested()
+
+
+## Android Back unwinds the UI one layer at a time and only leaves from the top.
+## Godot's default is to quit the process outright (quit_on_go_back), which on
+## device meant Back-to-close-the-Luck-Wheel killed a live run — the kind of
+## thing store reviewers fail a build for. Order mirrors what is on top of what.
+func _on_back_requested() -> void:
+	# A ceremony owns the screen and is already dismissed by tapping it; Back
+	# during the run-ending beat should do nothing rather than skip it blind.
+	if _climax != null and bool(_climax.call("is_active")):
+		return
+	for overlay in [_gambling, _dragon_patron, _prestige_tree]:
+		if overlay != null and overlay.visible:
+			overlay.call("close")
+			return
+	if _boss_sheet != null and _boss_sheet.visible:
+		_boss_sheet.call("close")
+		return
+	# Milestone/offline/event overlays are tap-to-continue and drive game state;
+	# let them finish rather than dismissing them from under the player.
+	if bool(_overlays.get("blocking")):
+		return
+	if _tab != "bldgs":
+		_show_tab("bldgs")
+		return
+	# Top level: the Android convention is press-again-to-exit, not an instant
+	# kill. Save first — an idle game losing a session to a stray tap is worse
+	# than the tap itself.
+	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	if now < _back_exit_armed_until:
+		SaveManager.save_game()
+		get_tree().quit()
+		return
+	_back_exit_armed_until = now + _BACK_EXIT_WINDOW
+	GameState.notification.emit("Press back again to exit", GameTheme.TEXT)
+
+
 func _on_overlay_requested(kind: String) -> void:
 	match kind:
 		"boss":
@@ -293,6 +344,7 @@ func _on_gap_input(event: InputEvent) -> void:
 # --------------------------------------------------------------------- loop
 
 func _process(delta: float) -> void:
+	_process_started_us = Time.get_ticks_usec()
 	_stats_ui_timer -= delta
 	if _stats_dirty and _stats_ui_timer <= 0.0:
 		_stats_ui_timer = _STATS_UI_INTERVAL
@@ -449,12 +501,21 @@ func _refresh_fps_debug() -> void:
 	var fps: float = Engine.get_frames_per_second()
 	# Always emit to stdout once a second so a device pass can read hardware
 	# numbers off `adb logcat`. Overlay text stays gated by the Config toggle.
+	#
+	# This used to print Performance.TIME_PROCESS * 1000 as "process_ms", which
+	# read ~68 no matter whether the device was doing 26fps or 45 — a per-frame
+	# script cost cannot stay flat while frame time nearly doubles, so the number
+	# was worse than useless for diagnosing the city's draw cost. Two directly
+	# defined numbers instead: frame_ms is the wall clock budget (1000/fps), and
+	# shell_ms is what this node's own _process actually consumed, measured. If
+	# shell_ms is a small fraction of frame_ms, the cost is in the renderer.
 	_fps_log_timer -= get_process_delta_time()
 	if _fps_log_timer <= 0.0:
 		_fps_log_timer = 1.0
-		print("[fps] %.1f  process_ms=%.2f draw_calls=%d" % [
+		print("[fps] %.1f  frame_ms=%.1f shell_ms=%.2f draw_calls=%d" % [
 			fps,
-			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+			1000.0 / maxf(fps, 1.0),
+			float(Time.get_ticks_usec() - _process_started_us) / 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
 		])
 	if not GameState.show_debug_fps:

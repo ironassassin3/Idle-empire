@@ -22,6 +22,10 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0.102, 0.082, 0.125, 1)
 boot_splash/show_image=false
 config/icon="res://icon.svg"
+; Android Back must unwind the UI, not kill the app. Godot's default quits the
+; process outright, so on device (2026-07-30) tapping Back to close the Luck
+; Wheel terminated a live run. game_shell.gd handles the request instead.
+config/quit_on_go_back=false
 
 [autoload]
 
