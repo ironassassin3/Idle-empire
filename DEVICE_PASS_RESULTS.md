@@ -93,13 +93,36 @@ drag threshold, and what the handle communicates about its own state.
 `MOUSE_FILTER_PASS` unblocked drags, but touch scrolling is not yet smooth — likely
 drag threshold / scroll deceleration, possibly starved by the framerate in P0-1.
 
-### 6. City grows out of the screen
+### 6. City grows out of the screen — FIXED 2026-07-30
 As the empire scales, the skyline overflows its stage bounds. No clamp on cumulative
 facade height/width against the virtual canvas.
 
-### 7. Tutorials vanish permanently after a few taps
+Root cause: [`city_view.gd`](godot/scripts/ui/city_view.gd) grows each facade with
+`log(owned)/log(6) * 34` — log-damped, but still unbounded. At owned counts in the
+hundreds/thousands, `base_h` exceeded `ground_y`, so the tower's top ran above the
+canvas and got hard-scissored by `clip_contents` (no rim light, no marquee, no
+crown) instead of tapering. Extracted the height formula into a public
+`facade_height()` and clamped it to `ground_y - SKYLINE_TOP_MARGIN` (40px headroom
+for rim/beacon/marquee). Normal-tier heights (owned < ~50) are well under the cap
+and are visually unchanged. Verified headless: `skyline_bounds_probe.gd` sweeps
+owned = 1 / 6 / 20 / 1,000 / 1,000,000 at max tier and asserts every facade stays
+in bounds.
+
+### 7. Tutorials vanish permanently after a few taps — FIXED 2026-07-30
 Tutorial hints disappear and can never be seen again — no replay path, no Config entry.
 Anything missed on first run is lost for good.
+
+This one was already half-true: a "Reset Tutorial" button in
+[`config_screen.gd`](godot/scripts/ui/screens/config_screen.gd) has existed since
+before this audit and does call `GameState.reset_tutorial()`, which correctly
+zeroes `tutorial_step` and every `shown_*_tutorial` flag — so the replay path
+technically worked. Two real gaps made it read as broken: (1) it was unlabeled as
+a replay feature (read as a destructive reset, sitting next to Delete Save), and
+(2) tapping it gave **zero feedback** — you stay on the Settings screen with no
+sign anything happened. Fixed both: relabeled to "Replay Tutorial Hints", and
+`reset_tutorial()` now emits a confirmation toast ("Tutorial hints reset —
+they'll replay as you play") through the existing `GameState.notification`
+channel. Verified headless via `tutorial_replay_probe.gd`.
 
 ### 8. Free spin does not feel skill-based
 The timing window is too tight to read as skill, so the "skill vs luck" split that the
@@ -212,5 +235,9 @@ place: correct, inert, and live the moment the engine side allows it.
 Audio · touch feel / free-spin STOP timing · one-handed reach · golden coin ·
 real rewarded ads · portrait-lock rotation · offline overlay. Also open from the
 07-27 list and **not attempted this pass**: sheet drag feel (#4), scroll feel
-(#5), skyline overflow (#6), tutorial replay (#7), free spin skill-read (#8),
-base text size (#9), rows visible in portrait (#10).
+(#5), free spin skill-read (#8), base text size (#9), rows visible in portrait (#10).
+
+Skyline overflow (#6) and tutorial replay (#7) were fixed later the same day
+(2026-07-30) — see the updated #6/#7 entries above. Both verified headless
+(`skyline_bounds_probe.gd`, `tutorial_replay_probe.gd`); neither has been
+re-played on hardware yet.

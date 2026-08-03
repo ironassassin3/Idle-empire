@@ -50,7 +50,11 @@ Fixes 2 and 3 are code-complete but evidence-free: nobody has played a fresh run
 since. That is the gap now, not the original defects.
 
 ### P1 / P2
-Sheet drag feel · finnicky scroll · skyline overflow · tutorial no-replay · free-spin not skill-readable · body text small · few rows visible  
+Sheet drag feel · finnicky scroll · ~~skyline overflow~~ · ~~tutorial no-replay~~ · free-spin not skill-readable · body text small · few rows visible
+
+#6 (skyline overflow) and #7 (tutorial replay) fixed this pass — see
+[`DEVICE_PASS_RESULTS.md`](DEVICE_PASS_RESULTS.md) for detail. Still open:
+sheet drag feel, scroll feel, free-spin skill-read, text size, rows visible.
 
 Full detail + re-test list: [`DEVICE_PASS_RESULTS.md`](DEVICE_PASS_RESULTS.md).
 

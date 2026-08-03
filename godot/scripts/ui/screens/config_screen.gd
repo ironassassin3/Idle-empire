@@ -87,7 +87,7 @@ func rebuild() -> void:
 		SaveManager.save_game()
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 	)
-	_action_button("Reset Tutorial", func():
+	_action_button("Replay Tutorial Hints", func():
 		GameState.reset_tutorial()
 		rebuild()
 	)

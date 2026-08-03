@@ -8,6 +8,9 @@ const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 const VIRTUAL_SIZE := Vector2(404.0, 320.0)
 # Ambient city redraw. 20 Hz is enough for rain/traffic; Mali pays per redraw.
 const REDRAW_INTERVAL := 1.0 / 20.0
+# Headroom a hero facade must leave above the sky so its rim light, beacon,
+# and marquee never get scissored by clip_contents at extreme owned counts.
+const SKYLINE_TOP_MARGIN := 40.0
 
 const INK := Color("06070c")
 const INK_GOLD := Color(0.541, 0.361, 1.0, 0.157)
@@ -396,6 +399,29 @@ func _draw_back_parallax(t: float, tier: int) -> void:
 					Color(WINDOW_MIX[(i * 11 + 2) % WINDOW_MIX.size()], 0.35))
 
 
+## Public (no leading underscore) so a headless probe can assert the clamp
+## directly instead of duplicating this formula. Not otherwise part of the
+## component's external contract.
+func facade_height(owned: int, tier: int, total: int, is_hero: bool, parity: int, ground_y: float) -> float:
+	# Each unit invested climbs the facade (log-damped so it never runs away):
+	# +0 at 1 owned, ~+34 at 6, ~+57 at 20. This is what makes the city keep
+	# growing every purchase, not just at tier thresholds.
+	var grow := log(float(maxi(owned, 1))) / log(6.0)
+	var h := 34.0 + tier * 18.0 + grow * 34.0 + float(parity) * 10.0
+	if total >= 80:
+		h += 40.0
+	elif total >= 35:
+		h += 24.0
+	# Dominant business (most owned) towers as the empire's hero landmark.
+	if is_hero:
+		h *= 1.3
+	# Clamp: `grow` is log-damped but unbounded (owned counts run into the
+	# thousands+), so past a point h exceeded ground_y and the tower's top got
+	# scissored off by clip_contents with no rim/marquee/crown — the facade
+	# visibly ran off the top of the stage instead of tapering.
+	return minf(h, ground_y - SKYLINE_TOP_MARGIN)
+
+
 func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: float, ground_y: float) -> void:
 	var sw := VIRTUAL_SIZE.x
 	# One hero facade per owned business type (up to 5), so owning more types
@@ -429,18 +455,7 @@ func _draw_mid_skyline(total: int, tier: int, keys: Array, counts: Array, t: flo
 		var key: String = neon_keys[i] if i < neon_keys.size() else "dealer"
 		var owned: int = int(counts[i]) if i < counts.size() else 1
 		var cx := slot_w * (float(i) + 0.5) + sin(t * 0.4 + i) * 1.5
-		# Each unit invested climbs the facade (log-damped so it never runs
-		# away): +0 at 1 owned, ~+34 at 6, ~+57 at 20. This is what makes the
-		# city keep growing every purchase, not just at tier thresholds.
-		var grow := log(float(maxi(owned, 1))) / log(6.0)
-		var base_h := 34.0 + tier * 18.0 + grow * 34.0 + float(i % 2) * 10.0
-		if total >= 80:
-			base_h += 40.0
-		elif total >= 35:
-			base_h += 24.0
-		# Dominant business (most owned) towers as the empire's hero landmark.
-		if i == 0 and not keys.is_empty():
-			base_h *= 1.3
+		var base_h := facade_height(owned, tier, total, i == 0 and not keys.is_empty(), i % 2, ground_y)
 		var breath := 1.0
 		if not GameTheme.ui_reduced_motion():
 			var share: float = float(_top_building_shares[i]) if i < _top_building_shares.size() else 0.0

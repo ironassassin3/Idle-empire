@@ -1550,3 +1550,6 @@ func reset_tutorial() -> void:
 	shown_raid_tutorial = false
 	shown_syndicate_tutorial = false
 	stats_changed.emit()
+	# The reset itself is invisible (settings screen doesn't change) — without
+	# this, tapping the button gave no sign anything happened.
+	notification.emit("Tutorial hints reset — they'll replay as you play", GameTheme.GOLD)
