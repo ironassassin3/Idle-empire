@@ -34,3 +34,9 @@ graphify-out/
 # Per-machine Claude Code settings (tool permissions etc.). The shared team config
 # is .claude/settings.json, which stays tracked.
 /.claude/settings.local.json
+
+# Local device-pass sandboxes — a downloaded Godot engine (~273 MB) and an
+# Android/gradle/export-template tree (~1.3 GB). Audit screenshots under _audit/
+# stay committable; only these heavyweight scratch dirs are ignored.
+/_audit/godot-engine/
+/_audit/runtime/

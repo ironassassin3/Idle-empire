@@ -18,10 +18,6 @@ func show_rewarded(placement: String) -> void:
 	ad_rewarded.emit(placement)
 
 
-func show_interstitial(_trigger: String) -> void:
-	pass
-
-
 func query_products() -> void:
 	products_queried.emit(Monetization.PRODUCT_IDS.duplicate())
 

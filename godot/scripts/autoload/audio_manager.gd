@@ -9,6 +9,9 @@ const Sfxr = preload("res://scripts/audio/sfxr.gd")
 const MusicDefs = preload("res://scripts/audio/music_defs.gd")
 
 const HEAT_TENSION_THRESHOLD := 60.0
+# Keeps procedural SFX under the music and notification mix even when a saved
+# settings profile has the SFX slider at 100%.
+const SFX_BASE_GAIN := 0.65
 
 # Global SFX softening — playtest said the stock sfxr presets were "metallic /
 # harsh." Roll off the brittle highs (low-pass), keep the low-end body (no
@@ -88,7 +91,8 @@ func apply_from_state(state) -> void:
 		_sfx_linear = 0.0
 		_music_linear = 0.0
 	else:
-		_sfx_linear = clampf(state.master_volume * state.sfx_volume, 0.0, 1.0)
+		_sfx_linear = clampf(
+			state.master_volume * state.sfx_volume * SFX_BASE_GAIN, 0.0, 1.0)
 		_music_linear = clampf(state.master_volume * state.music_volume, 0.0, 1.0)
 	var sfx_db := linear_to_db(maxf(_sfx_linear, 0.0001)) if _sfx_linear > 0.0 else -80.0
 	for p in _players:

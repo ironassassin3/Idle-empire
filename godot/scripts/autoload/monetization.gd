@@ -17,9 +17,6 @@ const PLACEMENT_FREE_COIN := "free_coin"
 const PLACEMENT_TIME_SKIP := "time_skip"
 const PLACEMENT_GAMBLE_SPIN := "gamble_spin"
 
-const INTERSTITIAL_MIN_SECS := 180.0
-const INTERSTITIAL_SESSION_CAP := 3
-
 signal ad_reward_granted(placement: String)
 signal ad_failed(placement: String, reason: String)
 signal purchase_completed(product_id: String)
@@ -28,19 +25,12 @@ signal purchase_failed(product_id: String, reason: String)
 var _backend: RefCounted
 var _enabled := true
 var _rewarded_ready: Dictionary = {}
-var _pending_placement: String = ""
-var _interstitial_count: int = 0
-var _last_interstitial_at: float = 0.0
-
-
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if DisplayServer.get_name() == "headless":
 		_enabled = false
 		return
 	_pick_backend()
-	if GameState != null and GameState.has_signal("prestiged"):
-		GameState.prestiged.connect(_on_prestiged)
 
 
 func _pick_backend() -> void:
@@ -81,25 +71,9 @@ func show_rewarded(placement: String) -> void:
 	if not _enabled or not ads_available():
 		ad_failed.emit(placement, "ads_disabled")
 		return
-	_pending_placement = placement
 	_log_ad_event("ad_shown", placement)
 	if _backend != null:
 		_backend.show_rewarded(placement)
-
-
-func maybe_show_interstitial(trigger: String) -> void:
-	if not _enabled or not ads_available():
-		return
-	if _interstitial_count >= INTERSTITIAL_SESSION_CAP:
-		return
-	var now: float = Time.get_ticks_msec() / 1000.0
-	if now - _last_interstitial_at < INTERSTITIAL_MIN_SECS:
-		return
-	_interstitial_count += 1
-	_last_interstitial_at = now
-	_log_ad_event("ad_shown", "interstitial:%s" % trigger)
-	if _backend != null:
-		_backend.show_interstitial(trigger)
 
 
 func query_products() -> void:
@@ -152,6 +126,10 @@ func _on_ad_rewarded(placement: String) -> void:
 func _on_ad_failed(placement: String, reason: String) -> void:
 	_rewarded_ready.erase(placement)
 	ad_failed.emit(placement, reason)
+	# Empty placement means a background warm/load failed; stay quiet. A named
+	# placement means the player tapped a reward CTA and deserves clear feedback.
+	if not placement.is_empty():
+		GameState.notification.emit("Ad isn't ready yet — try again soon", GameTheme.TEXT_MUTED)
 
 
 func _on_purchase_completed(product_id: String) -> void:
@@ -163,10 +141,10 @@ func _on_purchase_completed(product_id: String) -> void:
 func _on_purchase_failed(product_id: String, reason: String) -> void:
 	_log_iap_event(product_id, false, reason)
 	purchase_failed.emit(product_id, reason)
-
-
-func _on_prestiged(_info: Dictionary) -> void:
-	maybe_show_interstitial("prestige")
+	var message := "Purchase couldn't start — try again later"
+	if reason in ["billing_unavailable", "disabled"]:
+		message = "Google Play purchases aren't available right now"
+	GameState.notification.emit(message, GameTheme.TEXT_MUTED)
 
 
 func _log_ad_event(ev: String, placement: String) -> void:

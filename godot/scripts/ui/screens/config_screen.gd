@@ -82,6 +82,14 @@ func rebuild() -> void:
 	_iap_row("Starter pack", Monetization.PRODUCT_STARTER, "Cash + Influence boost")
 	_iap_row("2× income (permanent)", Monetization.PRODUCT_INCOME_X2, "Doubles passive income")
 	_action_button("Restore purchases", func(): Monetization.restore())
+	_header("FAIR PLAY")
+	var fair_play := Label.new()
+	fair_play.text = ("Ads are always your choice and state the reward up front. "
+		+ "No interstitials, countdown offers, disguised buttons, or ad-gated offline progress.")
+	fair_play.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	fair_play.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	fair_play.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_body.add_child(fair_play)
 	_header("DATA")
 	_action_button("Save & Main Menu", func():
 		SaveManager.save_game()
