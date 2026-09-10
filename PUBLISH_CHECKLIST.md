@@ -2,6 +2,7 @@
 
 **Created:** 2026-09-10 · **Owner:** Ayden · **Target track:** Closed testing → soft launch
 **Supersedes the "ranked path" in** [`SHIP_AUDIT.md`](SHIP_AUDIT.md) **as the live task list.**
+**Interactive tracker (shared, checkable):** https://claude.ai/code/artifact/bb8fc9dc-5581-430f-934d-a2d41e706f48
 Evidence files: [`DEVICE_PASS_RESULTS.md`](DEVICE_PASS_RESULTS.md) · [`SHIP_ARCHITECTURE.md`](SHIP_ARCHITECTURE.md) · [`ANDROID_SETUP.md`](ANDROID_SETUP.md)
 
 **Verdict today:** Not publish-ready. Code side is close; the store/compliance track is untouched
