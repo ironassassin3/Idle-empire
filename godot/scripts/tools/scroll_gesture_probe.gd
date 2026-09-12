@@ -1,6 +1,14 @@
 extends SceneTree
 ## Uses the engine's touch-emulation and real viewport dispatch, not signal-only tests.
 const Autoloads = preload("res://scripts/tools/soak_autoloads.gd")
+const CASES := [
+	{"name": "buildings", "tests_button": true},
+	{"name": "upgrades", "tests_button": true},
+	{"name": "config", "tests_button": true},
+	{"name": "turf", "tests_button": false},
+	{"name": "turf:rivals", "tests_button": true},
+	{"name": "stats", "tests_button": false},
+]
 var failures: Array[String] = []
 var sv: SubViewport
 var presses := 0
@@ -21,7 +29,9 @@ func _run() -> void:
 	for building in gs.buildings:
 		building.owned = 20
 	gs.tutorial_step = 99
-	for screen_name in ["buildings", "upgrades", "config", "turf", "turf:rivals", "stats"]:
+	for probe_case in CASES:
+		var screen_name: String = probe_case["name"]
+		var tests_button: bool = probe_case["tests_button"]
 		sv = SubViewport.new()
 		sv.size = Vector2i(720, 500)
 		root.add_child(sv)
@@ -35,7 +45,11 @@ func _run() -> void:
 		var scroll := _find_scroll(screen)
 		_check(screen_name + " has scrolling content", scroll != null and scroll.get_v_scroll_bar().max_value > 500)
 		if scroll != null:
-			var button := _find_button(scroll)
+			var button: Button = _find_button(scroll) if tests_button else null
+			if tests_button:
+				_check(screen_name + " has visible enabled button", button != null)
+			else:
+				print(screen_name, " button interaction: scroll-only case")
 			var start := Vector2(350, 250)
 			if button != null:
 				start = button.get_global_rect().get_center()
@@ -52,15 +66,19 @@ func _run() -> void:
 				await process_frame
 			_mouse(start - Vector2(0, 120), false)
 			_check(screen_name + " vertical drag scrolls", scroll.scroll_vertical > 0)
-			_check(screen_name + " scroll does not activate action", presses == 0)
-			if button != null:
+			if tests_button and button != null:
+				_check(screen_name + " drag does not activate button", presses == 0)
+				presses = 0
 				await _settle()
 				scroll.scroll_vertical = 0
 				await _settle()
-				start = button.get_global_rect().get_center()
-				_mouse(start, true)
-				_mouse(start, false)
-				_check(screen_name + " deliberate tap fires once", presses == 1)
+				var button_still_tappable := _button_is_tappable(button)
+				_check(screen_name + " button remains visible and enabled for tap", button_still_tappable)
+				if button_still_tappable:
+					start = button.get_global_rect().get_center()
+					_mouse(start, true)
+					_mouse(start, false)
+					_check(screen_name + " deliberate tap fires exactly once", presses == 1)
 		# These screens own detached header/footer controls in standalone probes.
 		var header: Control = screen.header_control()
 		if header != null and header.get_parent() == null:
@@ -99,13 +117,20 @@ func _find_scroll(node: Node) -> ScrollContainer:
 	return null
 
 func _find_button(node: Node) -> Button:
-	if node is Button and node.is_visible_in_tree() and not node.disabled and node.get_global_rect().end.y < 450:
+	if node is Button and _button_is_tappable(node):
 		return node
 	for child in node.get_children():
 		var found := _find_button(child)
 		if found != null:
 			return found
 	return null
+
+func _button_is_tappable(button: Button) -> bool:
+	if not button.is_visible_in_tree() or button.disabled:
+		return false
+	var rect := button.get_global_rect()
+	var viewport_rect := Rect2(Vector2.ZERO, Vector2(sv.size))
+	return viewport_rect.has_point(rect.get_center()) and rect.end.y < 450
 
 func _check(label: String, ok: bool) -> void:
 	print(label, ": ", ok)

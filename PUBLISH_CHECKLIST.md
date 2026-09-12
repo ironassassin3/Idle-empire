@@ -5,14 +5,18 @@
 **Interactive tracker (shared, checkable):** https://claude.ai/code/artifact/bb8fc9dc-5581-430f-934d-a2d41e706f48
 Evidence files: [`DEVICE_PASS_RESULTS.md`](DEVICE_PASS_RESULTS.md) · [`SHIP_ARCHITECTURE.md`](SHIP_ARCHITECTURE.md) · [`ANDROID_SETUP.md`](ANDROID_SETUP.md)
 Compliance drafts: [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md) · [`docs/PLAY_DATA_SAFETY.md`](docs/PLAY_DATA_SAFETY.md) · [`docs/STORE_LISTING.md`](docs/STORE_LISTING.md)
-**Last full automated verification:** 2026-09-11 — `.\device_pass.ps1 smoke` **PASS** (deck bounds,
-layout invariants, consent, v1 contract, deck gesture, scroll gesture, 30s soak, income parity 4/4)
-· `sim_branch_validation.py` **40/40** · polish matrix **162 surfaces clean**
+**Last full automated verification:** 2026-09-12 — `.\verify_ship.ps1` **PASS** (deck bounds,
+default layout 36/36, consent, display-backed v1 contract, deck gesture, strengthened scroll gesture,
+30s soak, income parity 4/4, branch validation 40/40, autobattler determinism). Godot still emitted
+RID/texture/ObjectDB/resource cleanup messages at exit; this was not a warning-free run. The earlier
+expanded polish matrix passed **162 layout cases** and was not rerun in this pass.
 
-**Verdict today:** Technically uploadable, but not yet polish-signed. A clean signed AAB, store copy,
-compliance drafts, icon, and feature graphic exist. That AAB is now the **signed baseline**, not the
-public-release candidate: the player-facing bar in Gate 0 and the real-device evidence in Gates A/B/E
-must pass before the final build is cut. Nothing in those gates can be proven from the repository alone.
+**Verdict today:** **Not release-ready.** A signed baseline AAB, store copy, compliance drafts, icon,
+and feature graphic exist, but that AAB predates the current polish source and is the **signed baseline**,
+not the public-release candidate. The player-facing bar in Gate 0 and the Play-installed/device evidence
+in Gates A/B/E must pass before the final build is cut. Automated bounds checks catch measurable
+clipping, overflow, and chrome collisions; they do not prove visual consistency, contrast, touch feel,
+or complete device usability.
 
 Legend — **[code]** doable in this repo · **[owner]** needs Ayden's accounts / device / hands · **[both]**
 
@@ -76,7 +80,8 @@ explaining it. A feature may be deferred; a visible control that silently does n
   - [x] **Cloud backup:** removed — "Sign in (cloud backup)" gone, `CloudSave` disabled, no backup claim in v1
   - [x] **Shared Analytics:** exposes only `OFF` / `DEVICE`; nothing leaves the device, revoke purges the queue
   - Machine-verified by `v1_contract_probe.gd` (UI text, autoload state, and both export presets) and
-    `consent_probe.gd`, both inside `.\device_pass.ps1 smoke`. Owner still confirms the *screen reads*
+    `consent_probe.gd`, both inside `.\device_pass.ps1 smoke`; the v1 service check runs display-backed
+    so headless self-disabling cannot mask initialization drift. Owner still confirms the *screen reads*
     right on device; the dead controls themselves can no longer come back unnoticed.
 - [ ] **[owner]** Background/resume pass: three pause/resume cycles, one force-stop/reopen, and one real
   offline gap restore the correct screen/save and show one clean offline-return summary
@@ -121,8 +126,9 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
   - [ ] Portrait-lock holds through rotation
   - [ ] Offline-return overlay renders correctly after a real time gap
 - [ ] **[owner]** Android Back: closes overlays/sheet/tab, then press-again-to-exit — **does not force-quit**
-  - Codex's 2026-09 pass reported this now passes; the 2026-07-30 pass said the Java `onBackPressed`
-    path still killed the app. **Re-confirm on the current build** — if it still quits, needs an
+  - A 2026-09 debug-device pass reported this now passes; the 2026-07-30 pass said the Java `onBackPressed`
+    path still killed the app. Debug-device evidence does not close this gate. **Re-confirm on the
+    Play-installed release candidate** — if it still quits, it needs an
     override in `godot/android/build/` (owner call: managed/regenerated dir). Handler is already
     in `game_shell.gd`, correct and inert until the engine side allows it.
 
@@ -159,7 +165,14 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
 - [x] **[owner]** Public publisher/contact fields filled — Actually Creative · `actuallycreativesupport@gmail.com`
 - [ ] **[owner]** Host the privacy policy at a stable public URL and paste it into Play Console
 - [x] **[code]** Data Safety + IARC + ads answers derived from the code — [`docs/PLAY_DATA_SAFETY.md`](docs/PLAY_DATA_SAFETY.md)
-- [ ] **[owner]** Submit the Data Safety form from that sheet (declare ad ID, purchase history, opt-in analytics; **do not** declare crash logs or cloud save — neither ships)
+- [ ] **[owner]** Reconcile the final resolved advertising/billing SDKs, merged release manifest, and
+  consent configuration against the providers' current Data Safety disclosures. Unresolved SDK
+  answers—including device IDs, approximate location, ad interactions, and performance/crash
+  diagnostics—are release blockers.
+- [ ] **[owner]** Submit the Data Safety form from that reviewed sheet. The game's gameplay telemetry
+  is local-only and is not off-device analytics; cloud save and a dedicated crash-reporting service
+  do not ship. Do not categorically exclude crash logs/diagnostics until the third-party SDK review
+  above is complete.
 - [ ] **[owner]** Content rating (IARC) questionnaire — answers pre-written in the same sheet: **simulated gambling = yes**, real-money = no, crime theme = yes
 - [x] **[code]** Target API level — `target_sdk=36` / `min_sdk=24`; re-confirm against Play's floor at submission (it moves each August)
 - [ ] **[owner]** App access — declare **all functionality open** (no login, no code, no gated content)
@@ -179,9 +192,14 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
 - [ ] **[owner]** Licensed-tester run on a Play-installed build: rewarded ad shows/rewards/dismisses, purchase + **restore** both work, real product prices fetch
 - [ ] **[owner]** Rewarded ad + UMP prompt verified on device (not mock backend)
 
-## Gate F — Retention infrastructure
+## Gate F — Deferred post-v1 retention infrastructure
 
-- [ ] **[owner]** Provision an analytics endpoint; set `REMOTE_ENDPOINT` in `telemetry.gd` (currently `""` — local file only)
+Notifications, cloud save, and remote analytics are intentionally deferred and are not v1 release
+requirements. Their controls, claims, permissions, and backends must remain off for v1. Reopening any
+of them is a separate post-v1 project with fresh privacy/Data Safety review and verification.
+
+- [ ] **[post-v1, deferred]** Provision and review a remote analytics endpoint before setting
+  `REMOTE_ENDPOINT` in `telemetry.gd` (currently `""` — local file only). Do not provision it for v1.
 - [x] **[code]** Consent defaults for remote telemetry correct on first launch — v1 exposes only
   `OFF` / `DEVICE`, because a SHARED control with no endpoint behind it is exactly the dead promise
   Gate 0 forbids. The `telemetry_share` field still exists and defaults **false**, so a save that
@@ -218,15 +236,19 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
 
 - [ ] **[owner]** Pick a crash service (Sentry vs Crashlytics) — note: Crashlytics pulls in Firebase
 - [ ] **[code]** Integrate the SDK, symbolicate a test crash
-- [x] **[code]** `verify_ship.ps1` + full smoke green on the **debug** build (2026-09-11, re-run after the
-  final telemetry/deck edits): deck bounds (3 viewports), layout invariants (36 surfaces × 2 font
-  scales), consent probe (14/14), v1 contract probe, deck gesture probe, scroll gesture probe
+- [x] **[code]** `verify_ship.ps1` + full smoke green against current source (2026-09-12): deck bounds
+  (3 viewports), default layout probe (**18 surfaces × 2
+  scales = 36 total cases**), consent probe (14/14), v1 contract probe, deck gesture probe, scroll gesture probe
   (6 screens), 30s soak, income parity (4/4 fixtures), branch validation 40/40, autobattler
-  determinism. Fixed en route: `sim_branch_validation.py` read run counters out of a leftover
+  determinism. Godot emitted the known RID/texture/ObjectDB/resource cleanup messages at exit; the
+  run passed but was not warning-free. Fixed earlier: `sim_branch_validation.py` read run counters out of a leftover
   `save.json`, so the suite passed or failed depending on whether a save existed — it now pins its
   own fixture and is order-independent.
-  - Wider polish matrix (3 viewport sizes × 3 text scales × 18 surfaces at 1.6× boost, via
-    `layout_invariants.gd --matrix`): **162 surfaces clean**, captures in `_audit/polish_*.png`.
+  - Expanded matrix (**18 surfaces × 3 viewport sizes × 3 text scales = 162 total cases** at 1.6×
+    boost, via `layout_invariants.gd --matrix`): all bounds cases passed; captures in `_audit/polish_*.png`.
+  - These bounds results do not prove visual consistency, contrast, touch feel, or full device usability.
+    Debug-build automation or debug-device testing cannot close the Play-installed Android Back,
+    billing, or release-signoff gates.
 - [ ] **[code]** Re-run the full automated suite immediately before cutting the release-candidate AAB
 - [ ] **[owner]** Play-installed release candidate completes a 30-minute mixed session plus
   background/resume without crash, freeze, save rollback, or Android system warning
@@ -238,7 +260,7 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
 | # | Item | Source |
 |---|------|--------|
 | P1 | Content sheet drag handle feel — **code fixed** (10px latched threshold, 28px handle, PEEK/HALF/FULL label, tween-kill on grab, pixel-space snap, cancel/focus-loss recovery; `deck_gesture_probe.gd`). Gate 0 blocker until replayed on device | `content_deck.gd` |
-| P1 | Touch scroll finnicky — **code fixed** (recursive `ScreenBase.pass_scroll_input` over every list + the 9 `game_screen` scrollers; `scroll_gesture_probe.gd` proves drag scrolls, drag never buys, tap fires once across 6 screens). Gate 0 blocker until replayed on device | `screen_base.gd` |
+| P1 | Touch scroll finnicky — **code fixed** (recursive `ScreenBase.pass_scroll_input` over every list + the 9 `game_screen` scrollers; `scroll_gesture_probe.gd` proves drag scrolling on 6 screens, with drag/no-activation/exactly-one-tap coverage on the 4 interaction surfaces and explicit scroll-only coverage for turf/stats). Gate 0 blocker until replayed on device | `screen_base.gd` |
 | P1 | Free spin doesn't feel skill-based; Gate 0 blocker because it blurs the skill/RNG promise | `sim_gambling.py` design |
 | ~~P1~~ | ~~Notifications, cloud backup, and shared analytics expose unavailable backends~~ — **closed 2026-09-11:** all three hidden, autoloads disabled, notification permission dropped from both presets | Settings/autoloads |
 | P1 | Android Back previously force-quit from overlays; Gate 0 blocker until Play-build proof | `game_shell.gd` / Android activity |

@@ -8,6 +8,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	_check("display-backed service initialization", DisplayServer.get_name() != "headless")
 	var gs := root.get_node("GameState")
 	gs.reset_new_game()
 	gs.telemetry_share = true  # Compatibility with a saved old SHARED setting.

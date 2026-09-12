@@ -245,7 +245,10 @@ function Invoke-Smoke {
     Write-Host "Telemetry consent contract..." -ForegroundColor Cyan
     & $godot --headless --path $GodotProject -s res://scripts/tools/consent_probe.gd | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "consent_probe failed - telemetry consent defaults regressed" }
-    & $godot --headless --path $GodotProject -s res://scripts/tools/v1_contract_probe.gd | Out-Host
+    # Service state must be checked after normal display-backed initialization.
+    # Notifications and CloudSave intentionally self-disable under --headless,
+    # which would mask a production enablement regression.
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/v1_contract_probe.gd | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "v1_contract_probe failed" }
     & $godot --headless --path $GodotProject -s res://scripts/tools/deck_gesture_probe.gd | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "deck_gesture_probe failed" }
