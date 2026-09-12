@@ -27,8 +27,10 @@ func configure(url: String, parent: Node) -> void:
 func enqueue(lines: PackedStringArray) -> void:
 	if lines.is_empty():
 		return
+	# No endpoint means no consented destination — drop rather than persist, or an
+	# unconfigured build grows telemetry_queue.jsonl forever with data it can
+	# never send. Telemetry only calls this once sharing is opted in anyway.
 	if endpoint_url.is_empty():
-		_persist_queue(lines)
 		return
 	for line in lines:
 		_pending_batch.append(line)
@@ -91,6 +93,13 @@ func _persist_queue(lines: PackedStringArray) -> void:
 	for line in lines:
 		f.store_line(line)
 	f.close()
+
+
+## Opt-out must not leave a retry queue on disk for the next launch to send.
+func purge_queue() -> void:
+	_pending_batch.clear()
+	if FileAccess.file_exists(QUEUE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(QUEUE_PATH))
 
 
 func _drain_queue_to_pending() -> void:

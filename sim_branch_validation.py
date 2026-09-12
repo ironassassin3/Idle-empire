@@ -29,9 +29,17 @@ def fresh():
     # on_enter() may load an existing save from a prior section; force a clean
     # slate so each test controls its own branch/perk state. Load/apply tests
     # override these immediately afterwards.
+    #
+    # The run counters matter as much as the perks: check_requirements() picks
+    # the first-prestige gate vs the scaled rebuild gate off _prestige_count,
+    # so a leftover save.json (this suite writes one in section 5) would
+    # otherwise silently change which building counts a fixture has to meet.
     sm = StateManager(); ps = PlayingState(sm); ps.on_enter()
     ps.perks_purchased = []
     ps.prestige_branch = None
+    ps._prestige_count = 0
+    ps._next_prestige_earnings = prestige.FIRST_PRESTIGE_EARNINGS
+    ps._prestige_route_earnings = 0.0
     pt.apply_perks(ps)
     return ps
 

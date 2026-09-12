@@ -53,6 +53,10 @@ const SURFACES := [
 	{"id": "prestige_tree", "tab": "bldgs", "sub": "", "overlay": "prestige"},
 	{"id": "dragon_patron", "tab": "bldgs", "sub": "", "overlay": "dragon"},
 	{"id": "luck_wheel", "tab": "bldgs", "sub": "", "overlay": "gambling"},
+	{"id": "offline", "tab": "bldgs", "sub": "", "overlay": ""},
+	{"id": "daily", "tab": "bldgs", "sub": "", "overlay": ""},
+	{"id": "milestone", "tab": "bldgs", "sub": "", "overlay": ""},
+	{"id": "event", "tab": "bldgs", "sub": "", "overlay": ""},
 ]
 
 const SETTLE := 14      # shell _ready + the deferred font-boost pass
@@ -71,6 +75,7 @@ var _verbose := false
 ## Loaded at runtime, not preloaded: game_theme.gd refers to the GameState
 ## autoload, which does not exist yet while this script is being compiled.
 var _theme: GDScript
+var _size := SIZE
 
 
 func _initialize() -> void:
@@ -83,6 +88,18 @@ func _initialize() -> void:
 			var job: Dictionary = surface.duplicate()
 			job["boost"] = boost
 			_jobs.append(job)
+	if OS.get_cmdline_user_args().has("--matrix"):
+		_jobs.clear()
+		for viewport_size in [Vector2i(720, 1604), Vector2i(720, 1280), Vector2i(1080, 1920)]:
+			for scale in [0, 1, 2]:
+				for surface in SURFACES:
+					var job: Dictionary = surface.duplicate()
+					job.merge({"boost": 1.6, "size": viewport_size, "scale": scale})
+					_jobs.append(job)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--surface="):
+			var id := arg.trim_prefix("--surface=")
+			_jobs = _jobs.filter(func(job): return job.id == id)
 	_next_job()
 
 
@@ -96,12 +113,13 @@ func _next_job() -> void:
 		_report()
 		return
 	_job = _jobs[_job_index]
+	_size = _job.get("size", SIZE)
 	# device_font_boost() caches its answer in a static, so a single process can
 	# only test one scale unless we reset it between jobs.
 	_theme.set("_device_font_boost", float(_job["boost"]))
 	_seed()
 	_sv = SubViewport.new()
-	_sv.size = SIZE
+	_sv.size = _size
 	_sv.disable_3d = true
 	_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_sv.gui_embed_subwindows = true
@@ -121,6 +139,9 @@ func _seed() -> void:
 	if gs == null:
 		return
 	gs.reset_new_game()
+	gs.ui_text_scale = int(_job.get("scale", 0))
+	gs.show_debug_fps = false
+	gs.show_particles = false
 	gs.balance = 1.2e21
 	gs.prestige_tokens = 30
 	gs.prestige_count = 3
@@ -147,6 +168,20 @@ func _suppress() -> void:
 	gs.pending_event = {}
 	gs.show_offline_overlay = false
 	gs.show_daily_overlay = false
+	match str(_job["id"]):
+		"offline":
+			gs.offline_gain = 1234567.0
+			gs.offline_secs_away = 14400.0
+			gs.show_offline_overlay = true
+		"daily":
+			gs.daily_reward = 12345.0
+			gs.daily_streak = 7
+			gs.show_daily_overlay = true
+		"milestone":
+			gs.milestone_queue = ["EMPIRE GROWING\nYour first business milestone is complete."]
+			gs.milestone_timer = 100.0
+		"event":
+			gs.pending_event = {"title": "A business opportunity", "description": "A contact offers a new opportunity. Choose how your empire responds.", "choices": [{"label": "Accept the offer", "desc": "Spend $1,000 for the opportunity"}, {"label": "Decline", "desc": "Keep your cash"}]}
 
 
 func _process(_delta: float) -> bool:
@@ -175,7 +210,10 @@ func _process(_delta: float) -> bool:
 # ----------------------------------------------------------------- the rules
 
 func _check() -> void:
-	var vp := Rect2(Vector2.ZERO, Vector2(SIZE))
+	if OS.get_cmdline_user_args().has("--capture") and _size == Vector2i(720, 1280) and int(_job.get("scale", 0)) == 2:
+		var output := ProjectSettings.globalize_path("res://../_audit/polish_%s.png" % _job["id"])
+		_sv.get_texture().get_image().save_png(output)
+	var vp := Rect2(Vector2.ZERO, Vector2(_size))
 	var masthead: Control = _shell.find_child("Masthead", true, false) as Control
 	var dock: Control = _shell.find_child("NavDock", true, false) as Control
 	var chrome: Array[Rect2] = []
@@ -204,7 +242,7 @@ func _check() -> void:
 		if not _contains(vp, r):
 			found.append("OVERFLOW %s  rect %.0f,%.0f %.0fx%.0f leaves %dx%d  \"%s\"" % [
 				_path(c), r.position.x, r.position.y, r.size.x, r.size.y,
-				SIZE.x, SIZE.y, text.left(28)])
+				_size.x, _size.y, text.left(28)])
 		if is_button and not _in_chrome(c, masthead, dock):
 			for cr in chrome:
 				if cr.intersects(r):
@@ -219,7 +257,7 @@ func _check() -> void:
 	if not str(_job["overlay"]).is_empty():
 		found.append_array(_hscroll_findings())
 	_checked += 1
-	var label := "%s @ %.1fx" % [_job["id"], float(_job["boost"])]
+	var label := "%s @ %.1fx %s text=%d" % [_job["id"], float(_job["boost"]), _size, int(_job.get("scale", 0))]
 	if found.is_empty():
 		if _verbose:
 			print("[layout] OK   %s" % label)

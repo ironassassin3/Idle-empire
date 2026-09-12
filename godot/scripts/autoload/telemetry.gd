@@ -2,8 +2,11 @@ extends Node
 ## Telemetry — local-first analytics with pluggable sinks (§4.4).
 ##
 ## Buffers gameplay events, flushing to LocalFileSink always and RemoteSink when
-## configured. Consent-gated via GameState.telemetry_consent. Disabled under
-## headless display server (mirrors AudioManager).
+## configured. Two consent levels, both in the save: `telemetry_consent` gates
+## recording at all (local file, never leaves the device), `telemetry_share`
+## gates transmission off-device and defaults FALSE — nothing is sent, queued, or
+## retained for sending until the player opts in. Disabled under headless
+## display server (mirrors AudioManager).
 
 const LocalFileSink = preload("res://scripts/telemetry/local_file_sink.gd")
 const RemoteSink = preload("res://scripts/telemetry/remote_sink.gd")
@@ -26,6 +29,9 @@ func _ready() -> void:
 	_remote_sink = RemoteSink.new()
 	if not REMOTE_ENDPOINT.is_empty():
 		_remote_sink.configure(REMOTE_ENDPOINT, self)
+	else:
+		# Discard retry files left by older builds; v1 has no remote destination.
+		_remote_sink.purge_queue()
 	if _is_probe_run():
 		enabled = true
 		_session = "probe-%05d" % (randi() % 100000)
@@ -60,6 +66,17 @@ func _consent_ok() -> bool:
 	return GameState == null or GameState.telemetry_consent
 
 
+## Off-device transmission needs BOTH a provisioned endpoint and explicit opt-in.
+func _share_ok() -> bool:
+	return (
+		_remote_sink != null
+		and not REMOTE_ENDPOINT.is_empty()
+		and GameState != null
+		and _consent_ok()
+		and GameState.telemetry_share
+	)
+
+
 ## Single entry point. `props` is merged into the record. Never throws.
 func log_event(ev: String, props: Dictionary = {}) -> void:
 	if not enabled or not _consent_ok():
@@ -77,7 +94,7 @@ func log_event(ev: String, props: Dictionary = {}) -> void:
 
 
 func _process(delta: float) -> void:
-	if _remote_sink != null:
+	if _share_ok():
 		_remote_sink.tick(delta, self)
 	if _buffer.is_empty():
 		return
@@ -88,14 +105,34 @@ func _process(delta: float) -> void:
 
 
 func flush() -> void:
+	if not _consent_ok():
+		_buffer.clear()
+		return
 	if _buffer.is_empty():
 		return
 	var batch := _buffer.duplicate()
 	if _local_sink == null or not _local_sink.append_lines(batch):
 		return
 	_buffer.clear()
-	if _remote_sink != null:
+	if _share_ok():
 		_remote_sink.enqueue(batch)
+
+
+## Called when the player changes the sharing setting. Revoking must also drop
+## anything already queued for a later send, or the opt-out leaks on next launch.
+func set_share_consent(on: bool) -> void:
+	on = on and not REMOTE_ENDPOINT.is_empty()
+	if GameState != null:
+		GameState.telemetry_share = on
+	if not on and _remote_sink != null:
+		_remote_sink.purge_queue()
+
+
+func set_local_consent(on: bool) -> void:
+	GameState.telemetry_consent = on
+	set_share_consent(false)
+	if not on:
+		_buffer.clear()
 
 
 func _notification(what: int) -> void:

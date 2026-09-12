@@ -10,14 +10,14 @@ const AndroidBackend = preload("res://scripts/cloud_save/android_backend.gd")
 const PUSH_INTERVAL := 120.0
 
 var _backend: RefCounted
-var _enabled := true
+var _enabled := false  # v1: local saves only; do not initialize a backend.
 var _push_timer: float = 0.0
 var _last_push_at: float = -PUSH_INTERVAL
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	if DisplayServer.get_name() == "headless":
+	if not _enabled or DisplayServer.get_name() == "headless":
 		_enabled = false
 		return
 	_pick_backend()

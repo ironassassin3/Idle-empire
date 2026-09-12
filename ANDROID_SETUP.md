@@ -1,7 +1,8 @@
 # Android setup — Criminal Empire (§5)
 
 Step-by-step guide to export a debug APK to a physical device (e.g. Moto G) from Godot **4.6.3**.  
-Prerequisite: mock-first autoloads are already in the repo (`Monetization`, `Notifications`, `CloudSave`).
+Prerequisite: monetization autoloads are in the repo. V1 deliberately disables notification and
+cloud-save initialization, UI, and notification permission. Do not enable those optional plugins.
 
 **Toolchain check (2026-06-23 on this machine):**
 
@@ -148,8 +149,8 @@ Follow [`godot/addons/PLUGINS.md`](godot/addons/PLUGINS.md). Summary:
 
 **After each install:**
 
-1. **Project → Project Settings → Plugins** — enable all four.
-2. **Project → Export → Android** — scroll to **Plugins** — enable each plugin checkbox.
+1. **Project → Project Settings → Plugins** — enable AdMob and Billing only for v1.
+2. V2 Android plugins are included through their editor plugin; see `godot/addons/PLUGINS.md`.
 3. Poing AdMob: set **AdMob App ID** in export options when you have a real ID (test ID OK for debug).
 
 **Backend singleton names** (already wired in `scripts/*/android_backend.gd`):
@@ -171,7 +172,7 @@ Follow [`godot/addons/PLUGINS.md`](godot/addons/PLUGINS.md). Summary:
 4. **Project → Install Android Build Template**.
 5. Install plugins per §6; enable in **Project Settings → Plugins**.
 6. **Project → Export** — select preset **Android Debug** — confirm no red errors.
-7. Under **Plugins** in the export preset, enable AdMob, Billing, Play Games, LocalNotification.
+7. Confirm only AdMob and Billing editor plugins are enabled; keep Play Games and notifications disabled.
 8. Connect Moto G via USB; enable **Developer options → USB debugging**.
 9. Run `adb devices` — device must show `device` (not `unauthorized`).
 10. In Export dialog: **Export & Run** (debug) — installs `godot/build/criminal-empire-debug.apk`.
@@ -222,7 +223,7 @@ ERROR: Android SDK path not found
 - USB mode: **File transfer / MTP**; accept RSA fingerprint on phone when `adb` first connects.
 - If `adb devices` shows `unauthorized`, revoke USB debugging authorizations on the phone and replug.
 - Arm64 only: `export_presets.cfg` has `architectures/arm64-v8a=true` (Moto G compatible).
-- First launch: grant **notification** permission when prompted (Android 13+); toggle in-game Config tab also gates scheduling.
+- V1 must never prompt for notification permission and must have no notification or cloud sign-in setting.
 
 ---
 

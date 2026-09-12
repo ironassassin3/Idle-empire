@@ -140,6 +140,7 @@ func _pane_scroll(host: Control) -> Array:
 	var box := VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 8)
+	pass_scroll_input(box)
 	scroll.add_child(box)
 	host.add_child(scroll)
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

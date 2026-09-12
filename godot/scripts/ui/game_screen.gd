@@ -266,6 +266,11 @@ func _ready() -> void:
 	_elim_dismiss.pressed.connect(_dismiss_elim)
 	_notif_default_font_size = _notif.get_theme_font_size("font_size")
 	_build_config_tab()
+	for scroll in [_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
+			_crew_scroll, _ops_scroll, _stats_scroll, _mgrs_scroll, _config_scroll]:
+		for content in scroll.get_children():
+			if not content is ScrollBar:
+				ScreenBase.pass_scroll_input(content)
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
 	_setup_tutorial_banner_dismiss()
@@ -2036,7 +2041,7 @@ func _build_config_tab() -> void:
 		AudioManager.apply_from_state(GameState)
 	)
 	_add_config_header("DISPLAY")
-	_add_cycle_row("Text scale", ["100%", "125%"], GameState.ui_text_scale, func(i):
+	_add_cycle_row("Text scale", ["100%", "125%", "150%"], GameState.ui_text_scale, func(i):
 		GameState.ui_text_scale = i
 		_apply_header_theme()
 		_apply_overlay_theme()
@@ -2056,29 +2061,11 @@ func _build_config_tab() -> void:
 		GameState.show_particles = i == 0
 		SaveManager.save_game()
 	)
-	_add_config_header("RETENTION")
-	_add_cycle_row("Notifications", ["OFF", "ON"], 1 if GameState.notifications_enabled else 0, func(i):
-		var on: bool = i == 1
-		GameState.notifications_enabled = on
-		if on:
-			Notifications.request_permission()
+	_add_config_header("PRIVACY")
+	_add_cycle_row("Analytics", ["OFF", "DEVICE"], 1 if GameState.telemetry_consent else 0, func(i):
+		Telemetry.set_local_consent(i == 1)
 		SaveManager.save_game()
 	)
-	_add_cycle_row("Analytics", ["OFF", "ON"], 1 if GameState.telemetry_consent else 0, func(i):
-		GameState.telemetry_consent = i == 1
-		SaveManager.save_game()
-	)
-	if CloudSave.is_signed_in():
-		var cloud_lbl := Label.new()
-		cloud_lbl.text = "Cloud save: signed in"
-		cloud_lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		_config_body.add_child(cloud_lbl)
-	else:
-		var cloud_btn := Button.new()
-		cloud_btn.text = "Sign in (cloud backup)"
-		_apply_config_action_button(cloud_btn)
-		cloud_btn.pressed.connect(func(): CloudSave.sign_in())
-		_config_body.add_child(cloud_btn)
 	_add_config_header("STORE")
 	_add_iap_row("Remove ads", Monetization.PRODUCT_REMOVE_ADS, "Hides ads permanently")
 	_add_iap_row("Starter pack", Monetization.PRODUCT_STARTER, "Cash + Influence boost")
@@ -2095,7 +2082,7 @@ func _build_config_tab() -> void:
 	menu.pressed.connect(_on_menu)
 	_config_body.add_child(menu)
 	var reset_tut := Button.new()
-	reset_tut.text = "Reset Tutorial"
+	reset_tut.text = "Replay Tutorial Hints"
 	_apply_config_action_button(reset_tut)
 	reset_tut.pressed.connect(func(): GameState.reset_tutorial(); _build_config_tab())
 	_config_body.add_child(reset_tut)

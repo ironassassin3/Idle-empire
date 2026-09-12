@@ -37,10 +37,19 @@ func make_scroll_list() -> Array:
 	# the card's own events working and forwards them up to the scroller.
 	# Applied on entry so every current and future row is covered, including
 	# the code-built silhouette cards.
-	list.child_entered_tree.connect(func(node: Node) -> void:
-		if node is Control and (node as Control).mouse_filter == Control.MOUSE_FILTER_STOP:
-			(node as Control).mouse_filter = Control.MOUSE_FILTER_PASS
-	)
+	pass_scroll_input(list)
 	scroll.add_child(list)
 	add_child(scroll)
 	return [scroll, list]
+
+
+## Nested cards and buttons must pass the press to their ScrollContainer too.
+## Godot cancels BaseButton activation on NOTIFICATION_SCROLL_BEGIN; ordinary
+## taps still fire on release, without introducing a timer or delayed action.
+static func pass_scroll_input(node: Node) -> void:
+	if node is Control and node.mouse_filter == Control.MOUSE_FILTER_STOP:
+		node.mouse_filter = Control.MOUSE_FILTER_PASS
+	if not node.child_entered_tree.is_connected(pass_scroll_input):
+		node.child_entered_tree.connect(pass_scroll_input)
+	for child in node.get_children():
+		pass_scroll_input(child)

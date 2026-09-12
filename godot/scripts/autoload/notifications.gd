@@ -8,12 +8,12 @@ const MockBackend = preload("res://scripts/notifications/mock_backend.gd")
 const AndroidBackend = preload("res://scripts/notifications/android_backend.gd")
 
 var _backend: RefCounted
-var _enabled := true
+var _enabled := false  # v1: no backend, scheduling, or permission requests.
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	if DisplayServer.get_name() == "headless":
+	if not _enabled or DisplayServer.get_name() == "headless":
 		_enabled = false
 		return
 	_pick_backend()

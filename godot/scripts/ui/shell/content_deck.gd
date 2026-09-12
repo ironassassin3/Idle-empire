@@ -8,6 +8,7 @@ enum SheetState { PEEK, REST, FULL }
 
 const SNAP_FRACTIONS := {SheetState.PEEK: 0.30, SheetState.REST: 0.55, SheetState.FULL: 0.86}
 const SNAP_TIME := 0.22
+const DRAG_THRESHOLD := 10.0  # Viewport pixels; latched once crossed.
 
 var state: int = SheetState.REST
 var _handle: Control
@@ -20,6 +21,8 @@ var _dragging := false
 var _drag_start_y := 0.0
 var _drag_start_h := 0.0
 var _height_tween: Tween
+var _drag_moved := false
+var _state_label: Label
 
 
 func _ready() -> void:
@@ -40,12 +43,20 @@ func _ready() -> void:
 	add_child(v)
 
 	_handle = Control.new()
-	_handle.custom_minimum_size = Vector2(0, 18)
+	_handle.custom_minimum_size = Vector2(0, 28)
 	_handle.mouse_default_cursor_shape = Control.CURSOR_DRAG
 	var notch := UiPrims.Handle.new()
 	notch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	notch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_handle.add_child(notch)
+	_state_label = Label.new()
+	_state_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_state_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_state_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_state_label.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_handle.add_child(_state_label)
 	_handle.gui_input.connect(_on_handle_input)
 	v.add_child(_handle)
 
@@ -83,7 +94,10 @@ func _ready() -> void:
 	# Re-derive the snap height when the VIEWPORT changes (rotation, window
 	# resize) — never on our own `resized`, which fires for every drag delta
 	# and tween step and would instantly cancel them.
-	get_viewport().size_changed.connect(func(): _apply_state(false))
+	get_viewport().size_changed.connect(func():
+		_dragging = false
+		_apply_state(false)
+	)
 	_apply_state.call_deferred(false)
 
 
@@ -174,6 +188,8 @@ func _target_height() -> float:
 
 
 func _apply_state(animate: bool) -> void:
+	if _state_label != null:
+		_state_label.text = ["PEEK", "HALF", "FULL"][state]
 	var target := _target_height()
 	if _height_tween != null and _height_tween.is_running():
 		_height_tween.kill()
@@ -191,11 +207,18 @@ func _on_handle_input(event: InputEvent) -> void:
 		if mb.button_index != MOUSE_BUTTON_LEFT:
 			return
 		if mb.pressed:
+			if _height_tween != null:
+				_height_tween.kill()
 			_dragging = true
+			_drag_moved = false
 			_drag_start_y = mb.global_position.y
 			_drag_start_h = size.y
 		else:
-			if _dragging and absf(mb.global_position.y - _drag_start_y) < 6.0:
+			if not _dragging:
+				return
+			if mb.canceled:
+				_apply_state(true)
+			elif not _drag_moved and absf(mb.global_position.y - _drag_start_y) < DRAG_THRESHOLD:
 				# Tap: toggle REST ↔ FULL.
 				set_sheet_state(SheetState.REST if state == SheetState.FULL else SheetState.FULL)
 			else:
@@ -203,22 +226,31 @@ func _on_handle_input(event: InputEvent) -> void:
 			_dragging = false
 	elif event is InputEventMouseMotion and _dragging:
 		var dy := (event as InputEventMouseMotion).global_position.y - _drag_start_y
+		if not _drag_moved and absf(dy) < DRAG_THRESHOLD:
+			return
+		_drag_moved = true
 		# Ceiling is _max_height(), the same bound the snap states honour — a
 		# drag may never reach a height the sheet cannot snap back from.
-		var h := clampf(_drag_start_h - dy, _viewport_height() * 0.24, _max_height())
+		var h := clampf(_drag_start_h - dy, minf(_viewport_height() * 0.30, _max_height()), _max_height())
 		custom_minimum_size.y = h
 
 
 func _snap_to_nearest() -> void:
-	var frac := size.y / maxf(1.0, _viewport_height())
-	var best: int = SheetState.REST
-	var best_d := 99.0
+	var best: int = state
+	var best_d := INF
 	for s in SNAP_FRACTIONS:
-		var d: float = absf(frac - float(SNAP_FRACTIONS[s]))
-		if d < best_d:
+		var target := minf(_viewport_height() * float(SNAP_FRACTIONS[s]), _max_height())
+		var d: float = absf(custom_minimum_size.y - target)
+		if d < best_d or (is_equal_approx(d, best_d) and s == state):
 			best_d = d
 			best = s
 	if best == state:
 		_apply_state(true)
 	else:
 		set_sheet_state(best)
+
+
+func _notification(what: int) -> void:
+	if _dragging and what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED]:
+		_dragging = false
+		_apply_state(false)

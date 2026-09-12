@@ -207,7 +207,12 @@ function Invoke-Godot {
         [Parameter(Mandatory = $true)][string]$Godot,
         [Parameter(ValueFromRemainingArguments = $true)][string[]]$Args
     )
-    & $Godot @Args 2>&1 | Out-Null
+    # Keep stderr attached to the console. In Windows PowerShell 5.1, merging a
+    # native process's stderr into the success stream turns even a harmless
+    # Godot warning into a terminating NativeCommandError when
+    # $ErrorActionPreference is "Stop". Suppress stdout only, then trust the
+    # native exit code below for the actual pass/fail result.
+    & $Godot @Args | Out-Null
     if ($null -eq $LASTEXITCODE) {
         if ($?) { return 0 }
         return 1
@@ -223,10 +228,9 @@ function Invoke-Smoke {
     if ($loadExit -ne 0) { throw "Godot headless load failed (exit $loadExit)" }
     # Sheet bounds: needs a real (offscreen) window - the layout does not settle
     # under --headless, so the check would silently pass there. Called directly
-    # rather than through Invoke-Godot: that wrapper merges stderr, which in
-    # PowerShell 5.1 swallows a native exe's run and its exit code.
+    # so its diagnostic output remains visible during the layout check.
     Write-Host "Sheet bounds (nav dock stays on screen)..." -ForegroundColor Cyan
-    & $godot --path $GodotProject --resolution 320x240 --position 3000,3000 -s res://scripts/tools/deck_bounds_smoke.gd
+    & $godot --path $GodotProject --resolution 320x240 --position 3000,3000 -s res://scripts/tools/deck_bounds_smoke.gd | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "deck_bounds_smoke failed - the content sheet overflows the viewport" }
     # Layout invariants across every tab/overlay at BOTH font scales. Desktop
     # renders at 1.0; a 263dpi phone applies 1.6 to the same layout, which is
@@ -234,8 +238,19 @@ function Invoke-Smoke {
     # No --position here: it skews get_display_safe_area(), which the shell
     # feeds into its margins, and every rect comes out garbage.
     Write-Host "Layout invariants (clip / overflow / chrome collision)..." -ForegroundColor Cyan
-    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/layout_invariants.gd
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/layout_invariants.gd | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "layout_invariants failed - see the violations above" }
+    # Telemetry consent contract — the Data Safety answers and the privacy policy
+    # both promise nothing leaves the device on a default install.
+    Write-Host "Telemetry consent contract..." -ForegroundColor Cyan
+    & $godot --headless --path $GodotProject -s res://scripts/tools/consent_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "consent_probe failed - telemetry consent defaults regressed" }
+    & $godot --headless --path $GodotProject -s res://scripts/tools/v1_contract_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "v1_contract_probe failed" }
+    & $godot --headless --path $GodotProject -s res://scripts/tools/deck_gesture_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "deck_gesture_probe failed" }
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/scroll_gesture_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "scroll_gesture_probe failed" }
     Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
     $python = Find-Python
     if (-not $python) { throw "Python not found (install the 'py' launcher or add python to PATH)." }
@@ -260,6 +275,58 @@ function Assert-AndroidToolchain {
     if ($drift) { throw ("Export preset problem:`n  - " + ($drift -join "`n  - ")) }
 }
 
+function Find-JdkTool {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $jdkHome = Find-JdkHome
+    if ($jdkHome) {
+        $jdkTool = Join-Path $jdkHome ("bin\{0}.exe" -f $Name)
+        if (Test-Path -LiteralPath $jdkTool) { return $jdkTool }
+    }
+    $command = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($command) { return $command.Source }
+    return $null
+}
+
+function Assert-ReleaseBundleContents {
+    param([Parameter(Mandatory = $true)][string]$BundlePath)
+
+    $jar = Find-JdkTool "jar"
+    if (-not $jar) { throw "jar.exe not found; cannot audit release bundle contents" }
+
+    $entries = @(& $jar tf $BundlePath)
+    if ($LASTEXITCODE -ne 0) { throw "Could not list AAB contents (jar exit $LASTEXITCODE)" }
+
+    # These files are useful locally but must never be swept into a store build.
+    $forbiddenPrefixes = @(
+        "assetPackInstallTime/assets/scripts/tools/",
+        "assetPackInstallTime/assets/cur_",
+        "assetPackInstallTime/assets/live_bldgs_zero.png"
+    )
+    $leaks = @($entries | Where-Object {
+        $entry = $_
+        @($forbiddenPrefixes | Where-Object { $entry.StartsWith($_) }).Count -gt 0
+    })
+    if ($leaks.Count -gt 0) {
+        $sample = ($leaks | Select-Object -First 12) -join "`n  - "
+        throw "Release AAB contains development-only files:`n  - $sample"
+    }
+
+    Write-Host "Release content audit PASS (no probes or reference screenshots)" -ForegroundColor Green
+}
+
+function Assert-AabSignature {
+    param([Parameter(Mandatory = $true)][string]$BundlePath)
+
+    $jarsigner = Find-JdkTool "jarsigner"
+    if (-not $jarsigner) { throw "jarsigner.exe not found; cannot verify AAB signature" }
+    $verification = & $jarsigner -verify $BundlePath | Out-String
+    if ($LASTEXITCODE -ne 0 -or $verification -notmatch "jar verified\.") {
+        throw "AAB signature verification failed; do not upload this bundle"
+    }
+    Write-Host "AAB signature PASS" -ForegroundColor Green
+}
+
 function Invoke-Export {
     $godot = Find-Godot
     if (-not $godot) { throw "Godot not found" }
@@ -270,8 +337,36 @@ function Invoke-Export {
     $exportExit = Invoke-Godot $godot --path $GodotProject --headless --export-debug $DebugPreset $ApkPath
     if ($exportExit -ne 0) { throw "Export failed (exit $exportExit)" }
     if (-not (Test-Path $ApkPath)) { throw "APK not found at $ApkPath" }
+    Assert-DebugApkContents $ApkPath
     $mb = [math]::Round((Get-Item $ApkPath).Length / 1MB, 1)
     Write-Host ("APK: {0} ({1} MB)" -f $ApkPath, $mb) -ForegroundColor Green
+}
+
+function Assert-DebugApkContents {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
+    try {
+        $leaks = @($archive.Entries | Where-Object {
+            $_.FullName -match '(^|/)scripts/tools/|(^|/)cur_[^/]*|(^|/)live_bldgs_zero\.png'
+        })
+        if ($leaks.Count -gt 0) { throw "Debug APK contains development files: $($leaks.FullName -join ', ')" }
+    } finally {
+        $archive.Dispose()
+    }
+    $buildTools = Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools'
+    $aapt = Get-ChildItem -LiteralPath $buildTools -Directory |
+        Sort-Object Name -Descending |
+        ForEach-Object { Join-Path $_.FullName 'aapt.exe' } |
+        Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if (-not $aapt) { throw 'aapt.exe missing; cannot audit the merged APK permissions' }
+    $permissions = & $aapt dump permissions $Path | Out-String
+    if ($LASTEXITCODE -ne 0) { throw 'APK manifest inspection failed' }
+    if ($permissions -match 'android\.permission\.POST_NOTIFICATIONS') {
+        throw 'V1 APK unexpectedly requests notification permission'
+    }
+    Write-Host 'Debug APK audit PASS (no tools, reference screenshots, or notification permission)' -ForegroundColor Green
 }
 
 function Invoke-ExportAab {
@@ -284,8 +379,12 @@ function Invoke-ExportAab {
     $exportExit = Invoke-Godot $godot --path $GodotProject --headless --export-release $ReleasePreset $AabPath
     if ($exportExit -ne 0) { throw "Export failed (exit $exportExit) - release keystore configured? See ANDROID_SETUP.md" }
     if (-not (Test-Path $AabPath)) { throw "AAB not found at $AabPath" }
+    Assert-AabSignature $AabPath
+    Assert-ReleaseBundleContents $AabPath
     $mb = [math]::Round((Get-Item $AabPath).Length / 1MB, 1)
+    $sha256 = (Get-FileHash -LiteralPath $AabPath -Algorithm SHA256).Hash
     Write-Host ("AAB: {0} ({1} MB)" -f $AabPath, $mb) -ForegroundColor Green
+    Write-Host ("SHA256: {0}" -f $sha256) -ForegroundColor Green
     Write-Host "Play Console upload only - adb cannot install a bundle. Device pass uses .\device_pass.ps1 run." -ForegroundColor Cyan
 }
 

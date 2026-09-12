@@ -4,6 +4,9 @@
 
 Godot version: **4.6.3** (`godot/project.godot`).
 
+**V1 selection:** enable AdMob and Billing only. The Play Games and notification entries below
+are deferred reference material. Do not run their install commands or enable those plugins for v1.
+
 > **No export checkbox.** These are **v2 Android plugins** (`export_plugin.gd`, no `.gdap`).
 > Godot 4.2+ removed the per-plugin checkbox list from the Android export dialog — v2
 > plugins are auto-included the moment their editor plugin is enabled. There is **no**
@@ -45,4 +48,5 @@ Expand-Archive godot\_plugin_staging\admob.zip -DestinationPath godot\addons -Fo
 # https://github.com/kyoz/godot-local-notification/releases
 ```
 
-After extract: open Godot → enable all four plugins → **Install Android Build Template** → Export preset → enable each plugin checkbox.
+After extract: open Godot → enable AdMob and Billing editor plugins only → **Install Android Build Template**.
+V2 plugins have no separate export checkbox. Keep cloud save and notifications disabled for v1.

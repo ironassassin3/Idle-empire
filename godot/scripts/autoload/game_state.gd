@@ -161,7 +161,10 @@ var fps_cap: int = 60
 var show_particles: bool = true
 var show_debug_fps: bool = false
 var notifications_enabled: bool = false
-var telemetry_consent: bool = true
+var telemetry_consent: bool = true  # local on-device diagnostics
+# Off-device transmission is opt-in: nothing leaves the device until the
+# player turns sharing ON (GDPR/Play Data Safety).
+var telemetry_share: bool = false
 var ui_text_scale: int = 0  # 0=100%, 1=125%, 2=150% (P14.6 a11y + Supremacy N6)
 var ui_compact_rows: bool = false  # Supremacy N8 veteran density (D5)
 var compact_offer_done: bool = false  # one-shot rail offer after prestige 1
@@ -1001,6 +1004,7 @@ func apply_save_data(data: Dictionary) -> void:
 	compact_offer_done = _b(data, "compact_offer_done", false)
 	notifications_enabled = _b(data, "notifications_enabled", false)
 	telemetry_consent = _b(data, "telemetry_consent", true)
+	telemetry_share = _b(data, "telemetry_share", false)
 	buy_mult_mode = clampi(_i(data, "buy_mult_mode", 0), 0, 2)
 	remove_ads = _b(data, "remove_ads", false)
 	entitlements = _arr(data, "entitlements")
@@ -1159,6 +1163,7 @@ func to_save_data() -> Dictionary:
 		"compact_offer_done": compact_offer_done,
 		"notifications_enabled": notifications_enabled,
 		"telemetry_consent": telemetry_consent,
+		"telemetry_share": telemetry_share,
 		"buy_mult_mode": buy_mult_mode,
 		"remove_ads": remove_ads,
 		"entitlements": entitlements.duplicate(),
