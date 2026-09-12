@@ -9,7 +9,8 @@ Compliance drafts: [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md) · [`docs/
 default layout 36/36, consent, display-backed v1 contract, deck gesture, strengthened scroll gesture,
 30s soak, income parity 4/4, branch validation 40/40, autobattler determinism). Godot still emitted
 RID/texture/ObjectDB/resource cleanup messages at exit; this was not a warning-free run. The earlier
-expanded polish matrix passed **162 layout cases** and was not rerun in this pass.
+expanded polish matrix was rerun on 2026-09-12 and passed **162/162 layout cases**; it emitted the
+same class of exit-time cleanup diagnostics.
 
 **Verdict today:** **Not release-ready.** A signed baseline AAB, store copy, compliance drafts, icon,
 and feature graphic exist, but that AAB predates the current polish source and is the **signed baseline**,
@@ -143,12 +144,21 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
 ## Gate C — Build & signing
 
 - [x] **[code]** Godot toolchain green — engine `C:\Tools\Godot_4.6.3\`, `GODOT_BIN` set, `.\device_pass.ps1 check`
+  - Rechecked 2026-09-12: Godot, templates, JDK 17, Android SDK, adb, build template,
+    and synchronized export presets reported ready. The sandboxed adb device listing could not create
+    its `.android` directory, so this is toolchain evidence only—not connected-device evidence.
 - [x] **[code]** Export presets — Android (gradle, arm64, portrait, `com.ironassassin.criminalempire`, v1.0.0)
 - [x] **[owner]** Create the **release upload keystore**, store it **outside the repo**, back it up
   (losing it = can never update the listing). Keep the password out of the repo too.
 - [x] **[owner]** Signed baseline AAB built with the cleaned export preset: `.\device_pass.ps1 aab`
   - Artifact: `godot/build/criminal-empire.aab` · 34.2 MB · signature verified · release-content audit passed
   - SHA-256: `CC11B9CC08B74719FAA09F162135570E75FCFB9B2A7E0070C63CFC2847327EA1`
+  - Read-only re-audit 2026-09-12: hash unchanged; `jarsigner` exited 0 with `jar verified`;
+    forbidden release entries = 0. The verifier also reported a self-signed chain, no timestamp,
+    POSIX attributes, and JAR/JarInputStream consistency warnings. This stale baseline is not signed off.
+  - Existing debug APK read-only audit: tool-script entries = 0 and `POST_NOTIFICATIONS` entries = 0;
+    SHA-256 `B5C20918BB85F4F50140B1904F1B99153FE5AE8D8DCDE248A8FAC403F7F6782A`.
+    It is debug evidence only and cannot close any Play-installed gate.
 - [ ] **[both]** After all Gate-0 fixes, cut the immutable release-candidate AAB; rerun signature,
   forbidden-content, full smoke, and SHA-256 checks and replace the baseline hash above
 - [ ] **[owner]** Install that exact release-candidate AAB via Play internal testing and smoke it on device
@@ -169,6 +179,9 @@ The July P0 fixes are code-complete and evidence-free. One clean human run settl
   consent configuration against the providers' current Data Safety disclosures. Unresolved SDK
   answers—including device IDs, approximate location, ad interactions, and performance/crash
   diagnostics—are release blockers.
+  - Stale baseline AAB metadata inventory (2026-09-12): Google Mobile Ads `24.9.0`, UMP `3.2.0`,
+    Play Billing/Billing KTX `8.3.0`. These versions are evidence inputs, not compliance answers;
+    inventory the final release candidate again before completing the form.
 - [ ] **[owner]** Submit the Data Safety form from that reviewed sheet. The game's gameplay telemetry
   is local-only and is not off-device analytics; cloud save and a dedicated crash-reporting service
   do not ship. Do not categorically exclude crash logs/diagnostics until the third-party SDK review
@@ -245,7 +258,8 @@ of them is a separate post-v1 project with fresh privacy/Data Safety review and 
   `save.json`, so the suite passed or failed depending on whether a save existed — it now pins its
   own fixture and is order-independent.
   - Expanded matrix (**18 surfaces × 3 viewport sizes × 3 text scales = 162 total cases** at 1.6×
-    boost, via `layout_invariants.gd --matrix`): all bounds cases passed; captures in `_audit/polish_*.png`.
+    boost, via `layout_invariants.gd --matrix`): **162/162 bounds cases passed on 2026-09-12**;
+    existing captures are in `_audit/polish_*.png`. The run emitted the same exit-time cleanup diagnostics.
   - These bounds results do not prove visual consistency, contrast, touch feel, or full device usability.
     Debug-build automation or debug-device testing cannot close the Play-installed Android Back,
     billing, or release-signoff gates.

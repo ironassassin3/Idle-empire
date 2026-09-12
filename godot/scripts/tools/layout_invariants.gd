@@ -345,9 +345,8 @@ func _path(c: Control) -> String:
 
 func _report() -> void:
 	if _failures > 0:
-		printerr("[layout] FAIL — %d violation(s) across %d surfaces" % [_failures, _checked])
+		printerr("[layout] FAIL — %d violation(s) across %d cases" % [_failures, _checked])
 		quit(1)
 	else:
-		print("[layout] PASS — %d surfaces clean at %s" % [
-			_checked, ", ".join(BOOSTS.map(func(b): return "%.1fx" % b))])
+		print("[layout] PASS — %d cases passed" % _checked)
 		quit(0)
