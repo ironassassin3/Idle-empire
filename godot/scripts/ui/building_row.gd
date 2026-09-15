@@ -38,9 +38,10 @@ func _ready() -> void:
 	# from the global ×1/×10/Max chip in the masthead.
 	_buy10.visible = false
 	_buy_max.visible = false
-	_buy1.custom_minimum_size = Vector2(118, 56)
+	_buy1.custom_minimum_size = Vector2(
+		GameTheme.scale_touch(132), GameTheme.scale_touch(64))
 	_buy1.add_theme_font_override("font", GameFonts.heading())
-	_buy1.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_buy1.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 	_apply_label_scale()
 	_buy1.pressed.connect(_on_buy_primary)
 	_buy10.pressed.connect(func(): buy_pressed.emit(building_index, 10))
@@ -77,12 +78,12 @@ func _on_any_purchase(key: String) -> void:
 
 
 func _apply_label_scale() -> void:
-	GameTheme.apply_row_title(_name, 16)
-	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
-	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
-	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	GameTheme.apply_row_title(_name, 17)
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	_income.add_theme_font_override("font", GameFonts.mono(false))
-	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	_income.add_theme_color_override("font_color", GameTheme.GREEN)
 
 
@@ -174,8 +175,9 @@ func _refresh() -> void:
 		_special.visible = not compact and not _building.special.is_empty()
 		_income.visible = not compact
 		_owned.visible = not compact
-		custom_minimum_size.y = 64.0 if compact else 0.0
-		_buy1.custom_minimum_size = Vector2(118, 48 if compact else 56)
+		custom_minimum_size.y = GameTheme.scale_touch(64) if compact else 0.0
+		_buy1.custom_minimum_size = Vector2(
+			GameTheme.scale_touch(132), GameTheme.scale_touch(56 if compact else 64))
 	var advisor_idx := _ManagerSystem.building_advisor_index(GameState)
 	var is_advised := advisor_idx == building_index
 	var prefix := _ManagerSystem.building_advisor_prefix(GameState, building_index)
@@ -191,7 +193,10 @@ func _refresh() -> void:
 	)
 	_owned.text = "Owned: %d" % _building.owned
 	_income.text = "%s/s" % FormatUtil.format_money(_building.income_per_second())
-	var qty := GameState.effective_buy_qty(building_index)
+	# Max with nothing affordable returns 0, and a 0-qty cost is $0 — which the
+	# whole row then read as READY (bright, purple, "$0"). Price and affordance
+	# both fall back to one unit so the button tells the truth (playtest 2026-09-15).
+	var qty := maxi(GameState.effective_buy_qty(building_index), 1)
 	var cost_qty := _building.cost_for_n(qty)
 	_buy1.text = "BUY %s\n%s" % [GameState.buy_mult_label(), FormatUtil.format_money(cost_qty)]
 	_buy10.text = "×10\n%s" % FormatUtil.format_money(_building.cost_for_n(10))

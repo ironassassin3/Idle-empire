@@ -17,6 +17,9 @@ const JEWEL_TEAL := Color("2fd6c6")
 const JEWEL_MAGENTA := Color("e5457e")
 const TEXT := Color("e8e0d4")
 const TEXT_MUTED := Color("8a8070")
+## Flavor/prose voice. Sits between TEXT and TEXT_MUTED: clearly a softer voice
+## than UI copy, still well above the contrast floor at body px (replaced italics).
+const TEXT_FLAVOR := Color("cfc4b4")
 const GREEN := Color("6a9a6a")
 const RED := Color("9a4a4a")
 ## Reactive-city alert tokens (spec §Open). RED (#9a4a4a) reads as ledger loss on
@@ -738,7 +741,12 @@ static func rank_plate_style() -> StyleBox:
 static func apply_flavor_label(lbl: Label) -> void:
 	if lbl == null:
 		return
-	lbl.add_theme_font_override("font", GameFonts.body_italic())
+	# Was Cormorant Italic. At body px on a phone the italic serif was the single
+	# least readable thing in the game ("I have to squint", playtest 2026-09-15),
+	# and overlay bodies are exactly where the writing has to land. Flavor now
+	# reads upright; the warm tint carries the tonal difference instead.
+	lbl.add_theme_font_override("font", GameFonts.body())
+	lbl.add_theme_color_override("font_color", TEXT_FLAVOR)
 
 
 static func apply_button_icon(btn: Button, icon_name: String, icon_px: int = 20, active: bool = true) -> void:
@@ -829,12 +837,24 @@ static func text_scale_mult() -> float:
 	return 1.0
 
 
+## Touch targets track the density boost and the a11y text scale, but at a
+## gentler rate than type: a button sized 1:1 with font px eats the row it sits
+## in. Use for min-sizes that must stay comfortably tappable as text grows.
+static func scale_touch(base: int) -> int:
+	var f: float = 1.0 + (text_scale_mult() * device_font_boost() - 1.0) * 0.6
+	return int(round(float(base) * f))
+
+
 static func scaled_font(base: int) -> int:
-	var px := int(round(float(base) * text_scale_mult()))
+	# The density boost belongs HERE, not only in the one-shot tree walk below:
+	# rows and overlays built after game_shell's _ready were never walked, so on a
+	# handset every dynamic label kept desktop px ("text to small everywhere",
+	# playtest 2026-09-15). Baking it in covers content created at any time.
+	var px := int(round(float(base) * text_scale_mult() * device_font_boost()))
 	# Market Supremacy N6: enforced legibility floor (Egg Inc's tiny-text
-	# failure). Captions never render below 12px-equivalent under the shell.
+	# failure). Captions never render below 13px-equivalent under the shell.
 	if GameConfig.UI_SHELL_V3:
-		px = maxi(px, 12)
+		px = maxi(px, int(round(13.0 * device_font_boost())))
 	return px
 
 
@@ -874,9 +894,12 @@ static func apply_device_font_boost(node: Node) -> void:
 
 static func _boost_fonts(node: Node, f: float) -> void:
 	if node is Control and not node.has_meta("_fb"):
-		var eff: int = node.get_theme_font_size("font_size")
-		if eff > 0:
-			node.add_theme_font_size_override("font_size", int(round(float(eff) * f)))
+		# Nodes carrying their own override came through scaled_font(), which
+		# already bakes in the boost — walking them again would double-scale.
+		if not node.has_theme_font_size_override("font_size"):
+			var eff: int = node.get_theme_font_size("font_size")
+			if eff > 0:
+				node.add_theme_font_size_override("font_size", int(round(float(eff) * f)))
 		node.set_meta("_fb", true)
 	for c in node.get_children():
 		_boost_fonts(c, f)

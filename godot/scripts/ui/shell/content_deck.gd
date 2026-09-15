@@ -51,6 +51,8 @@ func _ready() -> void:
 	_handle.add_child(notch)
 	_state_label = Label.new()
 	_state_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Flush right against the handle edge clipped the last glyph ("HAL").
+	_state_label.offset_right = -12.0
 	_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_state_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

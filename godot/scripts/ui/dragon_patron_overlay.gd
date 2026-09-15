@@ -123,24 +123,24 @@ func _build_cards() -> void:
 		var tag := Label.new()
 		tag.name = "Tag"
 		tag.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		tag.add_theme_font_size_override("font_size", 11)
+		tag.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 		vbox.add_child(tag)
 		var body := Label.new()
 		body.name = "Body"
 		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		body.add_theme_font_size_override("font_size", 11)
+		body.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 		body.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 		vbox.add_child(body)
 		var strengths := Label.new()
 		strengths.name = "Strengths"
 		strengths.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		strengths.add_theme_font_size_override("font_size", 10)
+		strengths.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 		strengths.add_theme_color_override("font_color", GameTheme.GREEN)
 		vbox.add_child(strengths)
 		var costs := Label.new()
 		costs.name = "Costs"
 		costs.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		costs.add_theme_font_size_override("font_size", 10)
+		costs.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
 		costs.add_theme_color_override("font_color", GameTheme.RED)
 		vbox.add_child(costs)
 		# Cards have unequal body text; this pushes every CTA to the card bottom so

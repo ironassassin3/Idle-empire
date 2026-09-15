@@ -1598,8 +1598,8 @@ func _refresh_dragon_hud() -> void:
 		var ab: Array = _DragonSystem.ABILITIES[ab_key]
 		var btn := Button.new()
 		var cd: float = _DragonSystem.ability_cooldown_remaining(GameState, ab_key)
-		btn.custom_minimum_size = Vector2(0, 24)
-		btn.add_theme_font_size_override("font_size", 9)
+		btn.custom_minimum_size = Vector2(0, GameTheme.scale_touch(30))
+		btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 		if cd > 0.0:
 			btn.text = "%s %ds" % [str(ab[2]).substr(0, 8), int(ceil(cd))]
 			btn.disabled = true

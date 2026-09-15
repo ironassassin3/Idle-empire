@@ -23,8 +23,11 @@ static func ensure_loaded() -> void:
 	if _ready:
 		return
 	_ready = true
-	_body = _variation(load(PATH_BODY) as FontFile, 400.0)
-	_body_italic = _variation(load(PATH_BODY_ITALIC) as FontFile, 400.0)
+	# Cormorant is a display serif: its 400 weight is hairline-thin at body px on
+	# a phone panel. 500 keeps the face and the mood but survives the screen
+	# (playtest 2026-09-15 — "all the text everywhere is to small").
+	_body = _variation(load(PATH_BODY) as FontFile, 500.0)
+	_body_italic = _variation(load(PATH_BODY_ITALIC) as FontFile, 500.0)
 	_heading = _variation(load(PATH_HEADING) as FontFile, 600.0)
 	_display = load(PATH_DISPLAY) as FontFile
 	_mono = _mono_font(load(PATH_MONO) as FontFile, false)
