@@ -247,8 +247,20 @@ of them is a separate post-v1 project with fresh privacy/Data Safety review and 
 
 ## Gate H — Crash reporting & stability
 
-- [ ] **[owner]** Pick a crash service (Sentry vs Crashlytics) — note: Crashlytics pulls in Firebase
+- [x] **[code]** **In-app diagnostics + launch-loop recovery** (2026-09-16, after the S25+ report:
+  crash at ~20 min, then instant close on every launch, nothing in Play Console). `CrashReporter`
+  records the phase each session dies in; a launch that dies while loading a save quarantines that
+  file and restores the backup, and two failed launches enter safe mode (no procedural audio, mock
+  ad/billing backend, Repair save + Crash diagnostics on the title screen). Engine errors land in
+  `user://diagnostics/session.log` with backtraces, bounded and rotated; the player copies the report
+  from the title screen or Config → DATA. See [docs/CRASH_DIAGNOSTICS.md](docs/CRASH_DIAGNOSTICS.md).
+  Verified by `tools/check_crash_recovery.py` (crash-loop, 52-case hostile-save fuzz, save recovery,
+  reporter) and `tools/check_chaos_soak.py`, both inside `.\device_pass.ps1 smoke`.
+- [ ] **[owner]** Pick a crash service (Sentry vs Crashlytics) — note: Crashlytics pulls in Firebase.
+  Still wanted for native crashes and OS kills, which in-app code can never see.
 - [ ] **[code]** Integrate the SDK, symbolicate a test crash
+- [ ] **[owner]** Reproduce the S25+ instant-close on the rebuilt APK, then send the in-app report.
+  Root cause is still unconfirmed: the phase marker will name it on the next failure.
 - [x] **[code]** `verify_ship.ps1` + full smoke green against current source (2026-09-12): deck bounds
   (3 viewports), default layout probe (**18 surfaces × 2
   scales = 36 total cases**), consent probe (14/14), v1 contract probe, deck gesture probe, scroll gesture probe

@@ -34,6 +34,13 @@ func _ready() -> void:
 
 
 func _pick_backend() -> void:
+	# Safe mode follows two launches that died early. Initializing the native ad
+	# and billing SDKs is one of the few things that can take the process down
+	# before the menu draws, so recovery launches stay on the mock backend.
+	if CrashReporter.safe_mode:
+		_backend = MockBackend.new()
+		_wire_backend(_backend)
+		return
 	var android := AndroidBackend.new()
 	if android.is_available():
 		_backend = android

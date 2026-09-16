@@ -269,6 +269,17 @@ func _ready() -> void:
 	call_deferred("reset_new_game")
 
 
+## Android can kill a backgrounded process at any moment and gives no second
+## warning, so the pause notification is the last reliable point to write. Without
+## this the autosave interval was the exposure: up to 30 seconds of a run lost
+## every time the OS reclaimed the app. The write is atomic (temp file + rename),
+## so being killed mid-save cannot damage the existing one.
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		if simulation_active:
+			SaveManager.save_game()
+
+
 func reset_new_game() -> void:
 	buildings = BuildingDefs.make_buildings()
 	managers = ManagerDefs.make_managers()
@@ -369,6 +380,7 @@ func reset_new_game() -> void:
 	stats_changed.emit()
 	_sync_rank_tracking()
 	_apply_audio_settings()
+	Engine.max_fps = fps_cap
 
 
 func _audio() -> Node:
@@ -915,6 +927,38 @@ func _arr(data: Dictionary, key: String) -> Array:
 	return v if v is Array else []
 
 
+## Element-level coercion for save arrays. A file written by a process that died
+## mid-save, or hand-edited, can hold a Dictionary where a count belongs, and
+## int()/bool() on one is a hard engine error that aborts the rest of the load —
+## leaving a half-applied world behind (save_fuzz_probe.gd).
+func _count_of(value, def: int = 0) -> int:
+	if value is int:
+		return value
+	if value is float:
+		return int(value) if is_finite(value) else def
+	return def
+
+
+func _flag_of(value, def: bool = false) -> bool:
+	if value is bool:
+		return value
+	if value is int or value is float:
+		return float(value) != 0.0
+	return def
+
+
+## Sub-structures are handed to system merge helpers with typed parameters, so a
+## wrong type here is an engine error rather than a rejected field.
+func _sub_array(data: Dictionary, key: String) -> Array:
+	var v = data.get(key)
+	return v if v is Array else []
+
+
+func _sub_dict(data: Dictionary, key: String) -> Dictionary:
+	var v = data.get(key)
+	return v if v is Dictionary else {}
+
+
 func apply_save_data(data: Dictionary) -> void:
 	buildings = BuildingDefs.make_buildings()
 	managers = ManagerDefs.make_managers()
@@ -948,18 +992,19 @@ func apply_save_data(data: Dictionary) -> void:
 	carl_emergency_used = _b(data, "carl_emergency_used", false)
 	mechanic_timer = _f(data, "mechanic_timer", 0.0)
 	autobuy_timer = _f(data, "autobuy_timer", 0.0)
-	if data.has("territories"):
-		_TerritorySystem.merge_save_territories(territories, data["territories"])
-	if data.has("rivals"):
-		_RivalSystem.merge_save_rivals(rivals, data["rivals"])
-	if data.has("crew") and typeof(data["crew"]) == TYPE_DICTIONARY:
-		_CrewSystem.merge_save_crew(crew, data["crew"])
-	if data.has("operations"):
-		_OperationSystem.merge_save_operations(operations, data["operations"])
-	if data.has("gambling"):
-		_GamblingSystem.merge_save_gambling(gambling, data["gambling"])
-	if data.has("perks_purchased"):
-		perks_purchased = data["perks_purchased"]
+	if not _sub_array(data, "territories").is_empty():
+		_TerritorySystem.merge_save_territories(territories, _sub_array(data, "territories"))
+	if not _sub_array(data, "rivals").is_empty():
+		_RivalSystem.merge_save_rivals(rivals, _sub_array(data, "rivals"))
+	if not _sub_dict(data, "crew").is_empty():
+		_CrewSystem.merge_save_crew(crew, _sub_dict(data, "crew"))
+	if not _sub_array(data, "operations").is_empty():
+		_OperationSystem.merge_save_operations(operations, _sub_array(data, "operations"))
+	if not _sub_dict(data, "gambling").is_empty():
+		_GamblingSystem.merge_save_gambling(gambling, _sub_dict(data, "gambling"))
+	for perk in _sub_array(data, "perks_purchased"):
+		if perk is String and not perks_purchased.has(perk):
+			perks_purchased.append(perk)
 	var branch_raw = data.get("prestige_branch", "")
 	if typeof(branch_raw) == TYPE_STRING and _PrestigeTree.is_valid_branch(branch_raw):
 		prestige_branch = branch_raw
@@ -978,10 +1023,10 @@ func apply_save_data(data: Dictionary) -> void:
 	coins_caught = _i(data, "coins_caught", 0)
 	promoter_heat_target = _f(data, "promoter_heat_target", 50.0)
 	offline_gain = _f(data, "offline_gain", 0.0)
-	if data.has("achievements"):
-		_AchievementSystem.merge_save(achievements, data["achievements"])
-	if data.has("goals_completed"):
-		_GoalSystem.merge_completed(goals, data["goals_completed"])
+	if not _sub_array(data, "achievements").is_empty():
+		_AchievementSystem.merge_save(achievements, _sub_array(data, "achievements"))
+	if not _sub_array(data, "goals_completed").is_empty():
+		_GoalSystem.merge_completed(goals, _sub_array(data, "goals_completed"))
 	tutorial_step = _i(data, "tutorial_step", 0)
 	shown_raid_tutorial = _b(data, "shown_raid_tutorial", false)
 	shown_ops_tutorial = _b(data, "shown_ops_tutorial", false)
@@ -996,7 +1041,13 @@ func apply_save_data(data: Dictionary) -> void:
 	sfx_volume = _f(data, "sfx_volume", 1.0)
 	music_volume = _f(data, "music_volume", 0.5)
 	mute_all = _b(data, "mute_all", false)
+	# Only the three values the Config row offers: find() returns -1 for anything
+	# else, which the row then reads as an out-of-range selection. The cap is also
+	# applied below — it used to take effect only when the player changed it, so a
+	# saved 30 FPS cap was silently ignored on every relaunch.
 	fps_cap = _i(data, "fps_cap", 60)
+	if not fps_cap in [30, 60, 120]:
+		fps_cap = 60
 	show_particles = _b(data, "show_particles", true)
 	show_debug_fps = _b(data, "show_debug_fps", false)
 	ui_text_scale = clampi(_i(data, "ui_text_scale", 0), 0, 2)
@@ -1038,13 +1089,13 @@ func apply_save_data(data: Dictionary) -> void:
 	show_offline_overlay = false
 	var owned: Array = _arr(data, "buildings")
 	for i in mini(owned.size(), buildings.size()):
-		buildings[i].owned = int(owned[i]) if owned[i] != null else 0
+		buildings[i].owned = maxi(0, _count_of(owned[i]))
 	var mgr: Array = _arr(data, "managers")
 	for i in mini(mgr.size(), managers.size()):
-		managers[i].hired = bool(mgr[i]) if mgr[i] != null else false
+		managers[i].hired = _flag_of(mgr[i])
 	var upg: Array = _arr(data, "upgrades")
 	for i in mini(upg.size(), upgrades.size()):
-		if upg[i] != null and bool(upg[i]):
+		if _flag_of(upg[i]):
 			upgrades[i].purchased = true
 			UpgradeDefs.apply_effect(upgrades[i], self)
 	BuildingDefs.sync_racket_multiplier(buildings)
@@ -1060,6 +1111,7 @@ func apply_save_data(data: Dictionary) -> void:
 	stats_changed.emit()
 	_sync_rank_tracking()
 	_apply_audio_settings()
+	Engine.max_fps = fps_cap
 
 
 # Once-per-calendar-day login reward (port of src/save_load.py). Streak +1 on a

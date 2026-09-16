@@ -80,6 +80,7 @@ func rebuild() -> void:
 			+ "The alley game is pure chance and pays back "
 			+ str(rtp) + "% of what is risked over time — the house keeps the rest.")
 	_header("DATA")
+	_action_button("Crash diagnostics", CrashReporter.show_report)
 	_action_button("Save & Main Menu", func():
 		SaveManager.save_game()
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")

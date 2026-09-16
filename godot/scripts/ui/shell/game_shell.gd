@@ -303,6 +303,7 @@ func _on_back_requested() -> void:
 	var now: float = float(Time.get_ticks_msec()) / 1000.0
 	if now < _back_exit_armed_until:
 		SaveManager.save_game()
+		CrashReporter.note("quit: double back from game")
 		get_tree().quit()
 		return
 	_back_exit_armed_until = now + _BACK_EXIT_WINDOW

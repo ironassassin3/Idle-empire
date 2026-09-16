@@ -106,12 +106,23 @@ static func merge_save_territories(territories: Array, saved: Array) -> void:
 	for i in mini(saved.size(), territories.size()):
 		var td = saved[i]
 		if typeof(td) == TYPE_DICTIONARY:
-			territories[i]["unlocked"] = bool(td.get("unlocked", false))
+			territories[i]["unlocked"] = _truthy(td.get("unlocked", false))
 			territories[i]["owner"] = str(td.get("owner", "unclaimed"))
 		else:
-			var owned: bool = bool(td)
+			# Pre-district saves stored a plain bool per district. Anything that is
+			# not bool-or-number is junk from a damaged file: bool() on it is an
+			# engine error that would abort the rest of the load.
+			var owned: bool = _truthy(td)
 			territories[i]["unlocked"] = owned
 			territories[i]["owner"] = "player" if owned else "unclaimed"
+
+
+static func _truthy(value) -> bool:
+	if value is bool:
+		return value
+	if value is int or value is float:
+		return float(value) != 0.0
+	return false
 
 
 static func territories_to_save(territories: Array) -> Array:

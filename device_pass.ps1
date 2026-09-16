@@ -254,9 +254,19 @@ function Invoke-Smoke {
     if ($LASTEXITCODE -ne 0) { throw "deck_gesture_probe failed" }
     & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/scroll_gesture_probe.gd | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "scroll_gesture_probe failed" }
-    Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
+    # Boot-path hardening: launch-loop recovery, hostile saves, log rotation.
+    # These run against an isolated _audit/runtime user dir, never a real save.
+    Write-Host "Crash recovery + hostile-save probes..." -ForegroundColor Cyan
     $python = Find-Python
     if (-not $python) { throw "Python not found (install the 'py' launcher or add python to PATH)." }
+    & $python (Join-Path $RepoRoot "tools\check_crash_recovery.py") --godot $godot | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "check_crash_recovery failed" }
+    # Randomised play: real actions against the live shell, failing on any engine
+    # error, non-finite economy value, unstable reload, or unbounded growth.
+    Write-Host "Chaos soak (randomised play)..." -ForegroundColor Cyan
+    & $python (Join-Path $RepoRoot "tools\check_chaos_soak.py") --godot $godot --steps 8000 --seeds 2 | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "check_chaos_soak failed" }
+    Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
     Push-Location $RepoRoot
     try {
         & $python sim_godot_soak.py --godot $godot --seconds 30

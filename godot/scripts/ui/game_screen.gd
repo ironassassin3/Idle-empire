@@ -2076,6 +2076,11 @@ func _build_config_tab() -> void:
 	restore.pressed.connect(func(): Monetization.restore())
 	_config_body.add_child(restore)
 	_add_config_header("DATA")
+	var diagnostics := Button.new()
+	diagnostics.text = "Crash diagnostics"
+	_apply_config_action_button(diagnostics)
+	diagnostics.pressed.connect(CrashReporter.show_report)
+	_config_body.add_child(diagnostics)
 	var menu := Button.new()
 	menu.text = "Save & Main Menu"
 	_apply_config_action_button(menu)

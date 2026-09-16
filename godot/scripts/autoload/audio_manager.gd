@@ -39,7 +39,10 @@ var _tension_active := false
 
 
 func _ready() -> void:
-	_enabled = not _is_headless()
+	# Safe mode builds no buses, streams or players: procedural music allocates
+	# the largest buffers in the app, and a recovery launch has to get the player
+	# to the menu above all else. One clean session turns the sound back on.
+	_enabled = not _is_headless() and not CrashReporter.safe_mode
 	if not _enabled:
 		return
 	_setup_buses()

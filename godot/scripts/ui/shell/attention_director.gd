@@ -10,6 +10,12 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const TAKEOVER_DWELL := 4.0
 const REFRESH_INTERVAL := 0.5
 const LOG_MAX := 40
+## One takeover leaves the queue every TAKEOVER_DWELL seconds, and a busy run
+## (raids, goals, ops) produces them faster than that. Unbounded, the queue grew
+## for the whole session and the rail ended up announcing events minutes after
+## they happened — the sort on every push got more expensive the longer you
+## played, which is exactly the shape of a session that degrades and dies.
+const TAKEOVER_MAX := 8
 
 # Priority table (high → low). Takeovers queue by priority; ambient items fill
 # the slot when no takeover is active.
@@ -126,7 +132,11 @@ func _push_takeover(prio: int, kind: String, text: String, value: String) -> voi
 	var item := {"prio": prio, "kind": kind, "text": text, "value": value, "target": ""}
 	_takeovers.append(item)
 	_takeovers.sort_custom(func(a, b): return int(a["prio"]) > int(b["prio"]))
-	if _takeovers[0] == item:
+	# Drop from the tail: what is left is the most urgent, and the rail is a
+	# "look here now" surface, not an archive (the event log keeps the history).
+	while _takeovers.size() > TAKEOVER_MAX:
+		_takeovers.pop_back()
+	if not _takeovers.is_empty() and _takeovers[0] == item:
 		_takeover_left = TAKEOVER_DWELL
 	_publish()
 
