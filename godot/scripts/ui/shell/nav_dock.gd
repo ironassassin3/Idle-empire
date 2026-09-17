@@ -73,7 +73,7 @@ func _build_tab(tab_id: String, icon: String, label: String) -> Control:
 
 	var tex := TextureRect.new()
 	tex.texture = GameIcons.texture(icon)
-	tex.custom_minimum_size = Vector2(22, 22)
+	tex.custom_minimum_size = Vector2(24, 24)
 	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tex.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -84,7 +84,7 @@ func _build_tab(tab_id: String, icon: String, label: String) -> Control:
 	l.text = label
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_override("font", GameFonts.heading())
-	l.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	l.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	v.add_child(l)
 

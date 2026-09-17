@@ -16,7 +16,7 @@ const GOLD_BRIGHT := Color("b18cff")
 const JEWEL_TEAL := Color("2fd6c6")
 const JEWEL_MAGENTA := Color("e5457e")
 const TEXT := Color("e8e0d4")
-const TEXT_MUTED := Color("8a8070")
+const TEXT_MUTED := Color("a39989")
 ## Flavor/prose voice. Sits between TEXT and TEXT_MUTED: clearly a softer voice
 ## than UI copy, still well above the contrast floor at body px (replaced italics).
 const TEXT_FLAVOR := Color("cfc4b4")
@@ -1223,7 +1223,7 @@ static func apply_row_affordance(row: PanelContainer, affordance: int) -> void:
 static func apply_row_buy_button(btn: Button) -> void:
 	if btn == null:
 		return
-	btn.add_theme_font_size_override("font_size", scaled_font(12))
+	btn.add_theme_font_size_override("font_size", scaled_font(14))
 	# Gilded: affordable = chunky gold bevel with dark text (inverted CTA);
 	# disabled = flat dark with a faint gold keyline so lists never go dead.
 	btn.add_theme_stylebox_override("normal", make_game_button_flat(GOLD))

@@ -41,7 +41,7 @@ func _ready() -> void:
 	_buy1.custom_minimum_size = Vector2(
 		GameTheme.scale_touch(132), GameTheme.scale_touch(64))
 	_buy1.add_theme_font_override("font", GameFonts.heading())
-	_buy1.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	_buy1.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	_apply_label_scale()
 	_buy1.pressed.connect(_on_buy_primary)
 	_buy10.pressed.connect(func(): buy_pressed.emit(building_index, 10))
@@ -78,12 +78,13 @@ func _on_any_purchase(key: String) -> void:
 
 
 func _apply_label_scale() -> void:
-	GameTheme.apply_row_title(_name, 17)
-	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
-	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
-	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	GameTheme.apply_row_title(_name, 18)
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_desc.add_theme_color_override("font_color", GameTheme.TEXT_FLAVOR)
+	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_income.add_theme_font_override("font", GameFonts.mono(false))
-	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_income.add_theme_color_override("font_color", GameTheme.GREEN)
 
 
