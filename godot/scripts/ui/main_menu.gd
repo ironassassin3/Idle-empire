@@ -43,6 +43,19 @@ func _ready() -> void:
 	# Runs after the boost pass above (both deferred, FIFO) so it measures the
 	# size the title actually ends up at.
 	_fit_title.call_deferred()
+	# A true first launch should feel like a game, not a file manager. Keep the
+	# title screen for returning players and for any launch that may need recovery.
+	if _should_auto_start_fresh():
+		_on_new.call_deferred()
+
+
+func _should_auto_start_fresh() -> bool:
+	return (
+		not SaveManager.has_save()
+		and not CrashReporter.safe_mode
+		and CrashReporter.boot_failures == 0
+		and CrashReporter.recovery_note.is_empty()
+	)
 
 
 ## Everything a player gets when the game has been failing to launch: what

@@ -93,6 +93,16 @@ func _apply_special_line() -> void:
 		_special.text = ""
 		return
 	_special.visible = true
+	if _building.icon_key == "racket":
+		var count := _building.owned
+		if count <= 0:
+			_special.text = "* Each adds +0.05× Dealer income (cap ×2)"
+		else:
+			var mult := minf(2.0, 1.0 + 0.05 * count)
+			var capped := " — CAP" if count >= 20 else ""
+			_special.text = "* Dealer: 1 + (%d × 0.05) = ×%.2f income%s" % [
+				count, mult, capped]
+		return
 	_special.text = "* %s" % _building.special
 
 

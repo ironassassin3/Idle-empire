@@ -16,8 +16,10 @@ const _Gambling = preload("res://scripts/systems/gambling_system.gd")
 # Three-Card Monte reveal (cash-wager reskin). The outcome is already resolved;
 # these two phases are pure presentation — a shuffle, then the dealer flips the
 # centre card to the band's face. `landed` fires exactly as the wheel's does.
-const MONTE_SHUFFLE_TIME := 0.9
-const MONTE_FLIP_TIME := 0.55
+# Deliberate enough to read on a phone; the result is already settled before
+# this presentation begins, so clarity matters more than snap.
+const MONTE_SHUFFLE_TIME := 1.35
+const MONTE_FLIP_TIME := 0.8
 const MONTE_PERMS: Array = [[0, 1, 2], [1, 0, 2], [1, 2, 0], [0, 1, 2]]
 const MONTE_CENTER_SLOT := 1
 

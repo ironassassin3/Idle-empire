@@ -359,11 +359,11 @@ func _build_chip_button(txt: String, on_press: Callable) -> Button:
 
 func _build_gear() -> Button:
 	var b := _build_chip_button("", func(): UiEvents.overlay_requested.emit("config"))
-	b.icon = GameIcons.texture("gear")
-	b.expand_icon = true
-	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.add_theme_constant_override("icon_max_width", 20)
-	b.add_theme_color_override("icon_normal_color", GameTheme.GOLD)
+	# The SVG imports as dark ink, so the shared gold-chip treatment provides the
+	# contrast. Tinting the texture itself cannot turn black source pixels gold.
+	GameTheme.apply_gear_icon_button(b)
+	b.add_theme_constant_override("icon_max_width", 24)
+	b.add_theme_constant_override("icon_max_height", 24)
 	b.tooltip_text = "Settings"
 	return b
 

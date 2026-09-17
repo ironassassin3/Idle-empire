@@ -245,7 +245,7 @@ func _sync_tension_layer() -> void:
 ## seed). Music loops are procedural PCM from music_defs motifs.
 func _build_streams() -> void:
 	# Soft "tok" for the constant UI click — low and short, no brittle edge.
-	_streams["click"] = _sfx("blip", 101, 0.30, {"p_base_freq": 0.40, "p_lpf_freq": 0.5, "p_env_decay": 0.10})
+	_streams["click"] = _sfx("blip", 101, 0.24, {"p_base_freq": 0.40, "p_lpf_freq": 0.5, "p_env_decay": 0.10})
 	# Buy: keep the coin "ding" but lower and warmer so it has body, not glare.
 	_streams["purchase"] = _sfx("coin", 202, 0.40, {"p_base_freq": 0.45, "p_lpf_freq": 0.5})
 	_streams["achievement"] = _sfx("powerup", 303, 0.44)

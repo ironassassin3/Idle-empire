@@ -16,7 +16,9 @@ extends SceneTree
 ##   --out PATH         Output PNG (absolute, user:// or res://)
 ##   --frames N         Settle frames before capture (default 60)
 ##   --cash / --city-tier / --heat / --districts / --prestige-tokens   GameState seeds
+##   --all-buildings-owned N   Seed every building count (useful for formula/cap states)
 ##   --no-overlays      Dismiss tutorial/milestone/offline overlays before capture
+##   --overlay KIND     Open boss|config|prestige|dragon|gambling after the shell settles
 ##   --debug-rects      Outline every visible Control in the capture (cyan;
 ##                      magenta = zero-area, i.e. collapsed layout) and write
 ##                      <out>.rects.json with name/class/rect/min_size per node
@@ -92,8 +94,10 @@ func _collect_jobs() -> Array:
 		"heat": _arg_after("--heat", ""),
 		"districts": _arg_after("--districts", ""),
 		"prestige_tokens": _arg_after("--prestige-tokens", ""),
+		"all_buildings_owned": int(_arg_after("--all-buildings-owned", "0")),
 		"no_overlays": _has_flag("--no-overlays"),
 		"debug_rects": _has_flag("--debug-rects"),
+		"overlay": _arg_after("--overlay", ""),
 	}
 	if job["shell"] or not str(job["scene"]).is_empty():
 		return [job]

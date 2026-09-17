@@ -31,7 +31,7 @@ const STREAK_BONUS_SPINS := 1
 const WELCOME_FREE_SPINS := 1      # one-time onboarding spin on new game
 
 # Marker sweep speed (bars/sec). UI reads this; validate via sim_gambling.py.
-const SWEEP_SPEED := 1.85
+const SWEEP_SPEED := 1.45
 
 
 # ── Cash-wager casino (pure RNG, fixed house edge) ─────────────────────────

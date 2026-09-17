@@ -71,8 +71,8 @@ func _apply_theme() -> void:
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
 	_spins.add_theme_color_override("font_color", GameTheme.TEXT)
 	_spins.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
-	_prompt.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_prompt.add_theme_color_override("font_color", GameTheme.TEXT)
+	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_status.add_theme_color_override("font_color", GameTheme.GOLD)
 	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 	GameTheme.apply_overlay_cta(_spin_btn, true)
@@ -165,9 +165,9 @@ func _refresh() -> void:
 
 	if _phase != Phase.DONE:
 		if spins > 0:
-			_prompt.text = "Tap SPIN for a free spin, or put cash on the line."
+			_prompt.text = "FREE SPIN: stop the marker — timing sets your reward; your cash is safe.\nRISK: pure luck — you can lose the full stake."
 		elif can_wager:
-			_prompt.text = "No free spins — put cash on the line to keep playing."
+			_prompt.text = "No free spins. RISK is pure luck — you can lose the full stake."
 		else:
 			_prompt.text = "No spins left — come back tomorrow for a free spin."
 
@@ -233,6 +233,6 @@ func _on_ad_pressed() -> void:
 func _on_ad_reward(placement: String) -> void:
 	if placement != Monetization.PLACEMENT_GAMBLE_SPIN or not visible:
 		return
-	_status.text = "+1 spin"
+	_status.text = "REWARD RECEIVED\n+1 FREE SPIN"
 	_stage_free_round()
 	_refresh()
