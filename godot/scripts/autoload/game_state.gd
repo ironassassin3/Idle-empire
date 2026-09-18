@@ -1554,7 +1554,7 @@ func grant_offline_ad_double() -> void:
 	lifetime_earnings += offline_gain
 	_offline_ad_doubled = true
 	notification.emit(
-		"Ad bonus! +%s offline earnings doubled" % FormatUtil.format_money(offline_gain),
+		"Reward received: +%s (offline earnings doubled)" % FormatUtil.format_money(offline_gain),
 		GameTheme.GREEN,
 	)
 	_mark_ips_dirty()
@@ -1563,10 +1563,16 @@ func grant_offline_ad_double() -> void:
 
 func grant_free_golden_coin() -> void:
 	if golden_coin_active:
+		# The ad was watched; never let the reward read as lost. Refresh the
+		# live coin's clock so the player still has its full window.
+		golden_coin_lifetime = 0.0
+		notification.emit("Reward received: a golden coin is waiting. Tap it!", GameTheme.GOLD)
 		return
-	golden_coin_active = true
+	# Must go through _spawn_golden_coin: a naturally expired coin leaves
+	# golden_coin_lifetime past COIN_LIFETIME, so the ad coin vanished next frame.
+	_spawn_golden_coin()
 	golden_coin_timer = 0.0
-	notification.emit("Golden coin spawned!", GameTheme.GOLD)
+	notification.emit("Reward received: golden coin! Tap it for a bonus", GameTheme.GOLD)
 	stats_changed.emit()
 
 

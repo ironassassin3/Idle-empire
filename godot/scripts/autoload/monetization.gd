@@ -123,7 +123,7 @@ func _on_ad_rewarded(placement: String) -> void:
 			GameState.grant_free_golden_coin()
 		PLACEMENT_TIME_SKIP:
 			BuffSystem.add_buff(GameState, "syndicate_income", 300.0, 2.0)
-			GameState.notification.emit("Time skip! 2× income for 5 min", GameTheme.GOLD)
+			GameState.notification.emit("Reward received: 2× income for 5 minutes", GameTheme.GOLD)
 		PLACEMENT_GAMBLE_SPIN:
 			# Stays capped at FREE_SPIN_CAP inside GamblingSystem — ad supply is
 			# the last lever keeping the Luck Wheel scarce (see GAMBLING_ARCHITECTURE §3).

@@ -128,7 +128,7 @@ func cue_for_notification(message: String, color: Color) -> String:
 		return "buff"
 	if message.begins_with("FRENZY!") or message.begins_with("CLICK STORM!"):
 		return "buff"
-	if message.begins_with("Achievement:"):
+	if message.begins_with("Achievement:") or message.begins_with("Reward received"):
 		return "achievement"
 	if message.begins_with("Prestige!"):
 		return "prestige"

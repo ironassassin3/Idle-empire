@@ -461,7 +461,15 @@ func _on_notification(message: String, color: Color) -> void:
 	var is_goal: bool = _is_goal_notification(message, color)
 	var is_autobuy: bool = AudioManager.is_autobuy_message(message)
 	var is_achievement := message.begins_with("Achievement:")
-	if is_goal or is_autobuy:
+	# Ad rewards borrow the achievement treatment: playtesters could not tell
+	# whether a watched ad had paid out.
+	var is_reward := message.begins_with("Reward received")
+	if is_reward:
+		_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_achievement_toast_style())
+		_notif.add_theme_font_size_override("font_size", maxi(_notif_default_font_size + 3, 16))
+		_notif.add_theme_color_override("font_color", GameTheme.GOLD_BRIGHT)
+		_notif_timer = 4.5
+	elif is_goal or is_autobuy:
 		_notif_shell.add_theme_stylebox_override("panel", GameTheme.ink_toast_style())
 		_notif.add_theme_font_size_override("font_size", maxi(_notif_default_font_size + 2, 15))
 		_notif_timer = 4.0
