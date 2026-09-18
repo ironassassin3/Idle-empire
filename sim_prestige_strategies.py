@@ -32,6 +32,7 @@ import src.prestige as prestige
 import src.prestige_tree as ptree
 import src.territory as terr_mod
 import src.upgrades as upg
+import src.managers as mgr_mod
 from src.state_base import StateManager
 from src.states import PlayingState
 from src.save_load import delete_save
@@ -63,6 +64,7 @@ class PrestigeEvent:
     total_influence: int
     rank: str
     ips_before: float
+    next_gate: float
 
 
 @dataclass
@@ -71,6 +73,7 @@ class RunResult:
     first_influence: float = 1e9
     first_prestige_ready: float = 1e9
     prestige_events: list[PrestigeEvent] = field(default_factory=list)
+    requirement_met_at: list[dict[str, float]] = field(default_factory=list)
     inf_at: dict[int, int] = field(default_factory=dict)
     final_influence: int = 0
     final_ips: float = 0.0
@@ -121,9 +124,11 @@ class StrategyPlayer:
                         u.apply(ps)
 
         if not s.skip_managers:
-            for m in ps.managers:
-                if not m.hired and ps.balance >= m.cost:
-                    ps.balance -= m.cost
+            for idx, m in enumerate(ps.managers):
+                # Mirror the real manager panel: cash alone is not sufficient;
+                # acquisition milestones and rank gates must also be satisfied.
+                if mgr_mod.can_hire_manager(ps, idx):
+                    ps.balance -= mgr_mod.hire_fee(idx)
                     m.hired = True
 
         ps.crew.collection = sum(b.owned for b in ps.buildings)
@@ -199,6 +204,7 @@ def run_strategy(
 
     result = RunResult(strategy=strat.name)
     done = 0
+    cycle_requirement_met: dict[str, float] = {}
 
     while t < minutes * 60 and done < prestige_target:
         if strat.name == "pure_idle":
@@ -208,6 +214,10 @@ def run_strategy(
 
         ps.update(dt)
         player.act(dt, active)
+
+        for key, requirement in prestige.check_requirements(ps).items():
+            if requirement[2] and key not in cycle_requirement_met:
+                cycle_requirement_met[key] = t
 
         if result.first_influence > 1e8 and ps.prestige_tokens >= 1:
             result.first_influence = t
@@ -239,8 +249,11 @@ def run_strategy(
                     total_influence=ps.prestige_tokens,
                     rank=prestige.get_rank(ps.prestige_tokens),
                     ips_before=ips_before,
+                    next_gate=prestige.prestige_earnings_required(ps),
                 )
             )
+            result.requirement_met_at.append(cycle_requirement_met.copy())
+            cycle_requirement_met.clear()
 
         for milestone_min in (5, 10, 15, 20, 25, 30, 45, 60):
             sec = milestone_min * 60

@@ -45,6 +45,7 @@ PRESTIGE_EARNINGS_GROWTH = _env_float("IDLE_PRESTIGE_GROWTH", 12.0)
 PRESTIGE_PACING_SECS = _env_float("IDLE_PRESTIGE_PACING_SECS", 1500.0)  # 25 min
 PRESTIGE_SNOWBALL_PAD = _env_float("IDLE_PRESTIGE_SNOWBALL_PAD", 6.0)
 PRESTIGE_REBUILD_SCALE_PER = _env_float("IDLE_PRESTIGE_REBUILD_SCALE", 0.5)
+POST_PRESTIGE_MIN_RUN_SECS = _env_float("IDLE_POST_PRESTIGE_MIN_RUN_SECS", 1500.0)
 
 
 def post_building_required(prestige_count: int, base: int) -> int:
@@ -121,6 +122,11 @@ def check_requirements(state) -> dict:
             'dealers': (dealers, d_need, dealers >= d_need),
             'rackets': (rackets, r_need, rackets >= r_need),
             'chops':   (chops, c_need, chops >= c_need),
+            'rebuild_time': (
+                float(getattr(state, '_prestige_cycle_time', 0.0)),
+                POST_PRESTIGE_MIN_RUN_SECS,
+                float(getattr(state, '_prestige_cycle_time', 0.0)) >= POST_PRESTIGE_MIN_RUN_SECS,
+            ),
         })
     if n >= 1:
         import src.prestige_tree as _ptree
@@ -477,6 +483,7 @@ class PrestigeManager:
         # Reset balance (lifetime_earnings keeps accumulating across prestiges)
         state.balance = 0.0
         state._prestige_route_earnings = 0.0  # Godot parity — gate starts fresh each cycle
+        state._prestige_cycle_time = 0.0
 
         # Reset buildings
         for b in state.buildings:

@@ -55,32 +55,30 @@ static func sync_racket_multiplier(buildings: Array[Building]) -> void:
 		dealer.income_multiplier = 1.0
 
 
-# base_income globally scaled ×0.22 vs the original draft (sim_pacing-validated):
-# the prior values exploded reinvestment and put first prestige at ~10 min; 0.22
-# lands first prestige at ~48-56 min across casual→masher play. Relative inc/$
-# curve (rises per tier) is unchanged — only global magnitude moved. Keep in
-# sync with src/buildings.py _DEFS.
+# Income/$ rises about 20% per tier after Protection Racket. This keeps each new
+# tier attractive without the old ~45% curve collapsing post-prestige cadence.
+# Keep in sync with src/buildings.py _DEFS.
 const _RAW: Array = [
-	["Corner Dealer", 10.0, 0.024, 1.15, "Moves product on the block", "dealer",
+	["Corner Dealer", 10.0, 0.0290, 1.15, "Moves product on the block", "dealer",
 		"Click bonus: +$0.10 cash per dealer owned"],
-	["Protection Racket", 150.0, 0.106, 1.18, "Businesses pay for 'insurance'", "racket",
+	["Protection Racket", 150.0, 0.1090, 1.18, "Businesses pay for 'insurance'", "racket",
 		"×1.05 Corner Dealer income per racket (cap ×2)"],
-	["Chop Shop", 2000.0, 2.03, 1.18, "Cars in, parts out, no questions", "chop",
+	["Chop Shop", 2000.0, 1.77, 1.18, "Cars in, parts out, no questions", "chop",
 		"8% chance/sec: 2× income bonus payout"],
-	["Sports Betting Ring", 20000.0, 29.5, 1.18, "The house always wins", "betting",
+	["Sports Betting Ring", 20000.0, 21.9, 1.18, "The house always wins", "betting",
 		"Jackpot every 60–150s: 30s income instantly"],
-	["Pawn Shop", 150000.0, 293.0, 1.18, "No serial numbers, no problems", "pawn",
+	["Pawn Shop", 150000.0, 185.0, 1.18, "No serial numbers, no problems", "pawn",
 		"−2% all upgrade costs per pawn (cap −50%)"],
-	["Loan Shark Office", 1200000.0, 3390.0, 1.20, "Generous terms. Very generous.", "loan",
+	["Loan Shark Office", 1200000.0, 1820.0, 1.20, "Generous terms. Very generous.", "loan",
 		"+0.05% balance/min per office (max 2 offices)"],
-	["Underground Casino", 10000000.0, 40900.0, 1.20, "High stakes, no tax man", "casino",
+	["Underground Casino", 10000000.0, 18670.0, 1.20, "High stakes, no tax man", "casino",
 		"+10% manager income per casino (when hired)"],
-	["Nightclub", 80000000.0, 475000.0, 1.20, "Laundromat with a dance floor", "club",
+	["Nightclub", 80000000.0, 184250.0, 1.20, "Laundromat with a dance floor", "club",
 		"Launders heat: −0.5/sec per nightclub"],
-	["Dock Smuggling Op", 600000000.0, 5150000.0, 1.20, "Containers of plausible deniability", "dock",
+	["Dock Smuggling Op", 600000000.0, 1698400.0, 1.20, "Containers of plausible deniability", "dock",
 		"×1.015 all passive income per dock"],
-	["Arms Broker", 5000000000.0, 62300000.0, 1.20, "Supply and demand, emphasis supply", "arms",
+	["Arms Broker", 5000000000.0, 17460300.0, 1.20, "Supply and demand, emphasis supply", "arms",
 		"+0.1 Influence/hour per broker"],
-	["Crime Syndicate HQ", 40000000000.0, 724000000.0, 1.20, "The whole city answers to you", "hq",
+	["Crime Syndicate HQ", 40000000000.0, 172470100.0, 1.20, "The whole city answers to you", "hq",
 		"×1.06 all income per HQ owned"],
 ]

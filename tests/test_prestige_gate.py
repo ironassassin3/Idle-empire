@@ -34,6 +34,7 @@ def test_next_gate_ignores_overshoot():
     ps.perks_purchased = ['kp_cashflow']
     ps._next_prestige_earnings = 100_000_000.0     # the gate just crossed
     ps._prestige_route_earnings = 900_000_000.0    # a 9x overshoot
+    ps._prestige_cycle_time = prestige.POST_PRESTIGE_MIN_RUN_SECS
     ps.lifetime_earnings = 2_000_000_000.0         # plenty for influence calc
     assert prestige.can_prestige(ps), "setup must satisfy the gate"
 
@@ -52,3 +53,22 @@ def test_next_gate_ignores_overshoot():
 def test_post_building_scales():
     assert prestige.post_building_required(1, 25) == 38  # 1.5x
     assert prestige.post_building_required(2, 25) == 50  # 2.0x
+
+
+def test_post_prestige_requires_a_stable_rebuild_window():
+    ps = _fresh_state()
+    ps._prestige_count = 1
+    ps._prestige_cycle_time = prestige.POST_PRESTIGE_MIN_RUN_SECS - 1.0
+    req = prestige.check_requirements(ps)["rebuild_time"]
+    assert not req[2]
+    ps._prestige_cycle_time += 1.0
+    assert prestige.check_requirements(ps)["rebuild_time"][2]
+
+
+def test_frenzy_cash_does_not_multiply_prestige_route_income():
+    ps = _fresh_state()
+    ps.buildings[0].owned = 10
+    stable = ps.prestige_route_income_per_second
+    ps._add_buff("frenzy", 15.0)
+    assert ps.income_per_second == stable * 7.0
+    assert ps.prestige_route_income_per_second == stable

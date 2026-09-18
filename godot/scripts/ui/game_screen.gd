@@ -1503,7 +1503,7 @@ func _prestige_gate_tooltip() -> String:
 	var reqs: Dictionary = Prestige.check_requirements(GameState)
 	var earn: Dictionary = reqs.get("earnings", {})
 	var lines: PackedStringArray = PackedStringArray([
-		"Empire route income (buildings + clicks only): %s / %s" % [
+		"Stable empire income (temporary buffs excluded): %s / %s" % [
 			FormatUtil.format_money(float(earn.get("current", 0.0))),
 			FormatUtil.format_money(float(earn.get("required", 0.0))),
 		],
@@ -1515,6 +1515,12 @@ func _prestige_gate_tooltip() -> String:
 				lines.append("%s: %d / %d" % [key.capitalize(), int(r.get("current", 0)), int(r.get("required", 0))])
 	if reqs.has("rank") and not bool(reqs["rank"].get("met", true)):
 		lines.append("Rank: need %s" % str(reqs["rank"].get("required", "")))
+	if reqs.has("rebuild_time") and not bool(reqs["rebuild_time"].get("met", true)):
+		var timing: Dictionary = reqs["rebuild_time"]
+		lines.append("Rebuild: %d / %d min" % [
+			int(float(timing.get("current", 0.0)) / 60.0),
+			int(float(timing.get("required", 0.0)) / 60.0),
+		])
 	if reqs.has("branch") and not bool(reqs["branch"].get("met", true)):
 		lines.append("Choose a prestige path")
 	elif reqs.has("branch_perk") and not bool(reqs["branch_perk"].get("met", true)):

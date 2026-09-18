@@ -101,6 +101,7 @@ class PlayingState(GameState):
         self._loaded = False
         self._time = 0.0
         self._play_time = 0.0
+        self._prestige_cycle_time = 0.0
         self._offline_gain = 0.0
         self._offline_secs_away = 0.0
         self._offline_capped = False
@@ -284,6 +285,19 @@ class PlayingState(GameState):
         self._ips_cached = base * mult
         self._ips_dirty = False
         return self._ips_cached
+
+    @property
+    def prestige_route_income_per_second(self) -> float:
+        """Stable passive income used by the prestige earnings gate.
+
+        Temporary event/frenzy multipliers still pay full cash, but do not let a
+        lucky 15-second burst skip a large part of the intended prestige run.
+        """
+        temporary_mult = 7.0 if self._has_buff('frenzy') else 1.0
+        for buff in getattr(self, '_buffs', []):
+            if buff.get('name') == 'syndicate_income':
+                temporary_mult *= max(1.0, float(buff.get('mult', 1.0)))
+        return self.income_per_second / temporary_mult
 
     @property
     def click_value(self) -> float:
@@ -560,6 +574,7 @@ class PlayingState(GameState):
     def update(self, dt):
         self._time += dt
         self._play_time += dt
+        self._prestige_cycle_time += dt
         self._ips_dirty = True  # invalidate income cache once per frame
 
         _tokens_before   = self.prestige_tokens
@@ -573,7 +588,8 @@ class PlayingState(GameState):
         if self.balance != self.balance or self.balance == float('inf'):
             self.balance = min(self.balance, 1e36)
         self.lifetime_earnings += passive
-        self._prestige_route_earnings = float(getattr(self, '_prestige_route_earnings', 0.0)) + passive
+        route_passive = self.prestige_route_income_per_second * dt
+        self._prestige_route_earnings = float(getattr(self, '_prestige_route_earnings', 0.0)) + route_passive
         money_debug.credit(self, passive, 'money_from_buildings')
         if self.lifetime_earnings != self.lifetime_earnings or self.lifetime_earnings == float('inf'):
             self.lifetime_earnings = min(self.lifetime_earnings, 1e36)

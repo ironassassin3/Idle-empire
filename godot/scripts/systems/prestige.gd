@@ -102,6 +102,11 @@ static func check_requirements(state) -> Dictionary:
 		reqs["dealers"] = {"current": dealers2, "required": d_need, "met": dealers2 >= d_need}
 		reqs["rackets"] = {"current": rackets2, "required": r_need, "met": rackets2 >= r_need}
 		reqs["chops"] = {"current": chops2, "required": c_need, "met": chops2 >= c_need}
+		reqs["rebuild_time"] = {
+			"current": float(state.prestige_cycle_time),
+			"required": GameConfig.POST_PRESTIGE_MIN_RUN_SECS,
+			"met": float(state.prestige_cycle_time) >= GameConfig.POST_PRESTIGE_MIN_RUN_SECS,
+		}
 	if state.prestige_count >= 1:
 		var branch: String = str(state.prestige_branch)
 		var branch_met := not branch.is_empty()
@@ -149,7 +154,12 @@ static func gate_progress_pct(state) -> int:
 	var required: float = float(earn.get("required", 0.0))
 	if required <= 0.0:
 		return 100
-	return mini(100, int(100.0 * float(earn.get("current", 0.0)) / required))
+	var pct := mini(100, int(100.0 * float(earn.get("current", 0.0)) / required))
+	if reqs.has("rebuild_time"):
+		var timing: Dictionary = reqs["rebuild_time"]
+		var time_required: float = maxf(1.0, float(timing.get("required", 1.0)))
+		pct = mini(pct, int(100.0 * float(timing.get("current", 0.0)) / time_required))
+	return mini(100, pct)
 
 
 static func compact_gate_label(state) -> String:
@@ -164,7 +174,7 @@ static func gate_progress_summary(state) -> Dictionary:
 	var ready := can_prestige(state)
 	var pct := gate_progress_pct(state)
 	var blockers: PackedStringArray = PackedStringArray()
-	for key in ["earnings", "dealers", "rackets", "chops", "rank", "branch", "branch_perk"]:
+	for key in ["earnings", "dealers", "rackets", "chops", "rebuild_time", "rank", "branch", "branch_perk"]:
 		if not reqs.has(key):
 			continue
 		var r: Dictionary = reqs[key]
@@ -191,6 +201,11 @@ static func _blocker_text(key: String, r: Dictionary) -> String:
 			return "Rackets %d/%d" % [int(r.get("current", 0)), int(r.get("required", 0))]
 		"chops":
 			return "Chop shops %d/%d" % [int(r.get("current", 0)), int(r.get("required", 0))]
+		"rebuild_time":
+			return "Rebuild %d/%d min" % [
+				int(float(r.get("current", 0.0)) / 60.0),
+				int(float(r.get("required", 0.0)) / 60.0),
+			]
 		"rank":
 			return "Rank: need %s" % str(r.get("required", ""))
 		"branch":

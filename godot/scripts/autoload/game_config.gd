@@ -34,6 +34,7 @@ const PRESTIGE_EARNINGS_GROWTH := 12.0
 const PRESTIGE_PACING_SECS := 1500.0  # 25 min at prestige-time IPS
 const PRESTIGE_SNOWBALL_PAD := 6.0  # climb IPS grows far past prestige-time IPS
 const PRESTIGE_REBUILD_SCALE_PER := 0.5  # need = FIRST * (1 + scale * prestige_count)
+const POST_PRESTIGE_MIN_RUN_SECS := 1500.0  # stable 25m rebuild floor after P1
 
 # Turf bonuses ramp with empire-route progress; cubic + cap slows turf snowball.
 const TERRITORY_ECONOMY_SCALE_EXPONENT := 3.0

@@ -42,6 +42,28 @@ P1→P2 for turf/balanced is still short of the 25m floor; next lever if playtes
 
 ---
 
+## 2026-09-17 full cadence rebalance
+
+Root cause: late-building income/$ rose by roughly 45% per tier. On P2, the
+casino→nightclub→dock unlock chain could raise base IPS about 74× in one minute;
+larger cash gates therefore added seconds rather than meaningful playtime.
+Short golden-coin Frenzy buffs amplified the variance when they hit that cliff.
+
+Changes:
+
+- Smoothed building income/$ growth to about 20% per tier after Protection Racket.
+- Prestige route earnings now use stable passive IPS; temporary income buffs
+  still award full cash but do not skip the prestige gate.
+- Added a saved, visible 25-minute rebuild floor after P1. Existing saves infer
+  progress from recorded playtime so the migration does not strand players.
+- Corrected strategy simulations to respect real manager unlock rules.
+
+Deterministic balanced seeds now land P1 at 52:37–60:33 and P1→P2 at
+25:00–25:34. The wider strategy sweep produced balanced 54:46 / 25:37 / 46:37,
+fast-buyer 50:20 / 27:16 / 30:36, and turf-rush 57:55 / 25:00 / 45:23.
+
+---
+
 ## 2026-06 history (superseded)
 
 Earlier fix: reset route earnings + soft 75% rebuild gates. That stopped 1–2 min re-prestiges but left P2→P3 ~6–9m under Influence snowball. See git history for tables.

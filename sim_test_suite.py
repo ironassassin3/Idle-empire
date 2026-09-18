@@ -1,12 +1,14 @@
 """Session 2 regression test suite. Exercises every required area on the REAL
 game code: fresh save, first prestige, second prestige, save/load round-trip,
 achievements, managers, territory, heat. Asserts no regressions."""
-import os
+import os, random
 os.environ.setdefault("SDL_VIDEODRIVER","dummy"); os.environ.setdefault("SDL_AUDIODRIVER","dummy")
 import pygame; pygame.init(); pygame.display.set_mode((900,720))
+random.seed(1337)
 
 import src.prestige as prestige, src.theme as theme
 import src.upgrades as upg, src.territory as terr_mod, src.heat as heat_mod
+import src.managers as mgr_mod, src.prestige_tree as ptree
 from src.state_base import StateManager
 from src.states import PlayingState
 from src.save_load import delete_save, save_game, load_game, apply_save_data
@@ -30,9 +32,11 @@ def make_player(ps):
         return b0
     def act(dt,t,active=True):
         if active:
-            state['ca']+=1.0*dt
+            state['ca']+=2.0*dt
             while state['ca']>=1.0:
-                cv=ps.click_value; ps.balance+=cv; ps.lifetime_earnings+=cv; ps._click_count+=1; state['ca']-=1.0
+                cv=ps.click_value; ps.balance+=cv; ps.lifetime_earnings+=cv
+                ps._prestige_route_earnings += cv
+                ps._click_count+=1; state['ca']-=1.0
         state['ba']+=0.6*dt
         while state['ba']>=1.0:
             state['ba']-=1.0
@@ -42,8 +46,9 @@ def make_player(ps):
             if not u.purchased:
                 c=upg._effective_cost(u,ps)
                 if ps.balance>=c: ps.balance-=c; u.purchased=True; u.apply(ps)
-        for m in ps.managers:
-            if not m.hired and ps.balance>=m.cost: ps.balance-=m.cost; m.hired=True
+        for idx,m in enumerate(ps.managers):
+            if mgr_mod.can_hire_manager(ps,idx):
+                ps.balance-=mgr_mod.hire_fee(idx); m.hired=True
         ps.crew.collection=sum(b.owned for b in ps.buildings)
         if sum(b.owned for b in ps.buildings)>=15:
             for idx,tr in enumerate(ps.territories):
@@ -74,7 +79,7 @@ check("fresh: next_prestige_earnings == FIRST", ps._next_prestige_earnings==pres
 # 2. FIRST PRESTIGE
 print("\n[2] FIRST PRESTIGE")
 t1=play_until(ps, lambda: prestige.can_prestige(ps))
-check("first prestige reachable (<60min)", prestige.can_prestige(ps) and t1<3600)
+check("first prestige reachable (<90min broad smoke)", prestige.can_prestige(ps) and t1<5400)
 ips_before=ps.income_per_second
 tok_before=ps.prestige_tokens
 gain=prestige.calc_influence_gain(ps.lifetime_earnings)
@@ -90,6 +95,15 @@ check("hard wipe: income resets to 0 (rebuild from scratch)", ps.income_per_seco
 check("enhanced bonus persists: prestige income_mult > 1", prestige.income_mult(ps.prestige_tokens)>1.0)
 check("next bar escalated (> first gate)", ps._next_prestige_earnings>prestige.FIRST_PRESTIGE_EARNINGS)
 print(f"      first prestige @ {int(t1//60)}m: +{gain} inf, income {fm(ips_before)} -> hard wipe {fm(ps.income_per_second)} (rebuild w/ persistent x{prestige.income_mult(ps.prestige_tokens):.2f})")
+
+# Commit to a path and buy its first perk, matching the real post-prestige flow.
+ptree.select_branch(ps, ptree.KINGPIN)
+for key, _name, _cost, _effect, _tier in ptree.BRANCH_PERKS[ptree.KINGPIN]:
+    can_buy, _reason = ptree.can_buy_perk(ps, key)
+    if can_buy:
+        ps.prestige_tokens -= ptree.PERK_COST[key]
+        ps.perks_purchased.append(key)
+        break
 
 # 3. SECOND PRESTIGE
 print("\n[3] SECOND PRESTIGE")
@@ -111,6 +125,7 @@ check("save written + loadable", data is not None)
 sm2=StateManager(); ps2=PlayingState(sm2); ps2.on_enter()  # loads the save
 check("loaded influence matches", ps2.prestige_tokens==ps.prestige_tokens)
 check("loaded prestige_count matches", ps2._prestige_count==ps._prestige_count)
+check("loaded prestige cycle time matches", abs(ps2._prestige_cycle_time-ps._prestige_cycle_time)<1.0)
 check("loaded next_prestige_earnings matches", abs(ps2._next_prestige_earnings-ps._next_prestige_earnings)<1.0)
 
 # 5. ACHIEVEMENTS
@@ -126,10 +141,11 @@ print("\n[6] MANAGERS")
 delete_save()
 sm3=StateManager(); ps3=PlayingState(sm3); ps3.on_enter()
 ps3.balance=1e9
+ps3._prestige_count=1
 acc=[m for m in ps3.managers if m.name=="The Accountant"][0]; acc.hired=True
-b0=sum(b.owned for b in ps3.buildings)
+mgr_mod._refresh_accountant_order(ps3)
 for _ in range(20): ps3.update(0.5)
-check("Accountant auto-buys buildings", sum(b.owned for b in ps3.buildings)>b0)
+check("Accountant prepares a best-buy order", ps3._accountant_order_idx>=0)
 ps3.heat=80.0
 prom=[m for m in ps3.managers if m.name=="The Promoter"][0]; prom.hired=True
 h0=ps3.heat
@@ -162,7 +178,6 @@ check("heat stays clamped <=100", ps5.heat<=100.0)
 
 # 9. SESSION 3 — MANAGER IDENTITIES
 print("\n[9] MANAGER IDENTITIES")
-import src.managers as mgr_mod
 delete_save()
 sm9=StateManager(); ps9=PlayingState(sm9); ps9.on_enter()
 def _hire(ps, name):

@@ -3401,7 +3401,12 @@ def draw_prestige_btn(surface: pygame.Surface, state, fonts: dict) -> None:
     if not can_p:
         req_earnings = prestige.prestige_earnings_required(state)
         if req_earnings > 0:
-            fill_ratio = min(1.0, state.lifetime_earnings / req_earnings)
+            fill_ratio = min(1.0, prestige.prestige_route_earnings(state) / req_earnings)
+            if getattr(state, '_prestige_count', 0) > 0:
+                time_ratio = float(getattr(state, '_prestige_cycle_time', 0.0)) / max(
+                    1.0, prestige.POST_PRESTIGE_MIN_RUN_SECS
+                )
+                fill_ratio = min(fill_ratio, time_ratio)
             fill_w = max(0, int(r.width * fill_ratio))
             if fill_w > 4:
                 fill_col = (70, 40, 110) if fill_ratio < 0.9 else (110, 50, 170)
@@ -3466,6 +3471,7 @@ def draw_prestige_btn(surface: pygame.Surface, state, fonts: dict) -> None:
             'dealers':  ('Dealers',  lambda c, t: f"{int(c)} / {int(t)}"),
             'rackets':  ('Rackets',  lambda c, t: f"{int(c)} / {int(t)}"),
             'chops':    ('Chops',    lambda c, t: f"{int(c)} / {int(t)}"),
+            'rebuild_time': ('Rebuild', lambda c, t: f"{int(c // 60)} / {int(t // 60)} min"),
         }
         for key, (cur, req, met) in reqs.items():
             if row_y + row_h > r.bottom - 4:

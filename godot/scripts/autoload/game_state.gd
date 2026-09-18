@@ -41,6 +41,7 @@ var next_prestige_earnings: float = 0.0
 var arms_influence_frac: float = 0.0  # Arms Broker special: fractional Influence accrual
 var click_count: int = 0
 var play_time: float = 0.0
+var prestige_cycle_time: float = 0.0
 # Runtime-only: play_time at last prestige / run start, for per-cycle telemetry
 # timing. Not saved — measured within the current session.
 var _last_prestige_play_time: float = 0.0
@@ -366,6 +367,7 @@ func reset_new_game() -> void:
 	balance = 0.0
 	lifetime_earnings = 0.0
 	prestige_route_earnings = 0.0
+	prestige_cycle_time = 0.0
 	prestige_tokens = 0
 	lifetime_tokens = 0
 	arms_influence_frac = 0.0
@@ -428,12 +430,13 @@ func _process(delta: float) -> void:
 	if not simulation_active:
 		return
 	play_time += delta
+	prestige_cycle_time += delta
 	_tick_golden_coin(delta)
 	var passive := income_per_second() * delta
 	if is_finite(passive):
 		balance += passive
 		lifetime_earnings += passive
-		prestige_route_earnings += passive
+		prestige_route_earnings += prestige_route_income_per_second() * delta
 	_tick_building_specials(delta)
 	_tick_loan_interest(delta)
 	_BuffSystem.tick_buffs(self, delta)
@@ -554,6 +557,14 @@ func income_per_second() -> float:
 	_ips_cached = base * mult
 	_ips_dirty = false
 	return _ips_cached
+
+
+func prestige_route_income_per_second() -> float:
+	# Temporary rewards keep their full cash value but cannot collapse the
+	# prestige cadence when a short frenzy lands at a tier breakpoint.
+	var temporary_mult := 7.0 if _BuffSystem.has_buff(self, "frenzy") else 1.0
+	temporary_mult *= maxf(1.0, _BuffSystem.income_mult(self))
+	return income_per_second() / temporary_mult
 
 
 func click_value() -> float:
@@ -810,6 +821,7 @@ func do_prestige() -> bool:
 	balance = 0.0
 	# lifetime_earnings accumulates across prestiges (pygame parity — drives Influence gain).
 	prestige_route_earnings = 0.0
+	prestige_cycle_time = 0.0
 	heat = 0.0
 	for b in buildings:
 		b.owned = 0
@@ -985,6 +997,11 @@ func apply_save_data(data: Dictionary) -> void:
 	next_prestige_earnings = _f(data, "next_prestige_earnings", 0.0)
 	click_count = _i(data, "click_count", 0)
 	play_time = _f(data, "play_time", 0.0)
+	prestige_cycle_time = _f(
+		data,
+		"prestige_cycle_time",
+		minf(play_time, GameConfig.POST_PRESTIGE_MIN_RUN_SECS) if prestige_count > 0 else 0.0
+	)
 	heat = _f(data, "heat", 0.0)
 	total_heat_generated = _f(data, "total_heat_generated", 0.0)
 	influence = _i(data, "influence", 0)
@@ -1161,6 +1178,7 @@ func to_save_data() -> Dictionary:
 		"next_prestige_earnings": next_prestige_earnings,
 		"click_count": click_count,
 		"play_time": play_time,
+		"prestige_cycle_time": prestige_cycle_time,
 		"heat": heat,
 		"total_heat_generated": total_heat_generated,
 		"influence": influence,
