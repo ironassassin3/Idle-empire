@@ -104,7 +104,28 @@ func _apply_special_line() -> void:
 			_special.text = "* Dealer: 1 + (%d × 0.05) = ×%.2f income%s" % [
 				count, mult, capped]
 		return
-	_special.text = "* %s" % _building.special
+	var live := _live_special_math(_building.icon_key, _building.owned)
+	_special.text = "* %s" % (_building.special if live.is_empty() else live)
+
+
+## Playtest 2026-09-15: show the arithmetic, not just the per-unit rate, once
+## the player owns some. Empty = fall back to the static description.
+static func _live_special_math(key: String, n: int) -> String:
+	if n <= 0:
+		return ""
+	match key:
+		"dock":
+			return "All passive income: 1.015^%d = ×%.3f" % [n, BuildingDefs.dock_income_mult(n)]
+		"hq":
+			return "All income: 1.06^%d = ×%.2f" % [n, BuildingDefs.hq_income_mult(n)]
+		"casino":
+			return "Manager income: 1 + (%d × 0.10) = ×%.2f (when hired)" % [
+				n, BuildingDefs.casino_bonus_for(n)]
+		"pawn":
+			if BuildingDefs.pawn_reduction_for(n) >= 0.5:
+				return "Upgrade costs: −50% (cap reached)"
+			return "Upgrade costs: %d × 2%% = −%d%%" % [n, n * 2]
+	return ""
 
 
 # Rule 10 (Stage & Ledger): progress-to-afford underbar while APPROACHING.

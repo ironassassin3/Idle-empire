@@ -13,11 +13,21 @@ static func make_buildings() -> Array[Building]:
 
 static func global_special_mult(buildings: Array[Building]) -> float:
 	var mult := 1.0
-	if buildings.size() > 8 and buildings[8].owned > 0:
-		mult *= pow(1.015, buildings[8].owned)
-	if buildings.size() > 10 and buildings[10].owned > 0:
-		mult *= pow(1.06, buildings[10].owned)
+	if buildings.size() > 8:
+		mult *= dock_income_mult(buildings[8].owned)
+	if buildings.size() > 10:
+		mult *= hq_income_mult(buildings[10].owned)
 	return mult
+
+
+## Compounding: each dock multiplies all passive income by 1.015.
+static func dock_income_mult(docks: int) -> float:
+	return pow(1.015, maxi(docks, 0))
+
+
+## Compounding: each HQ multiplies all income by 1.06.
+static func hq_income_mult(hqs: int) -> float:
+	return pow(1.06, maxi(hqs, 0))
 
 
 static func dealer_click_bonus(buildings: Array[Building]) -> float:
@@ -29,19 +39,21 @@ static func dealer_click_bonus(buildings: Array[Building]) -> float:
 static func pawn_cost_reduction(buildings: Array[Building]) -> float:
 	if buildings.size() <= 4:
 		return 0.0
-	var pawn := buildings[4]
-	if pawn.owned <= 0:
-		return 0.0
-	return minf(0.50, 0.02 * pawn.owned)
+	return pawn_reduction_for(buildings[4].owned)
+
+
+static func pawn_reduction_for(pawns: int) -> float:
+	return clampf(0.02 * pawns, 0.0, 0.50)
 
 
 static func casino_manager_bonus(buildings: Array[Building]) -> float:
 	if buildings.size() <= 6:
 		return 1.0
-	var casino := buildings[6]
-	if casino.owned <= 0:
-		return 1.0
-	return 1.0 + 0.10 * casino.owned
+	return casino_bonus_for(buildings[6].owned)
+
+
+static func casino_bonus_for(casinos: int) -> float:
+	return 1.0 + 0.10 * maxi(casinos, 0)
 
 
 const RACKET_STEP := 0.05
