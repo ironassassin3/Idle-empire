@@ -134,7 +134,7 @@ _DEFS = [
      "+0.05× Corner Dealer income per racket (cap ×2)"),
     ("Chop Shop",           2_000.0,        1.77,   1.18,
      "Cars in, parts out, no questions",    "chop",
-     "8% chance each sec for a bonus payout (2× income)"),
+     "Earns income + 8% chance/sec of a 2s income bonus"),
     ("Sports Betting Ring", 20_000.0,       21.9,  1.18,
      "The house always wins",               "betting",
      "Random jackpot every 60–150s: 30s of income instantly"),
