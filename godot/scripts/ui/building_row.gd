@@ -100,37 +100,55 @@ func _apply_special_line() -> void:
 		_special.text = ""
 		return
 	_special.visible = true
-	if _building.icon_key == "racket":
-		var count := _building.owned
-		if count <= 0:
-			_special.text = "* Each adds +0.05× Dealer income (cap ×2)"
-		else:
-			var mult := BuildingDefs.racket_dealer_multiplier(count)
-			var capped := " — CAP" if mult >= BuildingDefs.RACKET_CAP else ""
-			_special.text = "* Dealer: 1 + (%d × 0.05) = ×%.2f income%s" % [
-				count, mult, capped]
-		return
-	var live := _live_special_math(_building.icon_key, _building.owned)
+	var live := _live_special_math(_building)
 	_special.text = "* %s" % (_building.special if live.is_empty() else live)
 
 
-## Playtest 2026-09-15: show the arithmetic, not just the per-unit rate, once
-## the player owns some. Empty = fall back to the static description.
-static func _live_special_math(key: String, n: int) -> String:
+## Playtest 2026-09-15: every passive states what it boosts, whether it stacks
+## (adds per unit) or compounds (multiplies per unit), and its current total.
+## Empty = nothing owned yet; the static description (which also names the
+## stacking rule) shows instead.
+static func _live_special_math(b: Building) -> String:
+	var n := b.owned
 	if n <= 0:
 		return ""
-	match key:
-		"dock":
-			return "All passive income: 1.015^%d = ×%.3f" % [n, BuildingDefs.dock_income_mult(n)]
-		"hq":
-			return "All income: 1.06^%d = ×%.2f" % [n, BuildingDefs.hq_income_mult(n)]
-		"casino":
-			return "Manager income: 1 + (%d × 0.10) = ×%.2f (when hired)" % [
-				n, BuildingDefs.casino_bonus_for(n)]
+	match b.icon_key:
+		"dealer":
+			var per := GameConfig.CLICK_DEALER_BONUS
+			var total := per * n
+			# format_money drops trailing zeros ("$0.1"); cents read as money.
+			var total_s := "$%.2f" % total if total < 1000.0 else FormatUtil.format_money(total)
+			return "Click bonus, stacks: %d × $%.2f = +%s per click" % [n, per, total_s]
+		"racket":
+			var mult := BuildingDefs.racket_dealer_multiplier(n)
+			var capped := " (CAP)" if mult >= BuildingDefs.RACKET_CAP else ""
+			return "Dealer income, stacks: 1 + (%d × 0.05) = ×%.2f%s" % [n, mult, capped]
+		"chop":
+			return "Earns income + 8%%/sec chance of a 2s bonus (+%s)" % FormatUtil.format_money(
+				b.income_per_second() * 2.0)
+		"betting":
+			return "Earns income + jackpot every 60–150s: 30s of income (+%s)" % FormatUtil.format_money(
+				b.income_per_second() * 30.0)
 		"pawn":
 			if BuildingDefs.pawn_reduction_for(n) >= 0.5:
-				return "Upgrade costs: −50% (cap reached)"
-			return "Upgrade costs: %d × 2%% = −%d%%" % [n, n * 2]
+				return "Upgrade costs, stacks: −50% (cap reached)"
+			return "Upgrade costs, stacks: %d × 2%% = −%d%%" % [n, n * 2]
+		"loan":
+			var offices := mini(n, 2)
+			return "Interest, stacks to 2 offices: %d × 0.05%% = +%.2f%% balance/min" % [
+				offices, 0.05 * offices]
+		"casino":
+			return "Manager income, stacks: 1 + (%d × 0.10) = ×%.2f (when hired)" % [
+				n, BuildingDefs.casino_bonus_for(n)]
+		"club":
+			return "Heat, stacks: %d × 0.5 = −%.1f heat/sec" % [n, 0.5 * n]
+		"dock":
+			return "All passive income, compounds: 1.015^%d = ×%.3f" % [
+				n, BuildingDefs.dock_income_mult(n)]
+		"arms":
+			return "Influence, stacks: %d × 0.1 = +%.1f Influence/hour" % [n, 0.1 * n]
+		"hq":
+			return "All income, compounds: 1.06^%d = ×%.2f" % [n, BuildingDefs.hq_income_mult(n)]
 	return ""
 
 
