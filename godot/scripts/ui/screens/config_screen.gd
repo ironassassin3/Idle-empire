@@ -89,10 +89,7 @@ func rebuild() -> void:
 		GameState.reset_tutorial()
 		rebuild()
 	)
-	_action_button("Delete Save", func():
-		SaveManager.delete_save()
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
-	)
+	_action_button("Reset All Progress…", _confirm_reset_progress)
 	var note := Label.new()
 	note.text = "Auto-save every %ds" % int(GameConfig.AUTOSAVE_INTERVAL)
 	note.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
@@ -103,6 +100,27 @@ func _analytics_index() -> int:
 	if not GameState.telemetry_consent:
 		return 0
 	return 1
+
+
+func _confirm_reset_progress() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Reset all progress?"
+	dialog.dialog_text = (
+		"This permanently deletes your empire, purchases made with in-game "
+		+ "currency, Influence, prestige progress, and settings.\n\n"
+		+ "This cannot be undone."
+	)
+	dialog.ok_button_text = "Delete Everything"
+	dialog.cancel_button_text = "Keep My Progress"
+	dialog.confirmed.connect(func():
+		SaveManager.delete_save()
+		GameState.reset_new_game()
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	)
+	dialog.close_requested.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered_ratio(0.88)
 
 
 ## Muted wrapped body copy under a row or section header.

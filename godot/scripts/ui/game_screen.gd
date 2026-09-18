@@ -2098,9 +2098,9 @@ func _build_config_tab() -> void:
 	reset_tut.pressed.connect(func(): GameState.reset_tutorial(); _build_config_tab())
 	_config_body.add_child(reset_tut)
 	var del := Button.new()
-	del.text = "Delete Save"
+	del.text = "Reset All Progress…"
 	_apply_config_action_button(del)
-	del.pressed.connect(func(): SaveManager.delete_save(); get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+	del.pressed.connect(_confirm_reset_progress)
 	_config_body.add_child(del)
 	var note := Label.new()
 	note.text = "Auto-save every %ds" % int(GameConfig.AUTOSAVE_INTERVAL)
@@ -2116,6 +2116,27 @@ func _apply_config_action_button(btn: Button) -> void:
 		GameTheme.apply_ink_chip_button(btn, false, 14, GameTheme.TEXT)
 	else:
 		GameTheme.apply_menu_button(btn, false)
+
+
+func _confirm_reset_progress() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Reset all progress?"
+	dialog.dialog_text = (
+		"This permanently deletes your empire, purchases made with in-game "
+		+ "currency, Influence, prestige progress, and settings.\n\n"
+		+ "This cannot be undone."
+	)
+	dialog.ok_button_text = "Delete Everything"
+	dialog.cancel_button_text = "Keep My Progress"
+	dialog.confirmed.connect(func():
+		SaveManager.delete_save()
+		GameState.reset_new_game()
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	)
+	dialog.close_requested.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered_ratio(0.88)
 
 
 func _add_list_section_header(parent: Control, title: String) -> void:

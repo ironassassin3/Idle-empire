@@ -198,6 +198,9 @@ func _apply_menu_theme() -> void:
 func _refresh_save_ui() -> void:
 	var has_save := SaveManager.has_save()
 	_continue_btn.visible = has_save
+	# Returning players should never have a destructive reset action beside the
+	# primary Continue button. New Game remains only as the no-save/recovery path.
+	_new_btn.visible = not has_save
 	_preview_card.visible = has_save
 	_import_note.visible = false
 	if not has_save:
