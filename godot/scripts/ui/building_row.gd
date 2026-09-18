@@ -99,8 +99,8 @@ func _apply_special_line() -> void:
 		if count <= 0:
 			_special.text = "* Each adds +0.05× Dealer income (cap ×2)"
 		else:
-			var mult := minf(2.0, 1.0 + 0.05 * count)
-			var capped := " — CAP" if count >= 20 else ""
+			var mult := BuildingDefs.racket_dealer_multiplier(count)
+			var capped := " — CAP" if mult >= BuildingDefs.RACKET_CAP else ""
 			_special.text = "* Dealer: 1 + (%d × 0.05) = ×%.2f income%s" % [
 				count, mult, capped]
 		return

@@ -58,7 +58,7 @@ Colors (constants, use these — never hex literals in scenes you intend to ship
 | `GOLD` | `c8a35a` | brand accent, headings, borders |
 | `GOLD_BRIGHT` | `ecca7d` | emphasis / hover gold |
 | `TEXT` | `e8e0d4` | body text |
-| `TEXT_MUTED` | `8a8070` | secondary text |
+| `TEXT_MUTED` | `a39989` | secondary text |
 | `GREEN` / `RED` | `6a9a6a` / `9a4a4a` | positive / negative |
 | `BLUE_BRIGHT` / `ACCENT` | `6a9aaa` / `4a6a8a` | info accents |
 | `TAB_ACTIVE` / `TAB_IDLE` | `2a2030` / `141018` | tab strips |

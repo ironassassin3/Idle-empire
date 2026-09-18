@@ -359,8 +359,8 @@ func _build_chip_button(txt: String, on_press: Callable) -> Button:
 
 func _build_gear() -> Button:
 	var b := _build_chip_button("", func(): UiEvents.overlay_requested.emit("config"))
-	# The SVG imports as dark ink, so the shared gold-chip treatment provides the
-	# contrast. Tinting the texture itself cannot turn black source pixels gold.
+	# The SVG ships white so the icon colour override can tint it dark on a gold
+	# chip; a bare glyph on the masthead was invisible on phones.
 	GameTheme.apply_gear_icon_button(b)
 	b.add_theme_constant_override("icon_max_width", 24)
 	b.add_theme_constant_override("icon_max_height", 24)

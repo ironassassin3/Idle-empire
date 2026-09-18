@@ -131,7 +131,7 @@ _DEFS = [
      "Click bonus: +0.10 cash per dealer owned"),
     ("Protection Racket",   150.0,          0.1090, 1.18,
      "Businesses pay for 'insurance'",      "racket",
-     "Multiplies Corner Dealer income ×1.05 per racket"),
+     "+0.05× Corner Dealer income per racket (cap ×2)"),
     ("Chop Shop",           2_000.0,        1.77,   1.18,
      "Cars in, parts out, no questions",    "chop",
      "8% chance each sec for a bonus payout (2× income)"),

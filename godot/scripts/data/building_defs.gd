@@ -44,15 +44,21 @@ static func casino_manager_bonus(buildings: Array[Building]) -> float:
 	return 1.0 + 0.10 * casino.owned
 
 
+const RACKET_STEP := 0.05
+const RACKET_CAP := 2.0
+
+
+## Additive, not compounding: 1 + 0.05 per racket, capped at ×2 (20 rackets).
+static func racket_dealer_multiplier(rackets: int) -> float:
+	if rackets <= 0:
+		return 1.0
+	return minf(RACKET_CAP, 1.0 + RACKET_STEP * rackets)
+
+
 static func sync_racket_multiplier(buildings: Array[Building]) -> void:
 	if buildings.size() < 2:
 		return
-	var dealer := buildings[0]
-	var racket := buildings[1]
-	if racket.owned > 0:
-		dealer.income_multiplier = minf(2.0, 1.0 + 0.05 * racket.owned)
-	else:
-		dealer.income_multiplier = 1.0
+	buildings[0].income_multiplier = racket_dealer_multiplier(buildings[1].owned)
 
 
 # Income/$ rises about 20% per tier after Protection Racket. This keeps each new
@@ -62,7 +68,7 @@ const _RAW: Array = [
 	["Corner Dealer", 10.0, 0.0290, 1.15, "Moves product on the block", "dealer",
 		"Click bonus: +$0.10 cash per dealer owned"],
 	["Protection Racket", 150.0, 0.1090, 1.18, "Businesses pay for 'insurance'", "racket",
-		"×1.05 Corner Dealer income per racket (cap ×2)"],
+		"+0.05× Corner Dealer income per racket (cap ×2)"],
 	["Chop Shop", 2000.0, 1.77, 1.18, "Cars in, parts out, no questions", "chop",
 		"8% chance/sec: 2× income bonus payout"],
 	["Sports Betting Ring", 20000.0, 21.9, 1.18, "The house always wins", "betting",
