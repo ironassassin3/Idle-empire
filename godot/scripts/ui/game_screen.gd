@@ -1347,7 +1347,7 @@ func _update_motion_cues() -> void:
 	var buff_lines: PackedStringArray = PackedStringArray()
 	if _BuffSystem.has_buff(GameState, "frenzy"):
 		var rem: float = _buff_remaining("frenzy")
-		buff_lines.append("FRENZY 7× income  %.0fs" % rem)
+		buff_lines.append("FRENZY %d× income  %.0fs" % [int(GameConfig.FRENZY_INCOME_MULT), rem])
 	if _BuffSystem.has_buff(GameState, "click_storm"):
 		var storm_rem: float = _buff_remaining("click_storm")
 		buff_lines.append("CLICK STORM 10×  %.0fs" % storm_rem)

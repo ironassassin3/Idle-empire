@@ -108,3 +108,7 @@ CRIT_SPARK_DURATION   = 0.55  # crit spark lifetime (s)
 # Manager purchase automation (Accountant, Mechanic, Talent Scout perk) — post-P1.
 MANAGER_AUTOBUY_REQUIRES_PRESTIGE = True
 MANAGER_AUTOBUY_MIN_PRESTIGE_COUNT = 1
+
+# Golden-coin frenzy income multiplier. The prestige gate divides it back out
+# (PlayingState prestige-route IPS). Mirror: GameConfig.FRENZY_INCOME_MULT.
+FRENZY_INCOME_MULT = 7.0

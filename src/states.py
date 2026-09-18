@@ -250,7 +250,7 @@ class PlayingState(GameState):
         if any(u.purchased and u.effect_key == 'prestige_boost' for u in self.upgrades):
             mult *= prestige.prestige_mastery_mult(self.prestige_tokens)
         if self._has_buff('frenzy'):
-            mult *= 7.0
+            mult *= config.FRENZY_INCOME_MULT
         mult *= getattr(self, '_perk_income_mult', 1.0)
         # Branch income perks: Warlord turf intimidation, Cartel district income.
         mult *= ptree.turf_intimidation_income_mult(self)
@@ -293,7 +293,7 @@ class PlayingState(GameState):
         Temporary event/frenzy multipliers still pay full cash, but do not let a
         lucky 15-second burst skip a large part of the intended prestige run.
         """
-        temporary_mult = 7.0 if self._has_buff('frenzy') else 1.0
+        temporary_mult = config.FRENZY_INCOME_MULT if self._has_buff('frenzy') else 1.0
         for buff in getattr(self, '_buffs', []):
             if buff.get('name') == 'syndicate_income':
                 temporary_mult *= max(1.0, float(buff.get('mult', 1.0)))

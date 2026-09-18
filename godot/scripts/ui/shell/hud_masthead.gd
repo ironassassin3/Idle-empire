@@ -413,7 +413,7 @@ func refresh() -> void:
 		if typeof(b) == TYPE_DICTIONARY:
 			var nm := str(b.get("name", ""))
 			if nm == "frenzy":
-				buffs.append("FRENZY 7× %ds" % int(b.get("remaining", 0.0)))
+				buffs.append("FRENZY %d× %ds" % [int(GameConfig.FRENZY_INCOME_MULT), int(b.get("remaining", 0.0))])
 			elif nm == "click_storm":
 				buffs.append("STORM 10× %ds" % int(b.get("remaining", 0.0)))
 	_buff_label.text = "  ".join(buffs)

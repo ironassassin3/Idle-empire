@@ -547,7 +547,7 @@ func income_per_second() -> float:
 	mult *= _AchievementSystem.income_mult(achievements)
 	mult *= _BuffSystem.income_mult(self)
 	if _BuffSystem.has_buff(self, "frenzy"):
-		mult *= 7.0
+		mult *= GameConfig.FRENZY_INCOME_MULT
 	mult *= _DragonSystem.rival_presence_income_mult(self)
 	mult *= _DragonSystem.eliminated_rival_income_mult(self)
 	mult *= 1.0 + _DragonSystem.active_ops_income_bonus(self)
@@ -562,7 +562,7 @@ func income_per_second() -> float:
 func prestige_route_income_per_second() -> float:
 	# Temporary rewards keep their full cash value but cannot collapse the
 	# prestige cadence when a short frenzy lands at a tier breakpoint.
-	var temporary_mult := 7.0 if _BuffSystem.has_buff(self, "frenzy") else 1.0
+	var temporary_mult := GameConfig.FRENZY_INCOME_MULT if _BuffSystem.has_buff(self, "frenzy") else 1.0
 	temporary_mult *= maxf(1.0, _BuffSystem.income_mult(self))
 	return income_per_second() / temporary_mult
 
@@ -1517,7 +1517,7 @@ func collect_golden_coin(auto: bool = false) -> void:
 	match effect:
 		"frenzy":
 			_BuffSystem.add_buff(self, "frenzy", 15.0)
-			notification.emit("FRENZY! 7× income for 15s", GameTheme.GOLD_BRIGHT)
+			notification.emit("FRENZY! %d× income for 15s" % int(GameConfig.FRENZY_INCOME_MULT), GameTheme.GOLD_BRIGHT)
 		"lucky":
 			var gain: float = minf(income_per_second() * 60.0, maxf(balance * 0.15, 1.0))
 			balance += gain
