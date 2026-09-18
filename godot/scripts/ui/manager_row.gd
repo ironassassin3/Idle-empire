@@ -45,6 +45,13 @@ func _ready() -> void:
 
 
 func _apply_label_scale() -> void:
+	# At 150% text the one-line header (name + title + badge) outgrew a 720-wide
+	# phone and pushed the Hire button past the edge; trim/wrap instead.
+	for lbl in [_name, _title]:
+		lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		lbl.clip_text = true
+	for lbl in [_desc, _bonus, _status]:
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	GameTheme.apply_row_title(_name, 16)
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	_badge.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))

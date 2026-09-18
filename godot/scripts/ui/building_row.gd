@@ -79,6 +79,12 @@ func _on_any_purchase(key: String) -> void:
 
 func _apply_label_scale() -> void:
 	GameTheme.apply_row_title(_name, 18)
+	# At 150% text on a 720-wide phone an unwrapped name/description set the
+	# info column's min width and shoved the BUY button off screen.
+	_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_name.clip_text = true
+	for lbl in [_desc, _special]:
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_desc.add_theme_color_override("font_color", GameTheme.TEXT_FLAVOR)
 	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))

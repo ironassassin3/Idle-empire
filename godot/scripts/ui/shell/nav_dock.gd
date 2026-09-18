@@ -85,7 +85,11 @@ func _build_tab(tab_id: String, icon: String, label: String) -> Control:
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_override("font", GameFonts.heading())
 	# Cinzel sets lowercase as small caps, so it needs more px than body copy.
-	l.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
+	# Five labels share one row: past the 100% step they collide on a 720-wide
+	# phone, so the a11y text scale stops here (the icons carry the meaning).
+	l.add_theme_font_size_override("font_size", mini(GameTheme.scaled_font(16),
+			int(round(16.0 * GameTheme.TEXT_BASE_MULT * GameTheme.device_font_boost()))))
+	l.clip_text = true
 	l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	v.add_child(l)
 

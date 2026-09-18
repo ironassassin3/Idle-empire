@@ -85,12 +85,12 @@ func _apply_ink_theme() -> void:
 	_influence.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_prompt.add_theme_font_override("font", GameFonts.heading())
 	_prompt.add_theme_color_override("font_color", GameTheme.GOLD)
-	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_blurb.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	_blurb.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_blurb.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	GameTheme.apply_flavor_label(_blurb)
 	_lock_label.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	_lock_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_lock_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_perk_scroll.add_theme_stylebox_override("panel", GameTheme.ink_scroll_wrap_style())
 	GameTheme.apply_ink_chip_button(_back_btn, false, 14, GameTheme.TEXT)
 	GameTheme.apply_overlay_cta(_prestige_btn, true)
@@ -257,7 +257,7 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 	var tier_l := Label.new()
 	tier_l.text = "TIER %d" % tier
 	tier_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	tier_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	tier_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	vbox.add_child(tier_l)
 	var name_l := Label.new()
 	name_l.text = perk_name
@@ -297,7 +297,7 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 		detail_l.text = detail
 		detail_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		detail_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		detail_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+		detail_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 		vbox.add_child(detail_l)
 	return panel
 

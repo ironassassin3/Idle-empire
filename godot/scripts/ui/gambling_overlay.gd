@@ -75,6 +75,8 @@ func _apply_theme() -> void:
 	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_status.add_theme_color_override("font_color", GameTheme.GOLD)
 	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	# The scene's fixed 15px override made the boost walk skip this label.
+	_stake_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 	GameTheme.apply_overlay_cta(_spin_btn, true)
 	GameTheme.apply_overlay_cta(_bet_btn, true)
 	for b in [_quarter_btn, _half_btn, _max_btn, _ad_btn, _back_btn]:

@@ -155,6 +155,14 @@ func _draw() -> void:
 	var font := get_theme_default_font()
 	var fs := GameTheme.scaled_font(13)
 	var seg_w := w / float(n)
+	# One size for every segment, shrunk until the widest label fits its slot:
+	# at phone font boost the scaled size ran labels into their neighbours.
+	var widest := 0.0
+	for m in segs:
+		widest = maxf(widest, font.get_string_size(_seg_label(float(m)),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	if widest > seg_w - 4.0:
+		fs = maxi(8, int(floor(float(fs) * (seg_w - 4.0) / widest)))
 	for i in n:
 		var mult := float(segs[i])
 		var x := float(i) * seg_w
