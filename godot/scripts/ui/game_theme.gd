@@ -829,12 +829,17 @@ static func tab_label_with_badge(base: String, count: int) -> String:
 	return "%s •%d" % [base, count]
 
 
+## Baseline lift under every Settings step: even with the device boost, body copy
+## landed near 8dp on a 1080p phone (playtest 2026-09-15, "text too small everywhere").
+const TEXT_BASE_MULT := 1.2
+
+
 static func text_scale_mult() -> float:
 	if GameState.ui_text_scale >= 2:
-		return 1.5
+		return 1.5 * TEXT_BASE_MULT
 	if GameState.ui_text_scale >= 1:
-		return 1.25
-	return 1.0
+		return 1.25 * TEXT_BASE_MULT
+	return TEXT_BASE_MULT
 
 
 ## Touch targets track the density boost and the a11y text scale, but at a
@@ -1223,7 +1228,9 @@ static func apply_row_affordance(row: PanelContainer, affordance: int) -> void:
 static func apply_row_buy_button(btn: Button) -> void:
 	if btn == null:
 		return
-	btn.add_theme_font_size_override("font_size", scaled_font(14))
+	btn.add_theme_font_size_override("font_size", scaled_font(16))
+	# Playtest 2026-09-15: buy buttons read as too small to hit on a phone.
+	btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, scale_touch(52))
 	# Gilded: affordable = chunky gold bevel with dark text (inverted CTA);
 	# disabled = flat dark with a faint gold keyline so lists never go dead.
 	btn.add_theme_stylebox_override("normal", make_game_button_flat(GOLD))
