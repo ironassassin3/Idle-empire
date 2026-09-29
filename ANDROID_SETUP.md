@@ -1,7 +1,8 @@
 # Android setup — Criminal Empire (§5)
 
 Step-by-step guide to export a debug APK to a physical device (e.g. Moto G) from Godot **4.6.3**.  
-Prerequisite: mock-first autoloads are already in the repo (`Monetization`, `Notifications`, `CloudSave`).
+Prerequisite: monetization autoloads are in the repo. V1 deliberately disables notification and
+cloud-save initialization, UI, and notification permission. Do not enable those optional plugins.
 
 **Toolchain check (2026-06-23 on this machine):**
 
@@ -148,8 +149,8 @@ Follow [`godot/addons/PLUGINS.md`](godot/addons/PLUGINS.md). Summary:
 
 **After each install:**
 
-1. **Project → Project Settings → Plugins** — enable all four.
-2. **Project → Export → Android** — scroll to **Plugins** — enable each plugin checkbox.
+1. **Project → Project Settings → Plugins** — enable AdMob and Billing only for v1.
+2. V2 Android plugins are included through their editor plugin; see `godot/addons/PLUGINS.md`.
 3. Poing AdMob: set **AdMob App ID** in export options when you have a real ID (test ID OK for debug).
 
 **Backend singleton names** (already wired in `scripts/*/android_backend.gd`):
@@ -170,13 +171,22 @@ Follow [`godot/addons/PLUGINS.md`](godot/addons/PLUGINS.md). Summary:
 3. **Editor → Editor Settings → Export → Android** — set **Java SDK Path** and **Android SDK Path**.
 4. **Project → Install Android Build Template**.
 5. Install plugins per §6; enable in **Project Settings → Plugins**.
-6. **Project → Export** — select preset **Android** — confirm no red errors.
-7. Under **Plugins** in the export preset, enable AdMob, Billing, Play Games, LocalNotification.
+6. **Project → Export** — select preset **Android Debug** — confirm no red errors.
+7. Confirm only AdMob and Billing editor plugins are enabled; keep Play Games and notifications disabled.
 8. Connect Moto G via USB; enable **Developer options → USB debugging**.
 9. Run `adb devices` — device must show `device` (not `unauthorized`).
-10. In Export dialog: **Export & Run** (debug) — installs `godot/build/criminal-empire.apk`.
+10. In Export dialog: **Export & Run** (debug) — installs `godot/build/criminal-empire-debug.apk`.
 
-**Release AAB (later):** In export preset set `gradle_build/export_format=1`, create release keystore (gitignored `*.keystore`), export AAB for Play Console.
+**Two Android presets — pick by destination:**
+
+| Preset | Format | Output | Use for |
+|--------|--------|--------|---------|
+| **Android Debug** | APK (`export_format=0`) | `godot/build/criminal-empire-debug.apk` | device pass, `adb install` |
+| **Android** | AAB (`export_format=1`) | `godot/build/criminal-empire.aab` | Play Console upload only |
+
+Godot hard-fails on a format/extension mismatch (`Invalid filename! Android App Bundle requires the *.aab extension.`), and `adb` cannot install a bundle — so never aim one preset at the other's path. Keep SDK levels, version, package name, and permissions identical between the two; `.\device_pass.ps1 check` fails on drift.
+
+**Release AAB:** create the release keystore (gitignored `*.keystore`), then `.\device_pass.ps1 aab`.
 
 ---
 
@@ -188,8 +198,11 @@ cd d:\2d_game
 # Smoke load (must pass before/after plugin work)
 godot --headless --quit --path godot
 
-# Debug APK export
-godot --path godot --headless --export-debug Android
+# Debug APK export (APK preset — the AAB preset refuses a .apk path)
+godot --path godot --headless --export-debug "Android Debug" godot/build/criminal-empire-debug.apk
+
+# Release AAB for Play Console
+godot --path godot --headless --export-release Android godot/build/criminal-empire.aab
 
 # Parity soak
 python sim_godot_soak.py --godot "C:\Path\To\Godot_v4.6.3-stable_win64.exe"
@@ -210,7 +223,7 @@ ERROR: Android SDK path not found
 - USB mode: **File transfer / MTP**; accept RSA fingerprint on phone when `adb` first connects.
 - If `adb devices` shows `unauthorized`, revoke USB debugging authorizations on the phone and replug.
 - Arm64 only: `export_presets.cfg` has `architectures/arm64-v8a=true` (Moto G compatible).
-- First launch: grant **notification** permission when prompted (Android 13+); toggle in-game Config tab also gates scheduling.
+- V1 must never prompt for notification permission and must have no notification or cloud sign-in setting.
 
 ---
 

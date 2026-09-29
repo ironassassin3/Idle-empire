@@ -3,22 +3,32 @@
 #   .\device_pass.ps1 check          # toolchain status (default)
 #   .\device_pass.ps1 smoke          # headless load + 30s soak + income parity
 #   .\device_pass.ps1 export         # debug APK (needs JDK + SDK + templates)
-#   .\device_pass.ps1 install        # adb install build/criminal-empire.apk
+#   .\device_pass.ps1 install        # adb install build/criminal-empire-debug.apk
 #   .\device_pass.ps1 run            # export + install + launch on connected device
+#   .\device_pass.ps1 aab            # signed release AAB for Play Console submission
 #   .\device_pass.ps1 log            # tail Godot/Android logcat for the app
+#
+# Two Android presets, because a device pass and a Play upload need different formats:
+#   "Android Debug" -> APK  (installable via adb; what every action except `aab` uses)
+#   "Android"       -> AAB  (Play Console only; adb cannot install a bundle)
+# Godot hard-fails on a format/extension mismatch, so never point one at the other's path.
 #
 # Set GODOT_BIN to override Godot path. Manual gates: DEVICE_TEST_CHECKLIST.md (15-min pass).
 
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("check", "smoke", "export", "install", "run", "log")]
+    [ValidateSet("check", "smoke", "export", "install", "run", "aab", "log")]
     [string]$Action = "check"
 )
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $GodotProject = Join-Path $RepoRoot "godot"
-$ApkPath = Join-Path $GodotProject "build\criminal-empire.apk"
+$PresetsFile = Join-Path $GodotProject "export_presets.cfg"
+$DebugPreset = "Android Debug"
+$ReleasePreset = "Android"
+$ApkPath = Join-Path $GodotProject "build\criminal-empire-debug.apk"
+$AabPath = Join-Path $GodotProject "build\criminal-empire.aab"
 $Package = "com.ironassassin.criminalempire"
 $GodotVersion = "4.6.3.stable"
 
@@ -45,6 +55,10 @@ function Find-Adb {
     return $null
 }
 
+# Never call this script with `2>&1`: adb writes its "daemon not running" banner to
+# stderr, and PowerShell 5.1 turns a redirected native stderr into a terminating
+# ErrorRecord under $ErrorActionPreference="Stop", killing the pass mid-install.
+
 function Find-Python {
     # The bare `python` command on Windows is often the broken Store alias, so
     # prefer the `py` launcher, then a real python on PATH, then known installs.
@@ -58,6 +72,63 @@ function Find-Python {
         if (Test-Path $c) { return $c }
     }
     return $null
+}
+
+# Godot rewrites export_presets.cfg (dropping comments) whenever the editor saves a
+# preset, so the "keep both Android presets in sync" rule cannot live in that file --
+# it lives here, as a check.
+$PresetSyncKeys = @(
+    "exclude_filter",
+    "gradle_build/use_gradle_build",
+    "gradle_build/min_sdk",
+    "gradle_build/target_sdk",
+    "architectures/arm64-v8a",
+    "version/code",
+    "version/name",
+    "package/unique_name",
+    "screen/immersive_mode",
+    "permissions/access_network_state",
+    "permissions/internet",
+    "permissions/post_notifications",
+    "permissions/vibrate"
+)
+
+function Get-Preset {
+    param([Parameter(Mandatory = $true)][string]$Name)
+    if (-not (Test-Path $PresetsFile)) { return $null }
+    $lines = Get-Content $PresetsFile
+    $index = $null
+    $current = $null
+    foreach ($line in $lines) {
+        if ($line -match '^\[preset\.(\d+)\]\s*$') { $current = $Matches[1]; continue }
+        if ($line -match '^\[') { $current = $null; continue }
+        if ($current -and $line -match '^name="(.*)"\s*$' -and $Matches[1] -eq $Name) { $index = $current }
+    }
+    if ($null -eq $index) { return $null }
+    $vals = @{}
+    $capture = $false
+    foreach ($line in $lines) {
+        if ($line -match '^\[') {
+            $capture = ($line.Trim() -eq "[preset.$index]") -or ($line.Trim() -eq "[preset.$index.options]")
+            continue
+        }
+        if ($capture -and $line -match '^([^=]+)=(.*)$') { $vals[$Matches[1].Trim()] = $Matches[2].Trim() }
+    }
+    return $vals
+}
+
+function Get-PresetDrift {
+    $rel = Get-Preset $ReleasePreset
+    $dbg = Get-Preset $DebugPreset
+    if (-not $rel) { return @("preset '$ReleasePreset' missing from export_presets.cfg") }
+    if (-not $dbg) { return @("preset '$DebugPreset' missing from export_presets.cfg") }
+    $issues = @()
+    if ($rel["gradle_build/export_format"] -ne "1") { $issues += "'$ReleasePreset' export_format must be 1 (AAB) for Play" }
+    if ($dbg["gradle_build/export_format"] -ne "0") { $issues += "'$DebugPreset' export_format must be 0 (APK) for adb install" }
+    foreach ($key in $PresetSyncKeys) {
+        if ($rel[$key] -ne $dbg[$key]) { $issues += "$key drift: $ReleasePreset=$($rel[$key]) vs $DebugPreset=$($dbg[$key])" }
+    }
+    return $issues
 }
 
 function Test-ExportTemplates {
@@ -91,13 +162,15 @@ function Find-JdkHome {
 function Show-Check {
     $godot = Find-Godot
     $adb = Find-Adb
+    $presetDrift = @(Get-PresetDrift)
     $rows = @(
         @{ Item = "Godot 4.6.3"; Ok = [bool]$godot; Detail = if ($godot) { $godot } else { "Set GODOT_BIN or install Godot" } },
         @{ Item = "Export templates"; Ok = (Test-ExportTemplates); Detail = "$env:APPDATA\Godot\export_templates\$GodotVersion\" },
         @{ Item = "JDK 17"; Ok = (Test-Jdk); Detail = "winget install Microsoft.OpenJDK.17" },
         @{ Item = "Android SDK"; Ok = (Test-AndroidSdk); Detail = "%LOCALAPPDATA%\Android\Sdk (Android Studio SDK Manager)" },
         @{ Item = "adb"; Ok = [bool]$adb; Detail = if ($adb) { $adb } else { "Install Platform-Tools via SDK Manager" } },
-        @{ Item = "Android build template"; Ok = (Test-Path (Join-Path $GodotProject "android\build")); Detail = "Godot: Project -> Install Android Build Template" }
+        @{ Item = "Android build template"; Ok = (Test-Path (Join-Path $GodotProject "android\build")); Detail = "Godot: Project -> Install Android Build Template" },
+        @{ Item = "Export presets"; Ok = ($presetDrift.Count -eq 0); Detail = if ($presetDrift.Count -eq 0) { "'$DebugPreset' APK + '$ReleasePreset' AAB in sync" } else { $presetDrift -join "; " } }
     )
 
     Write-Host ""
@@ -118,7 +191,7 @@ function Show-Check {
         & $adb devices
     }
 
-    $ready = ($rows | Where-Object { $_.Item -in @("Godot 4.6.3", "Export templates", "JDK 17", "Android SDK", "Android build template") } | Where-Object { -not $_.Ok }).Count -eq 0
+    $ready = ($rows | Where-Object { $_.Item -in @("Godot 4.6.3", "Export templates", "JDK 17", "Android SDK", "Android build template", "Export presets") } | Where-Object { -not $_.Ok }).Count -eq 0
     Write-Host ""
     if ($ready) {
         Write-Host "Ready for: .\device_pass.ps1 export" -ForegroundColor Green
@@ -134,7 +207,12 @@ function Invoke-Godot {
         [Parameter(Mandatory = $true)][string]$Godot,
         [Parameter(ValueFromRemainingArguments = $true)][string[]]$Args
     )
-    & $Godot @Args 2>&1 | Out-Null
+    # Keep stderr attached to the console. In Windows PowerShell 5.1, merging a
+    # native process's stderr into the success stream turns even a harmless
+    # Godot warning into a terminating NativeCommandError when
+    # $ErrorActionPreference is "Stop". Suppress stdout only, then trust the
+    # native exit code below for the actual pass/fail result.
+    & $Godot @Args | Out-Null
     if ($null -eq $LASTEXITCODE) {
         if ($?) { return 0 }
         return 1
@@ -148,9 +226,47 @@ function Invoke-Smoke {
     Write-Host "Headless project load..." -ForegroundColor Cyan
     $loadExit = Invoke-Godot $godot --headless --quit --path $GodotProject
     if ($loadExit -ne 0) { throw "Godot headless load failed (exit $loadExit)" }
-    Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
+    # Sheet bounds: needs a real (offscreen) window - the layout does not settle
+    # under --headless, so the check would silently pass there. Called directly
+    # so its diagnostic output remains visible during the layout check.
+    Write-Host "Sheet bounds (nav dock stays on screen)..." -ForegroundColor Cyan
+    & $godot --path $GodotProject --resolution 320x240 --position 3000,3000 -s res://scripts/tools/deck_bounds_smoke.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "deck_bounds_smoke failed - the content sheet overflows the viewport" }
+    # Layout invariants across every tab/overlay at BOTH font scales. Desktop
+    # renders at 1.0; a 263dpi phone applies 1.6 to the same layout, which is
+    # how the menu title, the gear chip and the boss sheet all shipped broken.
+    # No --position here: it skews get_display_safe_area(), which the shell
+    # feeds into its margins, and every rect comes out garbage.
+    Write-Host "Layout invariants (clip / overflow / chrome collision)..." -ForegroundColor Cyan
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/layout_invariants.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "layout_invariants failed - see the violations above" }
+    # Telemetry consent contract — the Data Safety answers and the privacy policy
+    # both promise nothing leaves the device on a default install.
+    Write-Host "Telemetry consent contract..." -ForegroundColor Cyan
+    & $godot --headless --path $GodotProject -s res://scripts/tools/consent_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "consent_probe failed - telemetry consent defaults regressed" }
+    # Service state must be checked after normal display-backed initialization.
+    # Notifications and CloudSave intentionally self-disable under --headless,
+    # which would mask a production enablement regression.
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/v1_contract_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "v1_contract_probe failed" }
+    & $godot --headless --path $GodotProject -s res://scripts/tools/deck_gesture_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "deck_gesture_probe failed" }
+    & $godot --path $GodotProject --resolution 320x240 -s res://scripts/tools/scroll_gesture_probe.gd | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "scroll_gesture_probe failed" }
+    # Boot-path hardening: launch-loop recovery, hostile saves, log rotation.
+    # These run against an isolated _audit/runtime user dir, never a real save.
+    Write-Host "Crash recovery + hostile-save probes..." -ForegroundColor Cyan
     $python = Find-Python
     if (-not $python) { throw "Python not found (install the 'py' launcher or add python to PATH)." }
+    & $python (Join-Path $RepoRoot "tools\check_crash_recovery.py") --godot $godot | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "check_crash_recovery failed" }
+    # Randomised play: real actions against the live shell, failing on any engine
+    # error, non-finite economy value, unstable reload, or unbounded growth.
+    Write-Host "Chaos soak (randomised play)..." -ForegroundColor Cyan
+    & $python (Join-Path $RepoRoot "tools\check_chaos_soak.py") --godot $godot --steps 8000 --seeds 2 | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "check_chaos_soak failed" }
+    Write-Host "Soak + income parity (30s)..." -ForegroundColor Cyan
     Push-Location $RepoRoot
     try {
         & $python sim_godot_soak.py --godot $godot --seconds 30
@@ -161,23 +277,128 @@ function Invoke-Smoke {
     Write-Host "Smoke PASS" -ForegroundColor Green
 }
 
-function Invoke-Export {
-    $godot = Find-Godot
-    if (-not $godot) { throw "Godot not found" }
+function Assert-AndroidToolchain {
     if (-not (Test-ExportTemplates)) { throw "Export templates missing - Editor -> Manage Export Templates" }
     if (-not (Test-Jdk)) { throw "JDK 17 missing - winget install Microsoft.OpenJDK.17" }
     if (-not (Test-AndroidSdk)) { throw "Android SDK missing - run .\tools\install_android_sdk.ps1" }
     if (-not (Test-Path (Join-Path $GodotProject "android\build\.build_version"))) {
         & (Join-Path $RepoRoot "tools\install_android_build_template.ps1")
     }
+    $drift = Get-PresetDrift
+    if ($drift) { throw ("Export preset problem:`n  - " + ($drift -join "`n  - ")) }
+}
+
+function Find-JdkTool {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $jdkHome = Find-JdkHome
+    if ($jdkHome) {
+        $jdkTool = Join-Path $jdkHome ("bin\{0}.exe" -f $Name)
+        if (Test-Path -LiteralPath $jdkTool) { return $jdkTool }
+    }
+    $command = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($command) { return $command.Source }
+    return $null
+}
+
+function Assert-ReleaseBundleContents {
+    param([Parameter(Mandatory = $true)][string]$BundlePath)
+
+    $jar = Find-JdkTool "jar"
+    if (-not $jar) { throw "jar.exe not found; cannot audit release bundle contents" }
+
+    $entries = @(& $jar tf $BundlePath)
+    if ($LASTEXITCODE -ne 0) { throw "Could not list AAB contents (jar exit $LASTEXITCODE)" }
+
+    # These files are useful locally but must never be swept into a store build.
+    $forbiddenPrefixes = @(
+        "assetPackInstallTime/assets/scripts/tools/",
+        "assetPackInstallTime/assets/cur_",
+        "assetPackInstallTime/assets/live_bldgs_zero.png"
+    )
+    $leaks = @($entries | Where-Object {
+        $entry = $_
+        @($forbiddenPrefixes | Where-Object { $entry.StartsWith($_) }).Count -gt 0
+    })
+    if ($leaks.Count -gt 0) {
+        $sample = ($leaks | Select-Object -First 12) -join "`n  - "
+        throw "Release AAB contains development-only files:`n  - $sample"
+    }
+
+    Write-Host "Release content audit PASS (no probes or reference screenshots)" -ForegroundColor Green
+}
+
+function Assert-AabSignature {
+    param([Parameter(Mandatory = $true)][string]$BundlePath)
+
+    $jarsigner = Find-JdkTool "jarsigner"
+    if (-not $jarsigner) { throw "jarsigner.exe not found; cannot verify AAB signature" }
+    $verification = & $jarsigner -verify $BundlePath | Out-String
+    if ($LASTEXITCODE -ne 0 -or $verification -notmatch "jar verified\.") {
+        throw "AAB signature verification failed; do not upload this bundle"
+    }
+    Write-Host "AAB signature PASS" -ForegroundColor Green
+}
+
+function Invoke-Export {
+    $godot = Find-Godot
+    if (-not $godot) { throw "Godot not found" }
+    Assert-AndroidToolchain
     $outDir = Split-Path $ApkPath -Parent
     if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
-    Write-Host "Exporting debug APK..." -ForegroundColor Cyan
-    $exportExit = Invoke-Godot $godot --path $GodotProject --headless --export-debug Android $ApkPath
+    Write-Host "Exporting debug APK ($DebugPreset preset)..." -ForegroundColor Cyan
+    $exportExit = Invoke-Godot $godot --path $GodotProject --headless --export-debug $DebugPreset $ApkPath
     if ($exportExit -ne 0) { throw "Export failed (exit $exportExit)" }
     if (-not (Test-Path $ApkPath)) { throw "APK not found at $ApkPath" }
+    Assert-DebugApkContents $ApkPath
     $mb = [math]::Round((Get-Item $ApkPath).Length / 1MB, 1)
     Write-Host ("APK: {0} ({1} MB)" -f $ApkPath, $mb) -ForegroundColor Green
+}
+
+function Assert-DebugApkContents {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
+    try {
+        $leaks = @($archive.Entries | Where-Object {
+            $_.FullName -match '(^|/)scripts/tools/|(^|/)cur_[^/]*|(^|/)live_bldgs_zero\.png'
+        })
+        if ($leaks.Count -gt 0) { throw "Debug APK contains development files: $($leaks.FullName -join ', ')" }
+    } finally {
+        $archive.Dispose()
+    }
+    $buildTools = Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools'
+    $aapt = Get-ChildItem -LiteralPath $buildTools -Directory |
+        Sort-Object Name -Descending |
+        ForEach-Object { Join-Path $_.FullName 'aapt.exe' } |
+        Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if (-not $aapt) { throw 'aapt.exe missing; cannot audit the merged APK permissions' }
+    $permissions = & $aapt dump permissions $Path | Out-String
+    if ($LASTEXITCODE -ne 0) { throw 'APK manifest inspection failed' }
+    if ($permissions -match 'android\.permission\.POST_NOTIFICATIONS') {
+        throw 'V1 APK unexpectedly requests notification permission'
+    }
+    Write-Host 'Debug APK audit PASS (no tools, reference screenshots, or notification permission)' -ForegroundColor Green
+}
+
+function Invoke-ExportAab {
+    $godot = Find-Godot
+    if (-not $godot) { throw "Godot not found" }
+    Assert-AndroidToolchain
+    $outDir = Split-Path $AabPath -Parent
+    if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+    Write-Host "Exporting release AAB ($ReleasePreset preset)..." -ForegroundColor Cyan
+    $exportExit = Invoke-Godot $godot --path $GodotProject --headless --export-release $ReleasePreset $AabPath
+    if ($exportExit -ne 0) { throw "Export failed (exit $exportExit) - release keystore configured? See ANDROID_SETUP.md" }
+    if (-not (Test-Path $AabPath)) { throw "AAB not found at $AabPath" }
+    Assert-AabSignature $AabPath
+    Assert-ReleaseBundleContents $AabPath
+    $mb = [math]::Round((Get-Item $AabPath).Length / 1MB, 1)
+    $sha256 = (Get-FileHash -LiteralPath $AabPath -Algorithm SHA256).Hash
+    Write-Host ("AAB: {0} ({1} MB)" -f $AabPath, $mb) -ForegroundColor Green
+    Write-Host ("SHA256: {0}" -f $sha256) -ForegroundColor Green
+    Write-Host "Play Console upload only - adb cannot install a bundle. Device pass uses .\device_pass.ps1 run." -ForegroundColor Cyan
 }
 
 function Invoke-Install {
@@ -217,6 +438,7 @@ try {
         "export" { Invoke-Export }
         "install" { Invoke-Install }
         "run" { Invoke-Run }
+        "aab" { Invoke-ExportAab }
         "log" { Invoke-Log }
     }
 } finally {

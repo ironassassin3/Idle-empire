@@ -181,9 +181,9 @@ static func _take_action(state, r: Dictionary, rng: RandomNumberGenerator) -> Ar
 		var prefix: String = "%s " % symbol if not symbol.is_empty() else ""
 		var msg: String
 		if not claimed.is_empty():
-			msg = "%s%scaptured %s." % [prefix, name, claimed]
+			msg = "%s%s captured %s." % [prefix, name, claimed]
 		else:
-			msg = "%s%scaptured a new district." % [prefix, name]
+			msg = "%s%s captured a new district." % [prefix, name]
 		_log(state, msg)
 		events.append(msg)
 

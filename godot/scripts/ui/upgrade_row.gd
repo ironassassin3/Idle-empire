@@ -27,8 +27,9 @@ func _ready() -> void:
 
 
 func _apply_label_scale() -> void:
-	GameTheme.apply_row_title(_name, 14)
-	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	GameTheme.apply_row_title(_name, 16)
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_desc.add_theme_color_override("font_color", GameTheme.TEXT_FLAVOR)
 
 
 # Rule 10 (Stage & Ledger): progress-to-afford underbar while APPROACHING.

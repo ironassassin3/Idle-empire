@@ -100,6 +100,11 @@ func refresh(overlay_blocking: bool) -> void:
 	)
 
 
+func set_overlay_blocking(blocking: bool) -> void:
+	if _city != null:
+		_city.call("set_overlay_occluded", blocking)
+
+
 func _top_buildings() -> Array:
 	# Most-owned first; the city draws up to 5 hero facades and scales each by
 	# its owned count, so the skyline keeps growing with every purchase.

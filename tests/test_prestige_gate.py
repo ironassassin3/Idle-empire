@@ -1,4 +1,4 @@
-"""The next prestige gate is previous_gate x GROWTH, independent of overshoot."""
+"""Next prestige gate is max(prev x GROWTH, IPS-scaled floor); ignores overshoot."""
 import os
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -21,27 +21,54 @@ def _fresh_state():
 
 def test_next_gate_ignores_overshoot():
     ps = _fresh_state()
-    # Second-cycle prestige (count>=1). Satisfy the real rebuild gates so the
-    # test exercises the gate FORMULA, not the requirement machinery:
-    #   - rebuilt dealers/rackets/chops (POST_PRESTIGE_* counts)
-    #   - a committed branch with >=1 purchased perk
+    # Second-cycle prestige (count>=1). Satisfy scaled rebuild gates:
+    #   need = FIRST * (1 + 0.5 * prestige_count) → 1.5x at count=1
     ps._prestige_count = 1
-    ps.buildings[0].owned = 18   # dealers  (POST_PRESTIGE_DEALERS)
-    ps.buildings[1].owned = 7    # rackets  (POST_PRESTIGE_RACKETS)
-    ps.buildings[2].owned = 3    # chops    (POST_PRESTIGE_CHOPS)
+    d_need = prestige.post_building_required(1, prestige.POST_PRESTIGE_DEALERS)
+    r_need = prestige.post_building_required(1, prestige.POST_PRESTIGE_RACKETS)
+    c_need = prestige.post_building_required(1, prestige.POST_PRESTIGE_CHOPS)
+    ps.buildings[0].owned = d_need
+    ps.buildings[1].owned = r_need
+    ps.buildings[2].owned = c_need
     ps.prestige_branch = prestige_tree.KINGPIN
     ps.perks_purchased = ['kp_cashflow']
     ps._next_prestige_earnings = 100_000_000.0     # the gate just crossed
     ps._prestige_route_earnings = 900_000_000.0    # a 9x overshoot
+    ps._prestige_cycle_time = prestige.POST_PRESTIGE_MIN_RUN_SECS
     ps.lifetime_earnings = 2_000_000_000.0         # plenty for influence calc
     assert prestige.can_prestige(ps), "setup must satisfy the gate"
 
+    ips_before = float(ps.income_per_second)
     prestige.PrestigeManager.execute(ps)
 
-    growth = prestige.PRESTIGE_EARNINGS_GROWTH
-    expected = 100_000_000.0 * growth              # previous_gate x GROWTH
-    punished = 900_000_000.0 * growth              # the old route x GROWTH bug
+    expected = prestige.next_earnings_gate(
+        100_000_000.0, ips_before, ps.prestige_tokens
+    )
+    punished = 900_000_000.0 * prestige.PRESTIGE_EARNINGS_GROWTH
     assert ps._next_prestige_earnings == expected, (
-        f"gate should be {expected:.0f} (prev x {growth}), "
-        f"got {ps._next_prestige_earnings:.0f}")
+        f"gate should be {expected:.0f}, got {ps._next_prestige_earnings:.0f}")
     assert ps._next_prestige_earnings != punished
+
+
+def test_post_building_scales():
+    assert prestige.post_building_required(1, 25) == 38  # 1.5x
+    assert prestige.post_building_required(2, 25) == 50  # 2.0x
+
+
+def test_post_prestige_requires_a_stable_rebuild_window():
+    ps = _fresh_state()
+    ps._prestige_count = 1
+    ps._prestige_cycle_time = prestige.POST_PRESTIGE_MIN_RUN_SECS - 1.0
+    req = prestige.check_requirements(ps)["rebuild_time"]
+    assert not req[2]
+    ps._prestige_cycle_time += 1.0
+    assert prestige.check_requirements(ps)["rebuild_time"][2]
+
+
+def test_frenzy_cash_does_not_multiply_prestige_route_income():
+    ps = _fresh_state()
+    ps.buildings[0].owned = 10
+    stable = ps.prestige_route_income_per_second
+    ps._add_buff("frenzy", 15.0)
+    assert ps.income_per_second == stable * 7.0
+    assert ps.prestige_route_income_per_second == stable

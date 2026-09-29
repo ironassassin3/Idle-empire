@@ -15,6 +15,7 @@ extends SceneTree
 ##   --prestige-tokens N  Seed prestige tokens (e.g. 75 = Crime Lord rank glow)
 ##   --offline-overlay    Force offline return overlay (city dimmed behind scrim)
 ##   --prestige-tree      Open prestige tree overlay for capture
+##   --dragon-patron      Open dragon patron picker (seeds prestige 1 + Red patron)
 
 const GAME_SCREEN := "res://scenes/game_screen.tscn"
 const GAME_SHELL := "res://scenes/game_shell.tscn"
@@ -32,6 +33,7 @@ var _menu_mode := false
 var _shell_mode := false
 var _offline_overlay_mode := false
 var _prestige_tree_mode := false
+var _dragon_patron_mode := false
 
 ## --shell tab indices → Stage & Ledger tab ids (turf subtabs share "turf").
 const _SHELL_TABS := ["bldgs", "upgrs", "turf", "turf", "turf", "turf", "stats", "mgrs", "config"]
@@ -48,6 +50,7 @@ func _initialize() -> void:
 	_shell_mode = _has_flag("--shell")
 	_offline_overlay_mode = _has_flag("--offline-overlay")
 	_prestige_tree_mode = _has_flag("--prestige-tree")
+	_dragon_patron_mode = _has_flag("--dragon-patron")
 
 	SoakAutoloads.install(self)
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), true)
@@ -109,6 +112,11 @@ func _apply_city_matrix_seed(gs: Node) -> void:
 
 
 func _apply_overlay_seed(gs: Node) -> void:
+	if _dragon_patron_mode:
+		# Picker is gated behind the first prestige; seed an active patron so the
+		# ACTIVE/Switch card states both render.
+		gs.prestige_count = maxi(1, int(gs.prestige_count))
+		gs.dragon_patron = "red"
 	if _offline_overlay_mode:
 		gs.show_offline_overlay = true
 		gs.show_daily_overlay = false
@@ -153,6 +161,9 @@ func _process(_delta: float) -> bool:
 			if cash > 0.0:
 				gs.balance = cash
 			_apply_city_matrix_seed(gs)
+			if _dragon_patron_mode:
+				gs.prestige_count = maxi(1, int(gs.prestige_count))
+				gs.dragon_patron = "red"
 	if not _menu_mode and _frame == 5 and _screen != null:
 		if _shell_mode:
 			var events: Node = root.get_node_or_null("UiEvents")
@@ -166,6 +177,10 @@ func _process(_delta: float) -> bool:
 			var tree := _screen.get_node_or_null("PrestigeTreeOverlay")
 			if tree != null and tree.has_method("open"):
 				tree.call("open")
+		elif _dragon_patron_mode:
+			var dragon := _screen.get_node_or_null("DragonPatronOverlay")
+			if dragon != null and dragon.has_method("open"):
+				dragon.call("open")
 		elif _offline_overlay_mode and _screen.has_method("_refresh_overlays"):
 			_screen.call("_refresh_overlays")
 	if _frame < _settle:
@@ -183,6 +198,8 @@ func _process(_delta: float) -> bool:
 			payload["offline_overlay"] = true
 		if _prestige_tree_mode:
 			payload["prestige_tree"] = true
+		if _dragon_patron_mode:
+			payload["dragon_patron"] = true
 	else:
 		payload["menu"] = true
 	print(JSON.stringify(payload))

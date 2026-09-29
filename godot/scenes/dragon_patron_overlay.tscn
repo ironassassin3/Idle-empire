@@ -59,8 +59,13 @@ theme_override_font_sizes/font_size = 11
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="CardRow" type="HBoxContainer" parent="Panel/Margin/VBox"]
+[node name="CardScroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
 layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardRow" type="BoxContainer" parent="Panel/Margin/VBox/CardScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 

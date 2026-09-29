@@ -22,7 +22,7 @@ var _long_press_fired := false
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 68)
+	custom_minimum_size = Vector2(0, GameTheme.scale_touch(68))
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(GameTheme.INK_FIELD, 0.97)
 	sb.border_color = Color(GameTheme.GOLD, 0.4)
@@ -49,7 +49,7 @@ func _ready() -> void:
 func _build_tab(tab_id: String, icon: String, label: String) -> Control:
 	var btn := Button.new()
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 56)
+	btn.custom_minimum_size = Vector2(0, GameTheme.scale_touch(56))
 	btn.pressed.connect(func():
 		if _long_press_fired:
 			_long_press_fired = false
@@ -73,7 +73,7 @@ func _build_tab(tab_id: String, icon: String, label: String) -> Control:
 
 	var tex := TextureRect.new()
 	tex.texture = GameIcons.texture(icon)
-	tex.custom_minimum_size = Vector2(22, 22)
+	tex.custom_minimum_size = Vector2(24, 24)
 	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tex.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -84,7 +84,12 @@ func _build_tab(tab_id: String, icon: String, label: String) -> Control:
 	l.text = label
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_override("font", GameFonts.heading())
-	l.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	# Cinzel sets lowercase as small caps, so it needs more px than body copy.
+	# Five labels share one row: past the 100% step they collide on a 720-wide
+	# phone, so the a11y text scale stops here (the icons carry the meaning).
+	l.add_theme_font_size_override("font_size", mini(GameTheme.scaled_font(16),
+			int(round(16.0 * GameTheme.TEXT_BASE_MULT * GameTheme.device_font_boost()))))
+	l.clip_text = true
 	l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	v.add_child(l)
 

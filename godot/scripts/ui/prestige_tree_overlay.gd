@@ -10,7 +10,7 @@ const GameFonts = preload("res://scripts/ui/game_fonts.gd")
 @onready var _title: Label = $Panel/Margin/VBox/TitleLabel
 @onready var _influence: Label = $Panel/Margin/VBox/InfluenceLabel
 @onready var _prompt: Label = $Panel/Margin/VBox/PromptLabel
-@onready var _branch_row: HBoxContainer = $Panel/Margin/VBox/BranchRow
+@onready var _branch_row: HFlowContainer = $Panel/Margin/VBox/BranchRow
 @onready var _blurb: Label = $Panel/Margin/VBox/BlurbLabel
 @onready var _perk_scroll: ScrollContainer = $Panel/Margin/VBox/PerkScroll
 @onready var _perk_grid: GridContainer = $Panel/Margin/VBox/PerkScroll/PerkGrid
@@ -62,6 +62,15 @@ func _ready() -> void:
 	_prestige_yes.pressed.connect(_confirm_prestige)
 	_prestige_no.pressed.connect(_cancel_prestige_dialog)
 	GameState.stats_changed.connect(_refresh)
+	get_viewport().size_changed.connect(_fit_panels)
+	_fit_panels()
+
+
+## Authored as fixed centred boxes (780 wide) that bleed off a 720px phone.
+func _fit_panels() -> void:
+	GameTheme.fit_overlay_panel(_panel, Vector2(780, 600))
+	GameTheme.fit_overlay_panel(_branch_dialog, Vector2(440, 240))
+	GameTheme.fit_overlay_panel(_prestige_dialog, Vector2(480, 260))
 
 
 func _apply_ink_theme() -> void:
@@ -76,12 +85,12 @@ func _apply_ink_theme() -> void:
 	_influence.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_prompt.add_theme_font_override("font", GameFonts.heading())
 	_prompt.add_theme_color_override("font_color", GameTheme.GOLD)
-	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_blurb.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	_blurb.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_blurb.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	GameTheme.apply_flavor_label(_blurb)
 	_lock_label.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	_lock_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_lock_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_perk_scroll.add_theme_stylebox_override("panel", GameTheme.ink_scroll_wrap_style())
 	GameTheme.apply_ink_chip_button(_back_btn, false, 14, GameTheme.TEXT)
 	GameTheme.apply_overlay_cta(_prestige_btn, true)
@@ -109,6 +118,7 @@ func _apply_dialog_theme() -> void:
 
 func open() -> void:
 	visible = true
+	_fit_panels()
 	_branch_dialog.visible = false
 	_prestige_dialog.visible = false
 	_pending_branch = ""
@@ -247,7 +257,7 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 	var tier_l := Label.new()
 	tier_l.text = "TIER %d" % tier
 	tier_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	tier_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	tier_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
 	vbox.add_child(tier_l)
 	var name_l := Label.new()
 	name_l.text = perk_name
@@ -287,7 +297,7 @@ func _make_perk_card(key: String, perk_name: String, cost: int, effect: String, 
 		detail_l.text = detail
 		detail_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		detail_l.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		detail_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+		detail_l.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 		vbox.add_child(detail_l)
 	return panel
 

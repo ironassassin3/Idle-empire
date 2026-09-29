@@ -16,15 +16,20 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Criminal Empire"
 config/description="Criminal Empire — idle mobile game (Godot 1.0). Pygame repo root is balance lab only."
-config/version="1.0.0"
+config/version="1.0.2"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0.102, 0.082, 0.125, 1)
 boot_splash/show_image=false
 config/icon="res://icon.svg"
+; Android Back must unwind the UI, not kill the app. Godot's default quits the
+; process outright, so on device (2026-07-30) tapping Back to close the Luck
+; Wheel terminated a live run. game_shell.gd handles the request instead.
+config/quit_on_go_back=false
 
 [autoload]
 
+CrashReporter="*res://scripts/autoload/crash_reporter.gd"
 GameConfig="*res://scripts/autoload/game_config.gd"
 FormatUtil="*res://scripts/autoload/format_util.gd"
 GameState="*res://scripts/autoload/game_state.gd"
@@ -37,13 +42,17 @@ CloudSave="*res://scripts/autoload/cloud_save.gd"
 RusticUi="*res://scripts/autoload/rustic_ui.gd"
 UiEvents="*res://scripts/ui/shell/ui_events.gd"
 
+[debug]
+
+settings/gdscript/always_track_call_stacks=true
+
 [display]
 
 window/size/viewport_width=720
 window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation="portrait"
+window/handheld/orientation=1
 
 [editor_plugins]
 

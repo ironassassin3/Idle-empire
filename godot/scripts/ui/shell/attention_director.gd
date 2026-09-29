@@ -10,17 +10,21 @@ const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const TAKEOVER_DWELL := 4.0
 const REFRESH_INTERVAL := 0.5
 const LOG_MAX := 40
+## One takeover leaves the queue every TAKEOVER_DWELL seconds, and a busy run
+## (raids, goals, ops) produces them faster than that. Unbounded, the queue grew
+## for the whole session and the rail ended up announcing events minutes after
+## they happened — the sort on every push got more expensive the longer you
+## played, which is exactly the shape of a session that degrades and dies.
+const TAKEOVER_MAX := 8
 
 # Priority table (high → low). Takeovers queue by priority; ambient items fill
 # the slot when no takeover is active.
 const PRIO_RAID := 100
+const PRIO_PRESTIGE_READY := 90
 const PRIO_OP_COLLECT := 80
 const PRIO_GOAL_DONE := 70
-const PRIO_PRESTIGE_READY := 60
-# One-shot onboarding beats (D5 compact-mode offer) rank above passive
-# goal/afford hints — otherwise, since those hints are near-always present
-# past prestige 1, the "offered once" promise could starve forever and never
-# actually surface. Still below anything genuinely actionable right now.
+# Prestige used to sit below ops (60) and lost the one-slot rail whenever an
+# operation was ready — device pass could not find prestige with the gate met.
 const PRIO_OFFER := 45
 const PRIO_AFFORD_HINT := 40
 const PRIO_GOAL_HINT := 30
@@ -128,7 +132,11 @@ func _push_takeover(prio: int, kind: String, text: String, value: String) -> voi
 	var item := {"prio": prio, "kind": kind, "text": text, "value": value, "target": ""}
 	_takeovers.append(item)
 	_takeovers.sort_custom(func(a, b): return int(a["prio"]) > int(b["prio"]))
-	if _takeovers[0] == item:
+	# Drop from the tail: what is left is the most urgent, and the rail is a
+	# "look here now" surface, not an archive (the event log keeps the history).
+	while _takeovers.size() > TAKEOVER_MAX:
+		_takeovers.pop_back()
+	if not _takeovers.is_empty() and _takeovers[0] == item:
 		_takeover_left = TAKEOVER_DWELL
 	_publish()
 
@@ -150,6 +158,30 @@ func _refresh_ambient() -> void:
 
 
 func _ambient_item() -> Dictionary:
+	# Prestige first when eligible — the run-ending beat must not lose the
+	# one-slot rail to ops/goals (device pass 2026-07-27). Soft path/perk
+	# blockers also claim the rail: earnings at 100% with no branch looked
+	# like prestige vanished on the second climb.
+	var prestige_cta := Prestige.ascend_cta_kind(GameState)
+	if prestige_cta == "ready":
+		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
+		return {
+			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
+			"text": "▸ EMPIRE READY TO ASCEND",
+			"value": "+%d INF" % gain, "target": "prestige",
+		}
+	if prestige_cta == "need_path":
+		return {
+			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
+			"text": "▸ GATE CLEAR — choose your path",
+			"value": "PATH", "target": "prestige",
+		}
+	if prestige_cta == "need_perk":
+		return {
+			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
+			"text": "▸ PATH LOCKED — buy a tier-1 perk",
+			"value": "PERK", "target": "prestige",
+		}
 	# Ops ready to collect?
 	var ready_ops := 0
 	for op in GameState.operations:
@@ -160,13 +192,6 @@ func _ambient_item() -> Dictionary:
 			"kind": "op_collect", "prio": PRIO_OP_COLLECT,
 			"text": "▸ OPERATION COMPLETE — collect your take",
 			"value": "×%d" % ready_ops, "target": "ops",
-		}
-	if GameState.can_prestige():
-		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
-		return {
-			"kind": "prestige_ready", "prio": PRIO_PRESTIGE_READY,
-			"text": "▸ EMPIRE READY TO ASCEND",
-			"value": "+%d INF" % gain, "target": "prestige",
 		}
 	# NOTE: _ambient_item is a first-match cascade, not a sort by "prio" — the
 	# prio fields below are cosmetic/telemetry only. Ordering here IS the

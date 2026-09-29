@@ -16,7 +16,10 @@ const GOLD_BRIGHT := Color("b18cff")
 const JEWEL_TEAL := Color("2fd6c6")
 const JEWEL_MAGENTA := Color("e5457e")
 const TEXT := Color("e8e0d4")
-const TEXT_MUTED := Color("8a8070")
+const TEXT_MUTED := Color("a39989")
+## Flavor/prose voice. Sits between TEXT and TEXT_MUTED: clearly a softer voice
+## than UI copy, still well above the contrast floor at body px (replaced italics).
+const TEXT_FLAVOR := Color("cfc4b4")
 const GREEN := Color("6a9a6a")
 const RED := Color("9a4a4a")
 ## Reactive-city alert tokens (spec §Open). RED (#9a4a4a) reads as ledger loss on
@@ -738,7 +741,12 @@ static func rank_plate_style() -> StyleBox:
 static func apply_flavor_label(lbl: Label) -> void:
 	if lbl == null:
 		return
-	lbl.add_theme_font_override("font", GameFonts.body_italic())
+	# Was Cormorant Italic. At body px on a phone the italic serif was the single
+	# least readable thing in the game ("I have to squint", playtest 2026-09-15),
+	# and overlay bodies are exactly where the writing has to land. Flavor now
+	# reads upright; the warm tint carries the tonal difference instead.
+	lbl.add_theme_font_override("font", GameFonts.body())
+	lbl.add_theme_color_override("font_color", TEXT_FLAVOR)
 
 
 static func apply_button_icon(btn: Button, icon_name: String, icon_px: int = 20, active: bool = true) -> void:
@@ -821,20 +829,37 @@ static func tab_label_with_badge(base: String, count: int) -> String:
 	return "%s •%d" % [base, count]
 
 
+## Baseline lift under every Settings step: even with the device boost, body copy
+## landed near 8dp on a 1080p phone (playtest 2026-09-15, "text too small everywhere").
+const TEXT_BASE_MULT := 1.2
+
+
 static func text_scale_mult() -> float:
 	if GameState.ui_text_scale >= 2:
-		return 1.5
+		return 1.5 * TEXT_BASE_MULT
 	if GameState.ui_text_scale >= 1:
-		return 1.25
-	return 1.0
+		return 1.25 * TEXT_BASE_MULT
+	return TEXT_BASE_MULT
+
+
+## Touch targets track the density boost and the a11y text scale, but at a
+## gentler rate than type: a button sized 1:1 with font px eats the row it sits
+## in. Use for min-sizes that must stay comfortably tappable as text grows.
+static func scale_touch(base: int) -> int:
+	var f: float = 1.0 + (text_scale_mult() * device_font_boost() - 1.0) * 0.6
+	return int(round(float(base) * f))
 
 
 static func scaled_font(base: int) -> int:
-	var px := int(round(float(base) * text_scale_mult()))
+	# The density boost belongs HERE, not only in the one-shot tree walk below:
+	# rows and overlays built after game_shell's _ready were never walked, so on a
+	# handset every dynamic label kept desktop px ("text to small everywhere",
+	# playtest 2026-09-15). Baking it in covers content created at any time.
+	var px := int(round(float(base) * text_scale_mult() * device_font_boost()))
 	# Market Supremacy N6: enforced legibility floor (Egg Inc's tiny-text
-	# failure). Captions never render below 12px-equivalent under the shell.
+	# failure). Captions never render below 13px-equivalent under the shell.
 	if GameConfig.UI_SHELL_V3:
-		px = maxi(px, 12)
+		px = maxi(px, int(round(13.0 * device_font_boost())))
 	return px
 
 
@@ -849,7 +874,13 @@ static var _device_font_boost := -1.0
 static func device_font_boost() -> float:
 	if _device_font_boost < 0.0:
 		_device_font_boost = 1.0
-		if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
+		# Desktop captures always run at 1.0, so every row that only overflows at
+		# a phone's boost stayed invisible to ui_capture.ps1 until a device pass
+		# (2026-07-29). CE_FONT_BOOST lets the harness reproduce a real handset.
+		if OS.has_environment("CE_FONT_BOOST"):
+			_device_font_boost = clampf(
+				float(OS.get_environment("CE_FONT_BOOST")), 1.0, 1.6)
+		elif OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
 			var dpi := DisplayServer.screen_get_dpi()
 			if dpi > 200:
 				_device_font_boost = clampf(float(dpi) / 160.0, 1.0, 1.6)
@@ -868,12 +899,34 @@ static func apply_device_font_boost(node: Node) -> void:
 
 static func _boost_fonts(node: Node, f: float) -> void:
 	if node is Control and not node.has_meta("_fb"):
-		var eff: int = node.get_theme_font_size("font_size")
-		if eff > 0:
-			node.add_theme_font_size_override("font_size", int(round(float(eff) * f)))
+		# Nodes carrying their own override came through scaled_font(), which
+		# already bakes in the boost — walking them again would double-scale.
+		if not node.has_theme_font_size_override("font_size"):
+			var eff: int = node.get_theme_font_size("font_size")
+			if eff > 0:
+				node.add_theme_font_size_override("font_size", int(round(float(eff) * f)))
 		node.set_meta("_fb", true)
 	for c in node.get_children():
 		_boost_fonts(c, f)
+
+
+## Shrink a single-line label's font until its text fits `max_w`.
+## For headline text that must never wrap: a Label inside a centered container
+## grows its parent past the viewport instead of clipping to it, so the string
+## ends up cut at BOTH edges with no scrollbar to recover it. Always re-measures
+## from `start_px`, so it is idempotent and safe to re-run on viewport resize.
+static func fit_label_to_width(label: Label, max_w: float, start_px: int, min_px: int = 12) -> int:
+	if label == null or max_w <= 0.0 or start_px <= 0:
+		return 0
+	var font: Font = label.get_theme_font("font")
+	if font == null:
+		return 0
+	var px := start_px
+	while px > min_px and font.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, px).x > max_w:
+		px -= 1
+	label.add_theme_font_size_override("font_size", px)
+	return px
 
 
 ## Particles OFF doubles as reduced-motion (P14.7) — skip overlay pulses / heavy UI motion.
@@ -957,6 +1010,21 @@ static func menu_ledger_style() -> StyleBox:
 		if sb != null:
 			return sb
 	return make_menu_ledger_flat()
+
+
+## Overlays were authored as fixed-size centered boxes (840x620 for the patron
+## picker) that bleed off both edges of a 720px-wide phone. Clamp to the
+## viewport and re-centre; call on open and on viewport resize.
+static func fit_overlay_panel(panel: Control, design: Vector2, margin: float = 12.0) -> void:
+	if panel == null or not is_instance_valid(panel):
+		return
+	var vp: Vector2 = panel.get_viewport_rect().size
+	var w: float = minf(design.x, maxf(160.0, vp.x - margin * 2.0))
+	var h: float = minf(design.y, maxf(160.0, vp.y - margin * 2.0))
+	panel.offset_left = -w * 0.5
+	panel.offset_right = w * 0.5
+	panel.offset_top = -h * 0.5
+	panel.offset_bottom = h * 0.5
 
 
 static func overlay_ledger_style() -> StyleBox:
@@ -1160,7 +1228,9 @@ static func apply_row_affordance(row: PanelContainer, affordance: int) -> void:
 static func apply_row_buy_button(btn: Button) -> void:
 	if btn == null:
 		return
-	btn.add_theme_font_size_override("font_size", scaled_font(12))
+	btn.add_theme_font_size_override("font_size", scaled_font(16))
+	# Playtest 2026-09-15: buy buttons read as too small to hit on a phone.
+	btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, scale_touch(52))
 	# Gilded: affordable = chunky gold bevel with dark text (inverted CTA);
 	# disabled = flat dark with a faint gold keyline so lists never go dead.
 	btn.add_theme_stylebox_override("normal", make_game_button_flat(GOLD))

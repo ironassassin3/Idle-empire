@@ -1,6 +1,8 @@
 # Android build template (`res://android/build`)
 
-Gradle custom build is **required** for AdMob, Play Billing, notifications, and Play Games (§5).
+Gradle custom build is **required** for the v1 AdMob and Play Billing integrations.
+Notifications and cloud backup are disabled for v1. The optional notification instructions below
+are historical integration notes, not v1 setup steps; do not install or enable that plugin.
 
 ## Generate the template (editor only)
 

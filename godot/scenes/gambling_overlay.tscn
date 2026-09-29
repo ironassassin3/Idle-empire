@@ -56,8 +56,8 @@ horizontal_alignment = 1
 
 [node name="PromptLabel" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.541, 0.502, 0.439, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.86, 0.84, 0.8, 1)
+theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 horizontal_alignment = 1
 
@@ -89,17 +89,17 @@ text = "Risk: $0"
 vertical_alignment = 1
 
 [node name="QuarterBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
-custom_minimum_size = Vector2(52, 40)
+custom_minimum_size = Vector2(52, 48)
 layout_mode = 2
 text = "¼"
 
 [node name="HalfBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
-custom_minimum_size = Vector2(52, 40)
+custom_minimum_size = Vector2(52, 48)
 layout_mode = 2
 text = "½"
 
 [node name="MaxBtn" type="Button" parent="Panel/Margin/VBox/WagerRow"]
-custom_minimum_size = Vector2(60, 40)
+custom_minimum_size = Vector2(60, 48)
 layout_mode = 2
 text = "Max"
 
@@ -115,12 +115,12 @@ text = "SPIN"
 
 [node name="AdBtn" type="Button" parent="Panel/Margin/VBox"]
 visible = false
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Watch ad  +1 spin"
 
 [node name="BackBtn" type="Button" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(120, 36)
+custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Back"

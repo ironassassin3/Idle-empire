@@ -1,12 +1,19 @@
 extends Control
 ## HudMasthead — Z1 chrome band (UI_OVERHAUL_ARCHITECTURE.md §4).
 ## Balance is the single largest text on screen; every number here appears
-## nowhere else (rule 4). Prestige progress is a filament, not a chip (kills P0%).
+## nowhere else (rule 4). Prestige progress is a filament while climbing; when
+## the gate is met a clear PRESTIGE chip appears (device pass 2026-07-27: the
+## filament alone was undiscoverable).
 
 const _ManagerSystem = preload("res://scripts/systems/manager_system.gd")
 const _DragonSystem = preload("res://scripts/systems/dragon_system.gd")
 
 const HEIGHT := 128.0
+const CHIP_SEP := 8.0
+const PAD_H := 12.0
+## No bundled font carries emoji and no SystemFont fallback is installed, so a
+## 🎯 renders as a blank box on device (device pass 2026-07-29). Latin only here.
+const WHEEL_LABEL := "SPIN"
 
 var _rank: Label
 var _balance: Label
@@ -16,10 +23,13 @@ var _heat_label: Label
 var _heat_bar: UiPrims.MiniBar
 var _dragon_chip: Button
 var _wheel_chip: Button
+var _prestige_chip: Button
 var _filament: UiPrims.Filament
 var _filament_hit: Button
 var _shield_label: Label
 var _buff_label: Label
+var _top: HBoxContainer
+var _col: VBoxContainer
 
 # ── Performing ledger state (Supremacy §4.1, ADR-001) ──
 # Display NEVER exceeds truth: gains ease in, spends snap down same-frame.
@@ -55,25 +65,41 @@ func _ready() -> void:
 	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	v.add_theme_constant_override("separation", 0)
 	add_child(v)
+	_col = v
 
 	var pad := MarginContainer.new()
 	for side in ["left", "right"]:
-		pad.add_theme_constant_override("margin_" + side, 12)
+		pad.add_theme_constant_override("margin_" + side, int(PAD_H))
 	pad.add_theme_constant_override("margin_top", 8)
 	v.add_child(pad)
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 8)
 	pad.add_child(top)
+	_top = top
 
 	top.add_child(_build_rank_chip())
 	var spring := Control.new()
 	spring.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(spring)
+	_prestige_chip = _build_chip_button("PRESTIGE", func(): UiEvents.overlay_requested.emit("prestige"))
+	_prestige_chip.visible = false
+	_prestige_chip.tooltip_text = "Empire ready to ascend — tap to open prestige"
+	# Gold fill so it reads as the run-ending CTA, not another muted chrome chip.
+	var p_sb := StyleBoxFlat.new()
+	p_sb.bg_color = Color(GameTheme.GOLD_BRIGHT, 0.22)
+	p_sb.border_color = GameTheme.GOLD_BRIGHT
+	p_sb.set_border_width_all(2)
+	p_sb.set_corner_radius_all(4)
+	p_sb.content_margin_left = 10
+	p_sb.content_margin_right = 10
+	for st in ["normal", "hover", "pressed"]:
+		_prestige_chip.add_theme_stylebox_override(st, p_sb)
+	top.add_child(_prestige_chip)
 	_dragon_chip = _build_chip_button("", func(): UiEvents.overlay_requested.emit("dragon"))
 	_dragon_chip.visible = false
 	top.add_child(_dragon_chip)
 	top.add_child(_build_heat_pill())
-	_wheel_chip = _build_chip_button("🎯", func(): UiEvents.overlay_requested.emit("gambling"))
+	_wheel_chip = _build_chip_button(WHEEL_LABEL, func(): UiEvents.overlay_requested.emit("gambling"))
 	_wheel_chip.visible = GameConfig.GAMBLING_ENABLED
 	top.add_child(_wheel_chip)
 	top.add_child(_build_gear())
@@ -118,8 +144,8 @@ func _ready() -> void:
 	gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(gap)
 
-	# Prestige filament — tap target wraps the 3px thread (48dp floor met by
-	# the surrounding button height).
+	# Prestige filament — tap target wraps the progress thread. When ready the
+	# hit box grows so a thumb can find it; the PRESTIGE chip is the primary CTA.
 	_filament_hit = Button.new()
 	_filament_hit.flat = true
 	_filament_hit.custom_minimum_size = Vector2(0, 14)
@@ -333,18 +359,24 @@ func _build_chip_button(txt: String, on_press: Callable) -> Button:
 
 func _build_gear() -> Button:
 	var b := _build_chip_button("", func(): UiEvents.overlay_requested.emit("config"))
-	b.icon = GameIcons.texture("gear")
-	b.expand_icon = true
-	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.add_theme_constant_override("icon_max_width", 20)
-	b.add_theme_color_override("icon_normal_color", GameTheme.GOLD)
+	# The SVG ships white so the icon colour override can tint it dark on a gold
+	# chip; a bare glyph on the masthead was invisible on phones.
+	GameTheme.apply_gear_icon_button(b)
+	b.add_theme_constant_override("icon_max_width", 24)
+	b.add_theme_constant_override("icon_max_height", 24)
 	b.tooltip_text = "Settings"
 	return b
 
 
 func refresh() -> void:
-	# Track live text-scale changes from Settings without a scene rebuild.
-	custom_minimum_size.y = HEIGHT * GameTheme.text_scale_mult()
+	# Track live text-scale changes from Settings without a scene rebuild. The band
+	# must also never be shorter than its own content: a phone's 1.6 font boost grows
+	# the rank/balance/income stack past a scaled 128px, and the overflow rendered
+	# *under* the rail — the income line, the whole idle promise, was invisible on
+	# device (2026-07-29). Fixed heights cannot survive a text multiplier.
+	custom_minimum_size.y = maxf(
+		HEIGHT * GameTheme.text_scale_mult(),
+		_col.get_combined_minimum_size().y if _col != null else 0.0)
 	# Balance text is owned by the ticker (_tick_balance) — do not set it here.
 	var ips: float = GameState.income_per_second()
 	var ips_txt := FormatUtil.format_money(ips)
@@ -381,20 +413,42 @@ func refresh() -> void:
 		if typeof(b) == TYPE_DICTIONARY:
 			var nm := str(b.get("name", ""))
 			if nm == "frenzy":
-				buffs.append("FRENZY 7× %ds" % int(b.get("remaining", 0.0)))
+				buffs.append("FRENZY %d× %ds" % [int(GameConfig.FRENZY_INCOME_MULT), int(b.get("remaining", 0.0))])
 			elif nm == "click_storm":
 				buffs.append("STORM 10× %ds" % int(b.get("remaining", 0.0)))
 	_buff_label.text = "  ".join(buffs)
 	_buff_label.visible = not buffs.is_empty()
 
-	# Prestige filament (disclosure-gated).
+	# Prestige filament (disclosure-gated) + chip when ready OR soft-blocked
+	# (path/perk). Soft-block used to leave a 100% filament with no CTA —
+	# second prestige looked "missing" after earnings cleared.
+	var cta := Prestige.ascend_cta_kind(GameState)
+	var can_p := cta == "ready"
+	var soft_cta := cta == "need_path" or cta == "need_perk"
 	var show_filament := Disclosure.prestige_filament_visible(GameState)
 	_filament_hit.visible = show_filament
+	_prestige_chip.visible = can_p or soft_cta
 	if show_filament:
 		var summary: Dictionary = Prestige.gate_progress_summary(GameState)
 		_filament.progress = float(summary.get("pct", 0)) / 100.0
-		_filament.ready_pulse = GameState.can_prestige()
+		_filament.ready_pulse = can_p or soft_cta
 		_filament_hit.tooltip_text = _prestige_tooltip()
+		# Ready / soft-CTA: thicker thread + taller hit so it is not a 3px hairline.
+		if can_p or soft_cta:
+			_filament_hit.custom_minimum_size = Vector2(0, 36)
+			_filament.offset_top = -4.0
+			_filament.offset_bottom = 4.0
+		else:
+			_filament_hit.custom_minimum_size = Vector2(0, 14)
+			_filament.offset_top = -1.5
+			_filament.offset_bottom = 1.5
+	if can_p:
+		var gain: int = Prestige.calc_influence_gain(GameState.lifetime_earnings)
+		_prestige_chip.text = "PRESTIGE" if gain <= 0 else "PRESTIGE +%d" % gain
+		_prestige_chip.tooltip_text = _prestige_tooltip()
+	elif soft_cta:
+		_prestige_chip.text = "CHOOSE PATH" if cta == "need_path" else "BUY PATH PERK"
+		_prestige_chip.tooltip_text = _prestige_tooltip()
 
 	# Dragon companion chip.
 	var patron: String = _DragonSystem.active_dragon(GameState)
@@ -407,17 +461,69 @@ func refresh() -> void:
 		_dragon_chip.add_theme_color_override("font_color", meta.get("color", GameTheme.GOLD))
 		_dragon_chip.tooltip_text = "%s — tap to visit your patron" % str(meta.get("title", patron))
 
+	# Re-derived every refresh: _fit_top_row may have hidden it to save the gear.
+	_wheel_chip.visible = GameConfig.GAMBLING_ENABLED
 	if _wheel_chip.visible:
 		var spins: int = GameState.gambling_free_spins()
-		_wheel_chip.text = "🎯%d" % spins if spins > 0 else "🎯"
+		_wheel_chip.text = "%s %d" % [WHEEL_LABEL, spins] if spins > 0 else WHEEL_LABEL
 		_wheel_chip.tooltip_text = "Luck Wheel — %d free spin(s)" % spins
+
+	_fit_top_row()
+
+
+## Z1 has one hard invariant: the gear stays on screen. A Kingpin-era band
+## (rank + prestige CTA + patron mood + heat pill + wheel + gear) overflows 720px
+## and pushes Settings clean off the right edge — found on device 2026-07-29,
+## where Config was unreachable. Concede label width in priority order; never
+## concede a chip, and never the gear.
+func _fit_top_row() -> void:
+	# Measure against the width the row is ALLOWED, not the width it was granted:
+	# fit_child_in_rect never shrinks a child under its minimum, so an overflowing
+	# HBox reports size.x == its own overflow and every "does it fit" test passes.
+	var avail: float = size.x - 2.0 * PAD_H
+	if _top == null or avail <= 0.0 or _top_row_width() <= avail:
+		return
+	# Cheapest loss first: the chip's job is "you can ascend", not the exact gain.
+	if _prestige_chip.visible:
+		match _prestige_chip.text:
+			"CHOOSE PATH": _prestige_chip.text = "PATH"
+			"BUY PATH PERK": _prestige_chip.text = "PERK"
+			_:
+				if _prestige_chip.text.begins_with("PRESTIGE +"):
+					_prestige_chip.text = "PRESTIGE"
+		if _top_row_width() <= avail:
+			return
+	# Patron keeps its chip and its colour, loses the mood word.
+	if _dragon_chip.visible:
+		_dragon_chip.text = "●"
+		if _top_row_width() <= avail:
+			return
+	# Rank is repeated in the boss sheet, so it can shrink to a stub here.
+	_rank.text = GameTheme.truncate(GameState.rank_label().to_upper(), 8)
+	if _top_row_width() <= avail:
+		return
+	# Last resort: the wheel has a full row in the boss sheet, so it can go dark
+	# rather than shove Settings off the screen.
+	_wheel_chip.visible = false
+
+
+func _top_row_width() -> float:
+	var w := 0.0
+	var shown := 0
+	for child in _top.get_children():
+		var ctl := child as Control
+		if ctl == null or not ctl.visible:
+			continue
+		w += ctl.get_combined_minimum_size().x
+		shown += 1
+	return w + maxf(0.0, float(shown - 1)) * CHIP_SEP
 
 
 func _prestige_tooltip() -> String:
 	var reqs: Dictionary = Prestige.check_requirements(GameState)
 	var earn: Dictionary = reqs.get("earnings", {})
 	var lines: PackedStringArray = PackedStringArray([
-		"Empire route income (buildings + clicks only): %s / %s" % [
+		"Stable empire income (temporary buffs excluded): %s / %s" % [
 			FormatUtil.format_money(float(earn.get("current", 0.0))),
 			FormatUtil.format_money(float(earn.get("required", 0.0))),
 		],
@@ -431,6 +537,12 @@ func _prestige_tooltip() -> String:
 				])
 	if reqs.has("rank") and not bool(reqs["rank"].get("met", true)):
 		lines.append("Rank: need %s" % str(reqs["rank"].get("required", "")))
+	if reqs.has("rebuild_time") and not bool(reqs["rebuild_time"].get("met", true)):
+		var timing: Dictionary = reqs["rebuild_time"]
+		lines.append("Rebuild: %d / %d min" % [
+			int(float(timing.get("current", 0.0)) / 60.0),
+			int(float(timing.get("required", 0.0)) / 60.0),
+		])
 	if reqs.has("branch") and not bool(reqs["branch"].get("met", true)):
 		lines.append("Choose a prestige path")
 	elif reqs.has("branch_perk") and not bool(reqs["branch_perk"].get("met", true)):

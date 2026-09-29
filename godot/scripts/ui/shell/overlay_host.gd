@@ -56,6 +56,8 @@ func _ready() -> void:
 	_build_event()
 	_build_offline()
 	_build_elim()
+	get_viewport().size_changed.connect(_fit_panels)
+	_fit_panels()
 
 	# Offline returns run the full ceremony (§4.6, D4); the text panel remains
 	# for the daily-reward variant only.
@@ -76,7 +78,16 @@ func _panel(width: float, height: float) -> PanelContainer:
 	p.offset_bottom = height * 0.5
 	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	p.grow_vertical = Control.GROW_DIRECTION_BOTH
+	p.set_meta("design_size", Vector2(width, height))
 	return p
+
+
+func _fit_panels() -> void:
+	for panel in [_milestone_panel, _event_panel, _offline_panel, _elim_panel]:
+		if panel == null:
+			continue
+		GameTheme.fit_overlay_panel(
+			panel, panel.get_meta("design_size", Vector2(520, 320)), 16.0)
 
 
 func _title_label(size_px: int) -> Label:
@@ -98,13 +109,14 @@ func _body_label(size_px: int, col: Color = GameTheme.TEXT) -> Label:
 
 
 func _build_milestone() -> void:
-	_milestone_panel = _panel(440, 200)
+	_milestone_panel = _panel(560, 240)
 	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 12)
 	_milestone_panel.add_child(v)
-	_milestone_title = _title_label(18)
+	_milestone_title = _title_label(22)
 	v.add_child(_milestone_title)
-	_milestone_body = _body_label(14)
+	_milestone_body = _body_label(16)
 	v.add_child(_milestone_body)
 	_milestone_dismiss = Button.new()
 	_milestone_dismiss.text = "Tap to continue"
@@ -114,14 +126,14 @@ func _build_milestone() -> void:
 
 
 func _build_event() -> void:
-	_event_panel = _panel(480, 320)
+	_event_panel = _panel(600, 400)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	_event_panel.add_child(v)
-	_event_title = _title_label(17)
+	_event_title = _title_label(20)
 	_event_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	v.add_child(_event_title)
-	_event_desc = _body_label(14)
+	_event_desc = _body_label(16)
 	v.add_child(_event_desc)
 	_event_choices = VBoxContainer.new()
 	_event_choices.add_theme_constant_override("separation", 6)
@@ -129,14 +141,14 @@ func _build_event() -> void:
 
 
 func _build_offline() -> void:
-	_offline_panel = _panel(520, 360)
+	_offline_panel = _panel(620, 440)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_offline_panel.add_child(v)
-	_offline_title = _title_label(20)
+	_offline_title = _title_label(22)
 	_offline_title.text = "WELCOME BACK, BOSS"
 	v.add_child(_offline_title)
-	_offline_body = _body_label(14)
+	_offline_body = _body_label(16)
 	v.add_child(_offline_body)
 	_offline_continue = Button.new()
 	_offline_continue.text = "Tap to continue"
@@ -151,7 +163,7 @@ func _build_offline() -> void:
 		func(): Monetization.show_rewarded(Monetization.PLACEMENT_OFFLINE_DOUBLE))
 	v.add_child(_offline_watch_ad)
 	_offline_spin_btn = Button.new()
-	_offline_spin_btn.text = "🎯 Spin now"
+	_offline_spin_btn.text = "Spin now"
 	_offline_spin_btn.visible = false
 	GameTheme.apply_overlay_cta(_offline_spin_btn, false)
 	_offline_spin_btn.pressed.connect(_on_offline_spin)
@@ -159,7 +171,7 @@ func _build_offline() -> void:
 
 
 func _build_elim() -> void:
-	_elim_panel = _panel(580, 320)
+	_elim_panel = _panel(620, 380)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_elim_panel.add_child(v)
@@ -170,10 +182,10 @@ func _build_elim() -> void:
 	_elim_name = _title_label(18)
 	_elim_name.add_theme_color_override("font_color", GameTheme.GOLD)
 	v.add_child(_elim_name)
-	_elim_flavor = _body_label(13, GameTheme.TEXT_MUTED)
+	_elim_flavor = _body_label(15, GameTheme.TEXT_MUTED)
 	_elim_flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_elim_flavor)
-	_elim_rewards = _body_label(14, GameTheme.GREEN)
+	_elim_rewards = _body_label(16, GameTheme.GREEN)
 	_elim_rewards.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_elim_rewards)
 	_elim_dismiss = Button.new()
@@ -336,7 +348,7 @@ func _spin_grant_line() -> String:
 	if not _has_spin_grant():
 		return ""
 	var n: int = GameState.gambling_spins_granted
-	return "\n\n🎯 +%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
+	return "\n\n+%d free Luck Wheel spin%s" % [n, "" if n == 1 else "s"]
 
 
 func _on_offline_spin() -> void:

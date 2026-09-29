@@ -9,6 +9,7 @@ extends RefCounted
 ## Keep AUTOLOADS in sync with the [autoload] section of project.godot.
 
 const AUTOLOADS := [
+	["CrashReporter", "res://scripts/autoload/crash_reporter.gd"],
 	["GameConfig", "res://scripts/autoload/game_config.gd"],
 	["FormatUtil", "res://scripts/autoload/format_util.gd"],
 	["GameState", "res://scripts/autoload/game_state.gd"],

@@ -225,6 +225,15 @@ _NOTIF_START_Y = HEADER_H + TAB_H + 6   # below command center + tab bar
 _notification_stack: list[dict] = []
 
 
+def save_or_warn(state) -> bool:
+    """Save, and tell the player on screen if it failed (save_game also logs)."""
+    from src.save_load import save_game
+    if save_game(state):
+        return True
+    push_notification("SAVE FAILED\nProgress was not saved. Check disk space.", theme.RED)
+    return False
+
+
 def push_notification(text: str, color=None) -> None:
     """Add a notification to the top-right stack. Thread-safe-ish (single-threaded game).
 
@@ -2883,14 +2892,14 @@ def handle_settings_click(state, pos: tuple, rect: pygame.Rect) -> None:
                                  lambda v: "Enabled" if v else "Disabled"):
         if r.collidepoint(pos):
             _an.set_enabled(opt)
-            save_game(state); return
+            save_or_warn(state); return
     y += row_h + fonts['xs'].get_height() + sd(4)
     # Reset tutorial
     tut_r = pygame.Rect(x0, y, sd(150), sd(32))
     if tut_r.collidepoint(pos):
         state._tutorial_step = 0; state._tutorial_age = 0.0
         state._tutorial_age_step4 = 0.0; state._shown_milestones = set()
-        save_game(state); return
+        save_or_warn(state); return
     y += sd(32) + sd(12)
     # Delete save
     del_r = pygame.Rect(x0, y, sd(150), sd(32))
@@ -3401,7 +3410,12 @@ def draw_prestige_btn(surface: pygame.Surface, state, fonts: dict) -> None:
     if not can_p:
         req_earnings = prestige.prestige_earnings_required(state)
         if req_earnings > 0:
-            fill_ratio = min(1.0, state.lifetime_earnings / req_earnings)
+            fill_ratio = min(1.0, prestige.prestige_route_earnings(state) / req_earnings)
+            if getattr(state, '_prestige_count', 0) > 0:
+                time_ratio = float(getattr(state, '_prestige_cycle_time', 0.0)) / max(
+                    1.0, prestige.POST_PRESTIGE_MIN_RUN_SECS
+                )
+                fill_ratio = min(fill_ratio, time_ratio)
             fill_w = max(0, int(r.width * fill_ratio))
             if fill_w > 4:
                 fill_col = (70, 40, 110) if fill_ratio < 0.9 else (110, 50, 170)
@@ -3466,6 +3480,7 @@ def draw_prestige_btn(surface: pygame.Surface, state, fonts: dict) -> None:
             'dealers':  ('Dealers',  lambda c, t: f"{int(c)} / {int(t)}"),
             'rackets':  ('Rackets',  lambda c, t: f"{int(c)} / {int(t)}"),
             'chops':    ('Chops',    lambda c, t: f"{int(c)} / {int(t)}"),
+            'rebuild_time': ('Rebuild', lambda c, t: f"{int(c // 60)} / {int(t // 60)} min"),
         }
         for key, (cur, req, met) in reqs.items():
             if row_y + row_h > r.bottom - 4:

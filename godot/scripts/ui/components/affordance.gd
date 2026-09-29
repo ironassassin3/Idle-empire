@@ -21,7 +21,8 @@ static func progress(cost: float, balance: float) -> float:
 
 ## Style an action button (rows' BUY, hire, capture...). ≥48dp touch floor.
 static func apply_action_button(b: Button, state: int) -> void:
-	b.custom_minimum_size = Vector2(maxf(b.custom_minimum_size.x, 116.0), 56.0)
+	b.custom_minimum_size = Vector2(maxf(b.custom_minimum_size.x, 116.0),
+			maxf(b.custom_minimum_size.y, GameTheme.scale_touch(56)))
 	var sb := StyleBoxFlat.new()
 	sb.set_corner_radius_all(5)
 	match state:
@@ -49,7 +50,8 @@ static func apply_action_button(b: Button, state: int) -> void:
 	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
 		b.add_theme_stylebox_override(st, sb)
 	b.add_theme_font_override("font", GameFonts.heading())
-	b.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	# Cinzel sets lowercase as small caps; 13px read as too small to tap (playtest 2026-09-15).
+	b.add_theme_font_size_override("font_size", GameTheme.scaled_font(18))
 
 
 ## Style a row card panel for the three states (elevation, not border noise).

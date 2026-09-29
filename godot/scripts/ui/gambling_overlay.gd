@@ -54,6 +54,13 @@ func _ready() -> void:
 	_wheel.stopped.connect(_on_wheel_stopped)
 	_wheel.landed.connect(_on_wheel_landed)
 	Monetization.ad_reward_granted.connect(_on_ad_reward)
+	get_viewport().size_changed.connect(_fit_panel)
+	_fit_panel()
+
+
+## Fixed 680-wide centred box — fits a 720 phone, clips a 480 one.
+func _fit_panel() -> void:
+	GameTheme.fit_overlay_panel(_panel, Vector2(680, 520))
 
 
 func _apply_theme() -> void:
@@ -64,10 +71,12 @@ func _apply_theme() -> void:
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(20))
 	_spins.add_theme_color_override("font_color", GameTheme.TEXT)
 	_spins.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
-	_prompt.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_prompt.add_theme_color_override("font_color", GameTheme.TEXT)
+	_prompt.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_status.add_theme_color_override("font_color", GameTheme.GOLD)
 	_status.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
+	# The scene's fixed 15px override made the boost walk skip this label.
+	_stake_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(15))
 	GameTheme.apply_overlay_cta(_spin_btn, true)
 	GameTheme.apply_overlay_cta(_bet_btn, true)
 	for b in [_quarter_btn, _half_btn, _max_btn, _ad_btn, _back_btn]:
@@ -76,6 +85,7 @@ func _apply_theme() -> void:
 
 func open() -> void:
 	visible = true
+	_fit_panel()
 	_status.text = ""
 	_init_stake()
 	_stage_free_round()  # ring shown when free spins exist; harmless otherwise
@@ -157,9 +167,9 @@ func _refresh() -> void:
 
 	if _phase != Phase.DONE:
 		if spins > 0:
-			_prompt.text = "Tap SPIN for a free spin, or put cash on the line."
+			_prompt.text = "FREE SPIN: stop the marker — timing sets your reward; your cash is safe.\nRISK: pure luck — you can lose the full stake."
 		elif can_wager:
-			_prompt.text = "No free spins — put cash on the line to keep playing."
+			_prompt.text = "No free spins. RISK is pure luck — you can lose the full stake."
 		else:
 			_prompt.text = "No spins left — come back tomorrow for a free spin."
 
@@ -225,6 +235,6 @@ func _on_ad_pressed() -> void:
 func _on_ad_reward(placement: String) -> void:
 	if placement != Monetization.PLACEMENT_GAMBLE_SPIN or not visible:
 		return
-	_status.text = "+1 spin"
+	_status.text = "REWARD RECEIVED\n+1 FREE SPIN"
 	_stage_free_round()
 	_refresh()

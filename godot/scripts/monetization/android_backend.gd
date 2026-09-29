@@ -56,12 +56,6 @@ func show_rewarded(placement: String) -> void:
 	_admob.show(placement)
 
 
-func show_interstitial(_trigger: String) -> void:
-	if _admob == null:
-		return
-	pass
-
-
 func query_products() -> void:
 	if _billing == null:
 		products_queried.emit(Monetization.PRODUCT_IDS.duplicate())

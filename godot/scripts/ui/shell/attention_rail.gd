@@ -16,7 +16,7 @@ func _ready() -> void:
 	add_theme_constant_override("margin_top", 8)
 
 	_panel = Button.new()
-	_panel.custom_minimum_size = Vector2(0, 48)
+	_panel.custom_minimum_size = Vector2(0, GameTheme.scale_touch(52))
 	_panel.clip_text = true
 	add_child(_panel)
 	var sb := StyleBoxFlat.new()
@@ -34,6 +34,13 @@ func _ready() -> void:
 
 	var col := VBoxContainer.new()
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# A full-rect child of a Button ignores the stylebox's content margins, so the
+	# goal text rendered under the 3px accent border with its first glyph shaved
+	# ("apture First District"). Re-apply the margins as offsets by hand.
+	col.offset_left = sb.content_margin_left + sb.border_width_left
+	col.offset_right = -sb.content_margin_right
+	col.offset_top = sb.content_margin_top
+	col.offset_bottom = -sb.content_margin_bottom
 	col.add_theme_constant_override("separation", 4)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(col)
@@ -50,6 +57,10 @@ func _ready() -> void:
 	_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_label.add_theme_color_override("font_color", GameTheme.TEXT)
 	_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	# Without clip_text a Label's minimum width is its full text, so the HBox
+	# overflowed and pushed the value label off the panel's right edge — the
+	# ellipsis never got a chance to fire.
+	_label.clip_text = true
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(_label)
 

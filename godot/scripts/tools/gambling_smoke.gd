@@ -56,6 +56,10 @@ func _process(_delta: float) -> bool:
 
 	if _frames == 3:
 		_ov.call("open")
+		var prompt: String = str(_ov.get_node("Panel/Margin/VBox/PromptLabel").text)
+		if not prompt.contains("timing") or not prompt.contains("pure luck") or not prompt.contains("lose"):
+			_bad("idle prompt does not clearly distinguish free timing from cash risk")
+			return false
 		print("[gambling_smoke] overlay opened OK")
 		return false
 
@@ -122,6 +126,12 @@ func _process(_delta: float) -> bool:
 
 	# ── Stage 4: reset() must clear both animation paths ───────────────────
 	if _stage == 4:
+		_ov.call("_on_ad_reward", "gamble_spin")
+		var reward_status: String = str(
+			_ov.get_node("Panel/Margin/VBox/StatusLabel").text)
+		if not reward_status.contains("REWARD RECEIVED") or not reward_status.contains("+1 FREE SPIN"):
+			_bad("rewarded-ad confirmation is not unmistakable")
+			return false
 		_wheel.call("reset")
 		if _wheel.call("is_sweeping"):
 			_bad("reset left the wheel sweeping")

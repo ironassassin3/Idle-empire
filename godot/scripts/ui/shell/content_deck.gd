@@ -8,6 +8,7 @@ enum SheetState { PEEK, REST, FULL }
 
 const SNAP_FRACTIONS := {SheetState.PEEK: 0.30, SheetState.REST: 0.55, SheetState.FULL: 0.86}
 const SNAP_TIME := 0.22
+const DRAG_THRESHOLD := 10.0  # Viewport pixels; latched once crossed.
 
 var state: int = SheetState.REST
 var _handle: Control
@@ -20,6 +21,8 @@ var _dragging := false
 var _drag_start_y := 0.0
 var _drag_start_h := 0.0
 var _height_tween: Tween
+var _drag_moved := false
+var _state_label: Label
 
 
 func _ready() -> void:
@@ -40,12 +43,22 @@ func _ready() -> void:
 	add_child(v)
 
 	_handle = Control.new()
-	_handle.custom_minimum_size = Vector2(0, 18)
+	_handle.custom_minimum_size = Vector2(0, 28)
 	_handle.mouse_default_cursor_shape = Control.CURSOR_DRAG
 	var notch := UiPrims.Handle.new()
 	notch.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	notch.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_handle.add_child(notch)
+	_state_label = Label.new()
+	_state_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Flush right against the handle edge clipped the last glyph ("HAL").
+	_state_label.offset_right = -12.0
+	_state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_state_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_state_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_state_label.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_state_label.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	_handle.add_child(_state_label)
 	_handle.gui_input.connect(_on_handle_input)
 	v.add_child(_handle)
 
@@ -61,8 +74,17 @@ func _ready() -> void:
 	_title.add_theme_font_override("font", GameFonts.heading())
 	_title.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	_title.add_theme_color_override("font_color", GameTheme.GOLD)
+	# At a phone's 1.6 font boost the title's full-text minimum width squeezed the
+	# header's action slot instead, clipping the APPROVE cost mid-number. The title
+	# is the redundant half of this row (the tab is lit in the dock) — it yields.
+	_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_title.clip_text = true
 	header.add_child(_title)
-	_control_slot = Control.new()
+	# A real container, not a bare Control: the slot's contents change after the tab
+	# is shown (APPROVE appears, its cost grows digits), and a Control neither sizes
+	# its children nor re-reports a minimum, so the button kept a width measured
+	# when it was still hidden and clipped its own price mid-number on device.
+	_control_slot = HBoxContainer.new()
 	_control_slot.size_flags_horizontal = Control.SIZE_SHRINK_END
 	header.add_child(_control_slot)
 
@@ -74,7 +96,10 @@ func _ready() -> void:
 	# Re-derive the snap height when the VIEWPORT changes (rotation, window
 	# resize) — never on our own `resized`, which fires for every drag delta
 	# and tween step and would instantly cancel them.
-	get_viewport().size_changed.connect(func(): _apply_state(false))
+	get_viewport().size_changed.connect(func():
+		_dragging = false
+		_apply_state(false)
+	)
 	_apply_state.call_deferred(false)
 
 
@@ -99,9 +124,6 @@ func show_screen(id: String) -> void:
 	var ctl: Control = screen.call("header_control") if screen.has_method("header_control") else null
 	if ctl != null:
 		_control_slot.add_child(ctl)
-		_control_slot.custom_minimum_size = ctl.get_combined_minimum_size()
-	else:
-		_control_slot.custom_minimum_size = Vector2.ZERO
 	if screen.has_method("on_show"):
 		screen.call("on_show")
 
@@ -125,17 +147,51 @@ func set_sheet_state(new_state: int, animate: bool = true) -> void:
 	Telemetry.log_event("ui_sheet_state", {"state": state})
 
 
-# Masthead + rail + dock px the sheet may never displace: FULL keeps the dock
-# on screen at every aspect ratio (fractions alone overflow at 16:9).
-const CHROME_RESERVE := 260.0
+# Floor for the chrome reserve, used only before the column has been measured
+# once (boot). The real reserve is measured — see _max_height().
+const CHROME_RESERVE_FLOOR := 200.0
+
+
+## The sheet must be measured against the VIEWPORT, never against our own
+## parent. The parent is the chrome column we live in: its size grows when our
+## min height grows, so sizing off it let each drag raise its own ceiling — a
+## ratchet that walked the nav dock off the bottom of the screen and, because
+## _snap_to_nearest divided by the same inflated number, never snapped back.
+func _viewport_height() -> float:
+	return float(get_viewport_rect().size.y)
+
+
+## Every px in the column that isn't us: masthead + rail + dock + separations,
+## taken from the column's own minimum size with our contribution removed, so
+## the result cannot move when we resize. Plus margins outside the column
+## (safe-area insets), which the old fixed 260 forgot to count.
+func _max_height() -> float:
+	var others := 0.0
+	var parent := get_parent()
+	if parent is Control:
+		others = (parent as Control).get_combined_minimum_size().y - get_combined_minimum_size().y
+	others = maxf(others, CHROME_RESERVE_FLOOR) + _outer_insets()
+	return maxf(120.0, _viewport_height() - others)
+
+
+func _outer_insets() -> float:
+	var insets := 0.0
+	var node := get_parent()
+	while node != null and node is Control:
+		if node is MarginContainer:
+			insets += float(node.get_theme_constant("margin_top")) \
+				+ float(node.get_theme_constant("margin_bottom"))
+		node = node.get_parent()
+	return insets
 
 
 func _target_height() -> float:
-	var parent_h := get_parent_area_size().y if get_parent() != null else 1280.0
-	return minf(parent_h * float(SNAP_FRACTIONS[state]), parent_h - CHROME_RESERVE)
+	return minf(_viewport_height() * float(SNAP_FRACTIONS[state]), _max_height())
 
 
 func _apply_state(animate: bool) -> void:
+	if _state_label != null:
+		_state_label.text = ["PEEK", "HALF", "FULL"][state]
 	var target := _target_height()
 	if _height_tween != null and _height_tween.is_running():
 		_height_tween.kill()
@@ -153,11 +209,18 @@ func _on_handle_input(event: InputEvent) -> void:
 		if mb.button_index != MOUSE_BUTTON_LEFT:
 			return
 		if mb.pressed:
+			if _height_tween != null:
+				_height_tween.kill()
 			_dragging = true
+			_drag_moved = false
 			_drag_start_y = mb.global_position.y
 			_drag_start_h = size.y
 		else:
-			if _dragging and absf(mb.global_position.y - _drag_start_y) < 6.0:
+			if not _dragging:
+				return
+			if mb.canceled:
+				_apply_state(true)
+			elif not _drag_moved and absf(mb.global_position.y - _drag_start_y) < DRAG_THRESHOLD:
 				# Tap: toggle REST ↔ FULL.
 				set_sheet_state(SheetState.REST if state == SheetState.FULL else SheetState.FULL)
 			else:
@@ -165,22 +228,31 @@ func _on_handle_input(event: InputEvent) -> void:
 			_dragging = false
 	elif event is InputEventMouseMotion and _dragging:
 		var dy := (event as InputEventMouseMotion).global_position.y - _drag_start_y
-		var parent_h := get_parent_area_size().y if get_parent() != null else 1280.0
-		var h := clampf(_drag_start_h - dy, parent_h * 0.24, parent_h * 0.9)
+		if not _drag_moved and absf(dy) < DRAG_THRESHOLD:
+			return
+		_drag_moved = true
+		# Ceiling is _max_height(), the same bound the snap states honour — a
+		# drag may never reach a height the sheet cannot snap back from.
+		var h := clampf(_drag_start_h - dy, minf(_viewport_height() * 0.30, _max_height()), _max_height())
 		custom_minimum_size.y = h
 
 
 func _snap_to_nearest() -> void:
-	var parent_h := get_parent_area_size().y if get_parent() != null else 1280.0
-	var frac := size.y / maxf(1.0, parent_h)
-	var best: int = SheetState.REST
-	var best_d := 99.0
+	var best: int = state
+	var best_d := INF
 	for s in SNAP_FRACTIONS:
-		var d: float = absf(frac - float(SNAP_FRACTIONS[s]))
-		if d < best_d:
+		var target := minf(_viewport_height() * float(SNAP_FRACTIONS[s]), _max_height())
+		var d: float = absf(custom_minimum_size.y - target)
+		if d < best_d or (is_equal_approx(d, best_d) and s == state):
 			best_d = d
 			best = s
 	if best == state:
 		_apply_state(true)
 	else:
 		set_sheet_state(best)
+
+
+func _notification(what: int) -> void:
+	if _dragging and what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED]:
+		_dragging = false
+		_apply_state(false)

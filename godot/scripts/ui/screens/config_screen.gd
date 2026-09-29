@@ -58,47 +58,62 @@ func rebuild() -> void:
 		GameState.stats_changed.emit()
 		SaveManager.save_game()
 	)
-	_header("RETENTION")
-	_cycle_row("Notifications", ["OFF", "ON"], 1 if GameState.notifications_enabled else 0, func(i):
-		var on: bool = i == 1
-		GameState.notifications_enabled = on
-		if on:
-			Notifications.request_permission()
+	_header("PRIVACY")
+	_cycle_row("Analytics", ["OFF", "DEVICE"], _analytics_index(), func(i):
+		Telemetry.set_local_consent(i == 1)
 		SaveManager.save_game()
 	)
-	_cycle_row("Analytics", ["OFF", "ON"], 1 if GameState.telemetry_consent else 0, func(i):
-		GameState.telemetry_consent = i == 1
-		SaveManager.save_game()
-	)
-	if CloudSave.is_signed_in():
-		var cloud_lbl := Label.new()
-		cloud_lbl.text = "Cloud save: signed in"
-		cloud_lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		_body.add_child(cloud_lbl)
-	else:
-		_action_button("Sign in (cloud backup)", func(): CloudSave.sign_in())
+	_note("DEVICE keeps play stats in this app only. No gameplay analytics leave your device.")
 	_header("STORE")
 	_iap_row("Remove ads", Monetization.PRODUCT_REMOVE_ADS, "Hides ads permanently")
 	_iap_row("Starter pack", Monetization.PRODUCT_STARTER, "Cash + Influence boost")
 	_iap_row("2× income (permanent)", Monetization.PRODUCT_INCOME_X2, "Doubles passive income")
 	_action_button("Restore purchases", func(): Monetization.restore())
+	_header("FAIR PLAY")
+	_note("Ads are always your choice and state the reward up front. "
+		+ "No interstitials, countdown offers, disguised buttons, or ad-gated offline progress.")
+	if GameConfig.GAMBLING_ENABLED:
+		# Backs the IARC "simulated gambling" answer with visible in-app copy.
+		var rtp := int(round(GamblingSystem.WAGER_RTP * 100.0))
+		_note("The Luck Wheel and the alley game are played with in-game cash only. "
+			+ "You cannot stake real money and nothing you win can be cashed out. "
+			+ "The alley game is pure chance and pays back "
+			+ str(rtp) + "% of what is risked over time — the house keeps the rest.")
 	_header("DATA")
+	_action_button("Crash diagnostics", CrashReporter.show_report)
 	_action_button("Save & Main Menu", func():
 		SaveManager.save_game()
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 	)
-	_action_button("Reset Tutorial", func():
+	_action_button("Replay Tutorial Hints", func():
 		GameState.reset_tutorial()
 		rebuild()
 	)
-	_action_button("Delete Save", func():
-		SaveManager.delete_save()
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
-	)
+	_action_button("Reset All Progress…", _confirm_reset_progress)
 	var note := Label.new()
 	note.text = "Auto-save every %ds" % int(GameConfig.AUTOSAVE_INTERVAL)
 	note.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
 	_body.add_child(note)
+
+
+func _analytics_index() -> int:
+	if not GameState.telemetry_consent:
+		return 0
+	return 1
+
+
+func _confirm_reset_progress() -> void:
+	ResetProgressDialog.open(self)
+
+
+## Muted wrapped body copy under a row or section header.
+func _note(text: String) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
+	lbl.add_theme_font_size_override("font_size", GameTheme.scaled_font(12))
+	_body.add_child(lbl)
 
 
 func _header(text: String) -> void:

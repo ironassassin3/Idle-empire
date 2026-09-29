@@ -9,6 +9,8 @@ cd d:\2d_game
 .\device_pass.ps1 run      # device only: export + install + launch
 ```
 
+The pass installs the **debug APK** (`Android Debug` preset). `.\device_pass.ps1 aab` builds the Play Console bundle from the `Android` preset — adb cannot install that.
+
 **Godot:** `E:\Downloads\Godot_v4.6.3-stable_win64.exe` (or `$env:GODOT_BIN`).  
 **Full setup:** [`ANDROID_SETUP.md`](ANDROID_SETUP.md). **Deep reference:** [§Extended](#extended-reference) below.
 
@@ -48,6 +50,7 @@ Watch the game screen **without reading numbers**.
 - [ ] Tap prestige gate / tree entry → progress shows **route earnings near $0**, not ~$50M
 - [ ] Bottom tabs switch: **Bldgs → Upgrs → Turf → Stats** (no crash, no clip)
 - [ ] **Tutorial hint** floats **above** the building list — never covers a row or its BUY button (check at the phone's aspect / short screens)
+- [ ] **Portrait lock** (device, regression): rotate the phone to landscape → app **stays portrait**. The orientation setting was exported as landscape until `f3726fa`; verify on hardware, not desktop
 
 **Fail:** Prestige bar starts near gate max, tabs overlap notch/home bar, hustle dead, city stops changing after building 3, medallions show duplicate letters, tutorial pill sits on top of rows.
 
@@ -79,20 +82,40 @@ Watch the game screen **without reading numbers**.
 
 ---
 
-## 9:00–11:00 — Luck Wheel (gambling — timing feel)
+## 9:00–11:00 — Luck Wheel (gambling)
 
-The whole mechanic is **timing skill**, so it lives or dies on touch latency + sweep readability on real hardware. `GAMBLING_ENABLED = true`.
+One overlay, **two mechanics that must feel different** — this is the check. `GAMBLING_ENABLED = true`.
+
+| Path | Input | Money |
+|---|---|---|
+| **SPIN — free** | timing skill (sweep + STOP) | spends a banked spin, positive-EV, **can't lose cash** |
+| **RISK $X** | none — pure RNG | stakes balance, **can lose it**; payout = `stake × band × 0.90` |
+
+**Both paths**
 
 - [ ] Header **🎯 chip** visible with banked-spin **badge**; badge count matches Spins in overlay
-- [ ] Daily/offline return overlay shows **"🎰 Spin now"** CTA when spins were granted; it opens the wheel
-- [ ] Open wheel → **SPIN** sweeps the marker; button flips to **STOP**; STOP freezes exactly under the needle (WYSIWYG — no drift, no snap-back)
-- [ ] Segment under needle at stop = the multiplier paid (watch one payout notification match)
-- [ ] Jackpot band (10×) lands only on precise stops; **rankup SFX + gold "JACKPOT ×10"** fires
-- [ ] Spends decrement **Spins**; at 0 the CTA disables and **"Watch ad +1 spin"** shows (hidden if remove_ads owned or at cap 5)
-- [ ] Tap **Watch ad +1 spin** → mock/real rewarded flow banks **+1** (capped at 5); "SPIN AGAIN" goes live
-- [ ] Close/reopen mid-round is free (no spin lost); panel centred, never clipped at notch/home bar
+- [ ] Daily/offline return overlay shows **"🎰 Spin now"** CTA when spins were granted; it opens the overlay
+- [ ] Panel centred, never clipped at notch/home bar; Spins + Cash line updates live
+- [ ] Close/reopen between rounds is free (no spin lost, no cash moved)
 
-**Fail:** Marker drifts past where you tapped, badge count wrong, ad button grants past cap, spin consumed on close, panel clips.
+**Free spin (timing — lives or dies on touch latency)**
+
+- [ ] **SPIN — free** sweeps the marker; button flips to **STOP**; STOP freezes exactly under the needle (WYSIWYG — no drift, no snap-back)
+- [ ] Segment under needle at stop = the multiplier paid (watch one payout notification match)
+- [ ] Jackpot band (**10×**) lands only on precise stops; **rankup SFX + gold "JACKPOT ×10"** fires
+- [ ] Spend decrements **Spins**; at 0 the free button disables (or hides when RISK is offered) and **"Watch ad +1 spin"** shows — hidden if remove_ads owned, at cap **5**, or on a maxed daily streak
+- [ ] Tap **Watch ad +1 spin** → real rewarded ad on device → banks **+1**; "SPIN AGAIN — free" goes live
+
+**Cash wager (pure random — must NOT feel skill-based)**
+
+- [ ] Stake row shows **¼ / ½ / Max**; each retargets "Risk: $X" against current balance; min stake $1
+- [ ] **RISK $X** → cards shuffle and the dealer flips. **No STOP button appears** and taps during the reveal do nothing — the outcome was drawn at press
+- [ ] Payout matches the flipped card at **0.90 RTP**: the 5× band pays **×4.50**, jackpot 25× pays **×22.50**
+- [ ] Losses are real — a ~48% chance of nothing. Run **10+ bets at ¼ stake** and confirm the balance trends **down**, with the loss landing as a notification, not a silent deduction
+- [ ] Close mid-reveal → cash is **already settled** (balance correct on reopen); only the toast is skipped
+- [ ] Nothing anywhere offers real money, currency purchase, or an ad that buys a wager — free spins are the only ad reward
+
+**Fail:** Marker drifts past where you tapped · badge count wrong · ad button grants past cap or on max streak · spin consumed on close · a STOP/timing input appears during the Monte reveal (that path must be luck-only) · closing mid-reveal changes the money · panel clips.
 
 ---
 

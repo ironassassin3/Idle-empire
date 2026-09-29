@@ -29,9 +29,17 @@ def fresh():
     # on_enter() may load an existing save from a prior section; force a clean
     # slate so each test controls its own branch/perk state. Load/apply tests
     # override these immediately afterwards.
+    #
+    # The run counters matter as much as the perks: check_requirements() picks
+    # the first-prestige gate vs the scaled rebuild gate off _prestige_count,
+    # so a leftover save.json (this suite writes one in section 5) would
+    # otherwise silently change which building counts a fixture has to meet.
     sm = StateManager(); ps = PlayingState(sm); ps.on_enter()
     ps.perks_purchased = []
     ps.prestige_branch = None
+    ps._prestige_count = 0
+    ps._next_prestige_earnings = prestige.FIRST_PRESTIGE_EARNINGS
+    ps._prestige_route_earnings = 0.0
     pt.apply_perks(ps)
     return ps
 
@@ -160,9 +168,9 @@ ps5._next_prestige_earnings = prestige.FIRST_PRESTIGE_EARNINGS * prestige.PRESTI
 req2 = prestige.prestige_earnings_required(ps5) + 1
 ps5.lifetime_earnings = req2
 ps5._prestige_route_earnings = req2
-ps5.buildings[0].owned = prestige.POST_PRESTIGE_DEALERS
-ps5.buildings[1].owned = prestige.POST_PRESTIGE_RACKETS
-ps5.buildings[2].owned = prestige.POST_PRESTIGE_CHOPS
+ps5.buildings[0].owned = prestige.post_building_required(1, prestige.POST_PRESTIGE_DEALERS)
+ps5.buildings[1].owned = prestige.post_building_required(1, prestige.POST_PRESTIGE_RACKETS)
+ps5.buildings[2].owned = prestige.post_building_required(1, prestige.POST_PRESTIGE_CHOPS)
 check("2nd prestige blocked with no branch", not prestige.can_prestige(ps5))
 pt.select_branch(ps5, pt.KINGPIN)
 check("still blocked: branch chosen but no perk bought", not prestige.can_prestige(ps5))

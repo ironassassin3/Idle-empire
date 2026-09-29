@@ -9,6 +9,9 @@ const Sfxr = preload("res://scripts/audio/sfxr.gd")
 const MusicDefs = preload("res://scripts/audio/music_defs.gd")
 
 const HEAT_TENSION_THRESHOLD := 60.0
+# Keeps procedural SFX under the music and notification mix even when a saved
+# settings profile has the SFX slider at 100%.
+const SFX_BASE_GAIN := 0.65
 
 # Global SFX softening — playtest said the stock sfxr presets were "metallic /
 # harsh." Roll off the brittle highs (low-pass), keep the low-end body (no
@@ -36,7 +39,10 @@ var _tension_active := false
 
 
 func _ready() -> void:
-	_enabled = not _is_headless()
+	# Safe mode builds no buses, streams or players: procedural music allocates
+	# the largest buffers in the app, and a recovery launch has to get the player
+	# to the menu above all else. One clean session turns the sound back on.
+	_enabled = not _is_headless() and not CrashReporter.safe_mode
 	if not _enabled:
 		return
 	_setup_buses()
@@ -88,7 +94,8 @@ func apply_from_state(state) -> void:
 		_sfx_linear = 0.0
 		_music_linear = 0.0
 	else:
-		_sfx_linear = clampf(state.master_volume * state.sfx_volume, 0.0, 1.0)
+		_sfx_linear = clampf(
+			state.master_volume * state.sfx_volume * SFX_BASE_GAIN, 0.0, 1.0)
 		_music_linear = clampf(state.master_volume * state.music_volume, 0.0, 1.0)
 	var sfx_db := linear_to_db(maxf(_sfx_linear, 0.0001)) if _sfx_linear > 0.0 else -80.0
 	for p in _players:
@@ -121,7 +128,7 @@ func cue_for_notification(message: String, color: Color) -> String:
 		return "buff"
 	if message.begins_with("FRENZY!") or message.begins_with("CLICK STORM!"):
 		return "buff"
-	if message.begins_with("Achievement:"):
+	if message.begins_with("Achievement:") or message.begins_with("Reward received"):
 		return "achievement"
 	if message.begins_with("Prestige!"):
 		return "prestige"
@@ -238,7 +245,7 @@ func _sync_tension_layer() -> void:
 ## seed). Music loops are procedural PCM from music_defs motifs.
 func _build_streams() -> void:
 	# Soft "tok" for the constant UI click — low and short, no brittle edge.
-	_streams["click"] = _sfx("blip", 101, 0.30, {"p_base_freq": 0.40, "p_lpf_freq": 0.5, "p_env_decay": 0.10})
+	_streams["click"] = _sfx("blip", 101, 0.24, {"p_base_freq": 0.40, "p_lpf_freq": 0.5, "p_env_decay": 0.10})
 	# Buy: keep the coin "ding" but lower and warmer so it has body, not glare.
 	_streams["purchase"] = _sfx("coin", 202, 0.40, {"p_base_freq": 0.45, "p_lpf_freq": 0.5})
 	_streams["achievement"] = _sfx("powerup", 303, 0.44)

@@ -41,6 +41,7 @@ var next_prestige_earnings: float = 0.0
 var arms_influence_frac: float = 0.0  # Arms Broker special: fractional Influence accrual
 var click_count: int = 0
 var play_time: float = 0.0
+var prestige_cycle_time: float = 0.0
 # Runtime-only: play_time at last prestige / run start, for per-cycle telemetry
 # timing. Not saved — measured within the current session.
 var _last_prestige_play_time: float = 0.0
@@ -161,7 +162,10 @@ var fps_cap: int = 60
 var show_particles: bool = true
 var show_debug_fps: bool = false
 var notifications_enabled: bool = false
-var telemetry_consent: bool = true
+var telemetry_consent: bool = true  # local on-device diagnostics
+# Off-device transmission is opt-in: nothing leaves the device until the
+# player turns sharing ON (GDPR/Play Data Safety).
+var telemetry_share: bool = false
 var ui_text_scale: int = 0  # 0=100%, 1=125%, 2=150% (P14.6 a11y + Supremacy N6)
 var ui_compact_rows: bool = false  # Supremacy N8 veteran density (D5)
 var compact_offer_done: bool = false  # one-shot rail offer after prestige 1
@@ -217,7 +221,21 @@ var _ips_cached: float = 0.0
 var _autosave_timer: float = 0.0
 var _ach_check_timer: float = 0.0
 var _goal_check_timer: float = 0.0
+var _stats_emit_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
+
+# The passive income tick used to emit `stats_changed` every frame. 79 listeners
+# hang off that signal — every building/upgrade/manager/territory/rival/crew/op
+# row connects a full _refresh() to it, including rows on tabs that are not
+# visible — so one emit measured 9.3 ms of a 10.3 ms _process on desktop, and the
+# device pass saw 12–20 FPS. The simulation itself is ~26 us; the fan-out was the
+# whole cost. Idle numbers do not need 60 Hz (the shell already re-read them at
+# 10 Hz via _STATS_UI_INTERVAL, so this matches what the chrome already showed).
+#
+# This throttles ONLY the passive tick. Discrete player actions — buying,
+# prestiging, collecting — keep calling stats_changed.emit() directly and stay
+# frame-immediate, which stats_emit_rate_probe.gd asserts.
+const _STATS_EMIT_INTERVAL := 0.1
 
 const COIN_SPAWN_MIN := 30.0
 const COIN_SPAWN_MAX := 60.0
@@ -250,6 +268,17 @@ func set_simulation_active(active: bool) -> void:
 func _ready() -> void:
 	_rng.randomize()
 	call_deferred("reset_new_game")
+
+
+## Android can kill a backgrounded process at any moment and gives no second
+## warning, so the pause notification is the last reliable point to write. Without
+## this the autosave interval was the exposure: up to 30 seconds of a run lost
+## every time the OS reclaimed the app. The write is atomic (temp file + rename),
+## so being killed mid-save cannot damage the existing one.
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		if simulation_active:
+			SaveManager.save_game()
 
 
 func reset_new_game() -> void:
@@ -338,6 +367,7 @@ func reset_new_game() -> void:
 	balance = 0.0
 	lifetime_earnings = 0.0
 	prestige_route_earnings = 0.0
+	prestige_cycle_time = 0.0
 	prestige_tokens = 0
 	lifetime_tokens = 0
 	arms_influence_frac = 0.0
@@ -352,6 +382,7 @@ func reset_new_game() -> void:
 	stats_changed.emit()
 	_sync_rank_tracking()
 	_apply_audio_settings()
+	Engine.max_fps = fps_cap
 
 
 func _audio() -> Node:
@@ -399,12 +430,13 @@ func _process(delta: float) -> void:
 	if not simulation_active:
 		return
 	play_time += delta
+	prestige_cycle_time += delta
 	_tick_golden_coin(delta)
 	var passive := income_per_second() * delta
 	if is_finite(passive):
 		balance += passive
 		lifetime_earnings += passive
-		prestige_route_earnings += passive
+		prestige_route_earnings += prestige_route_income_per_second() * delta
 	_tick_building_specials(delta)
 	_tick_loan_interest(delta)
 	_BuffSystem.tick_buffs(self, delta)
@@ -474,7 +506,10 @@ func _process(delta: float) -> void:
 	lifetime_tokens = maxi(lifetime_tokens, prestige_tokens)
 	_check_rank_up()
 	_mark_ips_dirty()
-	stats_changed.emit()
+	_stats_emit_timer -= delta
+	if _stats_emit_timer <= 0.0:
+		_stats_emit_timer = _STATS_EMIT_INTERVAL
+		stats_changed.emit()
 	# Heat has settled for the tick (rise, raid, crew decay, dragon all applied
 	# above) — now address the city if the danger band changed.
 	var band: int = HeatSystem.heat_band(heat)
@@ -512,7 +547,7 @@ func income_per_second() -> float:
 	mult *= _AchievementSystem.income_mult(achievements)
 	mult *= _BuffSystem.income_mult(self)
 	if _BuffSystem.has_buff(self, "frenzy"):
-		mult *= 7.0
+		mult *= GameConfig.FRENZY_INCOME_MULT
 	mult *= _DragonSystem.rival_presence_income_mult(self)
 	mult *= _DragonSystem.eliminated_rival_income_mult(self)
 	mult *= 1.0 + _DragonSystem.active_ops_income_bonus(self)
@@ -522,6 +557,14 @@ func income_per_second() -> float:
 	_ips_cached = base * mult
 	_ips_dirty = false
 	return _ips_cached
+
+
+func prestige_route_income_per_second() -> float:
+	# Temporary rewards keep their full cash value but cannot collapse the
+	# prestige cadence when a short frenzy lands at a tier breakpoint.
+	var temporary_mult := GameConfig.FRENZY_INCOME_MULT if _BuffSystem.has_buff(self, "frenzy") else 1.0
+	temporary_mult *= maxf(1.0, _BuffSystem.income_mult(self))
+	return income_per_second() / temporary_mult
 
 
 func click_value() -> float:
@@ -757,9 +800,9 @@ func can_prestige() -> bool:
 func do_prestige() -> bool:
 	if not can_prestige():
 		return false
-	# Capture the gate just satisfied BEFORE incrementing the count, so the next
-	# gate ladders off it (not off however far this run overshot).
+	# Capture the gate + IPS just satisfied BEFORE wipe/increment.
 	var _prev_gate: float = Prestige.prestige_earnings_required(prestige_count, next_prestige_earnings)
+	var _ips_at_prestige: float = income_per_second()
 	var raw_gain: float = float(Prestige.calc_influence_gain(lifetime_earnings))
 	raw_gain *= _ManagerSystem.influence_gain_mult(self)
 	raw_gain *= _PrestigeTree.influence_gain_mult(self)
@@ -769,13 +812,16 @@ func do_prestige() -> bool:
 	lifetime_tokens += gain
 	influence += gain
 	prestige_count += 1
-	next_prestige_earnings = _prev_gate * GameConfig.PRESTIGE_EARNINGS_GROWTH
+	next_prestige_earnings = Prestige.next_earnings_gate(
+		_prev_gate, _ips_at_prestige, prestige_tokens
+	)
 	var _tele_cycle: float = play_time - _last_prestige_play_time
 	var _tele_route: float = float(prestige_route_earnings)
 	var _tele_branch: String = str(prestige_branch)
 	balance = 0.0
 	# lifetime_earnings accumulates across prestiges (pygame parity — drives Influence gain).
 	prestige_route_earnings = 0.0
+	prestige_cycle_time = 0.0
 	heat = 0.0
 	for b in buildings:
 		b.owned = 0
@@ -893,6 +939,38 @@ func _arr(data: Dictionary, key: String) -> Array:
 	return v if v is Array else []
 
 
+## Element-level coercion for save arrays. A file written by a process that died
+## mid-save, or hand-edited, can hold a Dictionary where a count belongs, and
+## int()/bool() on one is a hard engine error that aborts the rest of the load —
+## leaving a half-applied world behind (save_fuzz_probe.gd).
+func _count_of(value, def: int = 0) -> int:
+	if value is int:
+		return value
+	if value is float:
+		return int(value) if is_finite(value) else def
+	return def
+
+
+func _flag_of(value, def: bool = false) -> bool:
+	if value is bool:
+		return value
+	if value is int or value is float:
+		return float(value) != 0.0
+	return def
+
+
+## Sub-structures are handed to system merge helpers with typed parameters, so a
+## wrong type here is an engine error rather than a rejected field.
+func _sub_array(data: Dictionary, key: String) -> Array:
+	var v = data.get(key)
+	return v if v is Array else []
+
+
+func _sub_dict(data: Dictionary, key: String) -> Dictionary:
+	var v = data.get(key)
+	return v if v is Dictionary else {}
+
+
 func apply_save_data(data: Dictionary) -> void:
 	buildings = BuildingDefs.make_buildings()
 	managers = ManagerDefs.make_managers()
@@ -919,6 +997,11 @@ func apply_save_data(data: Dictionary) -> void:
 	next_prestige_earnings = _f(data, "next_prestige_earnings", 0.0)
 	click_count = _i(data, "click_count", 0)
 	play_time = _f(data, "play_time", 0.0)
+	prestige_cycle_time = _f(
+		data,
+		"prestige_cycle_time",
+		minf(play_time, GameConfig.POST_PRESTIGE_MIN_RUN_SECS) if prestige_count > 0 else 0.0
+	)
 	heat = _f(data, "heat", 0.0)
 	total_heat_generated = _f(data, "total_heat_generated", 0.0)
 	influence = _i(data, "influence", 0)
@@ -926,18 +1009,19 @@ func apply_save_data(data: Dictionary) -> void:
 	carl_emergency_used = _b(data, "carl_emergency_used", false)
 	mechanic_timer = _f(data, "mechanic_timer", 0.0)
 	autobuy_timer = _f(data, "autobuy_timer", 0.0)
-	if data.has("territories"):
-		_TerritorySystem.merge_save_territories(territories, data["territories"])
-	if data.has("rivals"):
-		_RivalSystem.merge_save_rivals(rivals, data["rivals"])
-	if data.has("crew") and typeof(data["crew"]) == TYPE_DICTIONARY:
-		_CrewSystem.merge_save_crew(crew, data["crew"])
-	if data.has("operations"):
-		_OperationSystem.merge_save_operations(operations, data["operations"])
-	if data.has("gambling"):
-		_GamblingSystem.merge_save_gambling(gambling, data["gambling"])
-	if data.has("perks_purchased"):
-		perks_purchased = data["perks_purchased"]
+	if not _sub_array(data, "territories").is_empty():
+		_TerritorySystem.merge_save_territories(territories, _sub_array(data, "territories"))
+	if not _sub_array(data, "rivals").is_empty():
+		_RivalSystem.merge_save_rivals(rivals, _sub_array(data, "rivals"))
+	if not _sub_dict(data, "crew").is_empty():
+		_CrewSystem.merge_save_crew(crew, _sub_dict(data, "crew"))
+	if not _sub_array(data, "operations").is_empty():
+		_OperationSystem.merge_save_operations(operations, _sub_array(data, "operations"))
+	if not _sub_dict(data, "gambling").is_empty():
+		_GamblingSystem.merge_save_gambling(gambling, _sub_dict(data, "gambling"))
+	for perk in _sub_array(data, "perks_purchased"):
+		if perk is String and not perks_purchased.has(perk):
+			perks_purchased.append(perk)
 	var branch_raw = data.get("prestige_branch", "")
 	if typeof(branch_raw) == TYPE_STRING and _PrestigeTree.is_valid_branch(branch_raw):
 		prestige_branch = branch_raw
@@ -956,10 +1040,10 @@ func apply_save_data(data: Dictionary) -> void:
 	coins_caught = _i(data, "coins_caught", 0)
 	promoter_heat_target = _f(data, "promoter_heat_target", 50.0)
 	offline_gain = _f(data, "offline_gain", 0.0)
-	if data.has("achievements"):
-		_AchievementSystem.merge_save(achievements, data["achievements"])
-	if data.has("goals_completed"):
-		_GoalSystem.merge_completed(goals, data["goals_completed"])
+	if not _sub_array(data, "achievements").is_empty():
+		_AchievementSystem.merge_save(achievements, _sub_array(data, "achievements"))
+	if not _sub_array(data, "goals_completed").is_empty():
+		_GoalSystem.merge_completed(goals, _sub_array(data, "goals_completed"))
 	tutorial_step = _i(data, "tutorial_step", 0)
 	shown_raid_tutorial = _b(data, "shown_raid_tutorial", false)
 	shown_ops_tutorial = _b(data, "shown_ops_tutorial", false)
@@ -974,7 +1058,13 @@ func apply_save_data(data: Dictionary) -> void:
 	sfx_volume = _f(data, "sfx_volume", 1.0)
 	music_volume = _f(data, "music_volume", 0.5)
 	mute_all = _b(data, "mute_all", false)
+	# Only the three values the Config row offers: find() returns -1 for anything
+	# else, which the row then reads as an out-of-range selection. The cap is also
+	# applied below — it used to take effect only when the player changed it, so a
+	# saved 30 FPS cap was silently ignored on every relaunch.
 	fps_cap = _i(data, "fps_cap", 60)
+	if not fps_cap in [30, 60, 120]:
+		fps_cap = 60
 	show_particles = _b(data, "show_particles", true)
 	show_debug_fps = _b(data, "show_debug_fps", false)
 	ui_text_scale = clampi(_i(data, "ui_text_scale", 0), 0, 2)
@@ -982,6 +1072,7 @@ func apply_save_data(data: Dictionary) -> void:
 	compact_offer_done = _b(data, "compact_offer_done", false)
 	notifications_enabled = _b(data, "notifications_enabled", false)
 	telemetry_consent = _b(data, "telemetry_consent", true)
+	telemetry_share = _b(data, "telemetry_share", false)
 	buy_mult_mode = clampi(_i(data, "buy_mult_mode", 0), 0, 2)
 	remove_ads = _b(data, "remove_ads", false)
 	entitlements = _arr(data, "entitlements")
@@ -1015,13 +1106,13 @@ func apply_save_data(data: Dictionary) -> void:
 	show_offline_overlay = false
 	var owned: Array = _arr(data, "buildings")
 	for i in mini(owned.size(), buildings.size()):
-		buildings[i].owned = int(owned[i]) if owned[i] != null else 0
+		buildings[i].owned = maxi(0, _count_of(owned[i]))
 	var mgr: Array = _arr(data, "managers")
 	for i in mini(mgr.size(), managers.size()):
-		managers[i].hired = bool(mgr[i]) if mgr[i] != null else false
+		managers[i].hired = _flag_of(mgr[i])
 	var upg: Array = _arr(data, "upgrades")
 	for i in mini(upg.size(), upgrades.size()):
-		if upg[i] != null and bool(upg[i]):
+		if _flag_of(upg[i]):
 			upgrades[i].purchased = true
 			UpgradeDefs.apply_effect(upgrades[i], self)
 	BuildingDefs.sync_racket_multiplier(buildings)
@@ -1037,6 +1128,7 @@ func apply_save_data(data: Dictionary) -> void:
 	stats_changed.emit()
 	_sync_rank_tracking()
 	_apply_audio_settings()
+	Engine.max_fps = fps_cap
 
 
 # Once-per-calendar-day login reward (port of src/save_load.py). Streak +1 on a
@@ -1086,6 +1178,7 @@ func to_save_data() -> Dictionary:
 		"next_prestige_earnings": next_prestige_earnings,
 		"click_count": click_count,
 		"play_time": play_time,
+		"prestige_cycle_time": prestige_cycle_time,
 		"heat": heat,
 		"total_heat_generated": total_heat_generated,
 		"influence": influence,
@@ -1140,6 +1233,7 @@ func to_save_data() -> Dictionary:
 		"compact_offer_done": compact_offer_done,
 		"notifications_enabled": notifications_enabled,
 		"telemetry_consent": telemetry_consent,
+		"telemetry_share": telemetry_share,
 		"buy_mult_mode": buy_mult_mode,
 		"remove_ads": remove_ads,
 		"entitlements": entitlements.duplicate(),
@@ -1423,7 +1517,7 @@ func collect_golden_coin(auto: bool = false) -> void:
 	match effect:
 		"frenzy":
 			_BuffSystem.add_buff(self, "frenzy", 15.0)
-			notification.emit("FRENZY! 7× income for 15s", GameTheme.GOLD_BRIGHT)
+			notification.emit("FRENZY! %d× income for 15s" % int(GameConfig.FRENZY_INCOME_MULT), GameTheme.GOLD_BRIGHT)
 		"lucky":
 			var gain: float = minf(income_per_second() * 60.0, maxf(balance * 0.15, 1.0))
 			balance += gain
@@ -1460,7 +1554,7 @@ func grant_offline_ad_double() -> void:
 	lifetime_earnings += offline_gain
 	_offline_ad_doubled = true
 	notification.emit(
-		"Ad bonus! +%s offline earnings doubled" % FormatUtil.format_money(offline_gain),
+		"Reward received: +%s (offline earnings doubled)" % FormatUtil.format_money(offline_gain),
 		GameTheme.GREEN,
 	)
 	_mark_ips_dirty()
@@ -1469,10 +1563,16 @@ func grant_offline_ad_double() -> void:
 
 func grant_free_golden_coin() -> void:
 	if golden_coin_active:
+		# The ad was watched; never let the reward read as lost. Refresh the
+		# live coin's clock so the player still has its full window.
+		golden_coin_lifetime = 0.0
+		notification.emit("Reward received: a golden coin is waiting. Tap it!", GameTheme.GOLD)
 		return
-	golden_coin_active = true
+	# Must go through _spawn_golden_coin: a naturally expired coin leaves
+	# golden_coin_lifetime past COIN_LIFETIME, so the ad coin vanished next frame.
+	_spawn_golden_coin()
 	golden_coin_timer = 0.0
-	notification.emit("Golden coin spawned!", GameTheme.GOLD)
+	notification.emit("Reward received: golden coin! Tap it for a bonus", GameTheme.GOLD)
 	stats_changed.emit()
 
 
@@ -1531,3 +1631,6 @@ func reset_tutorial() -> void:
 	shown_raid_tutorial = false
 	shown_syndicate_tutorial = false
 	stats_changed.emit()
+	# The reset itself is invisible (settings screen doesn't change) — without
+	# this, tapping the button gave no sign anything happened.
+	notification.emit("Tutorial hints reset — they'll replay as you play", GameTheme.GOLD)

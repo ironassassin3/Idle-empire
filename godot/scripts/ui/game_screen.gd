@@ -266,6 +266,11 @@ func _ready() -> void:
 	_elim_dismiss.pressed.connect(_dismiss_elim)
 	_notif_default_font_size = _notif.get_theme_font_size("font_size")
 	_build_config_tab()
+	for scroll in [_bldgs_scroll, _upgrs_scroll, _turf_scroll, _rivals_scroll,
+			_crew_scroll, _ops_scroll, _stats_scroll, _mgrs_scroll, _config_scroll]:
+		for content in scroll.get_children():
+			if not content is ScrollBar:
+				ScreenBase.pass_scroll_input(content)
 	_stats_ach_btn.pressed.connect(_toggle_achievements_panel)
 	_stats_ach_close.pressed.connect(_close_achievements_panel)
 	_setup_tutorial_banner_dismiss()
@@ -1342,7 +1347,7 @@ func _update_motion_cues() -> void:
 	var buff_lines: PackedStringArray = PackedStringArray()
 	if _BuffSystem.has_buff(GameState, "frenzy"):
 		var rem: float = _buff_remaining("frenzy")
-		buff_lines.append("FRENZY 7× income  %.0fs" % rem)
+		buff_lines.append("FRENZY %d× income  %.0fs" % [int(GameConfig.FRENZY_INCOME_MULT), rem])
 	if _BuffSystem.has_buff(GameState, "click_storm"):
 		var storm_rem: float = _buff_remaining("click_storm")
 		buff_lines.append("CLICK STORM 10×  %.0fs" % storm_rem)
@@ -1498,7 +1503,7 @@ func _prestige_gate_tooltip() -> String:
 	var reqs: Dictionary = Prestige.check_requirements(GameState)
 	var earn: Dictionary = reqs.get("earnings", {})
 	var lines: PackedStringArray = PackedStringArray([
-		"Empire route income (buildings + clicks only): %s / %s" % [
+		"Stable empire income (temporary buffs excluded): %s / %s" % [
 			FormatUtil.format_money(float(earn.get("current", 0.0))),
 			FormatUtil.format_money(float(earn.get("required", 0.0))),
 		],
@@ -1510,6 +1515,12 @@ func _prestige_gate_tooltip() -> String:
 				lines.append("%s: %d / %d" % [key.capitalize(), int(r.get("current", 0)), int(r.get("required", 0))])
 	if reqs.has("rank") and not bool(reqs["rank"].get("met", true)):
 		lines.append("Rank: need %s" % str(reqs["rank"].get("required", "")))
+	if reqs.has("rebuild_time") and not bool(reqs["rebuild_time"].get("met", true)):
+		var timing: Dictionary = reqs["rebuild_time"]
+		lines.append("Rebuild: %d / %d min" % [
+			int(float(timing.get("current", 0.0)) / 60.0),
+			int(float(timing.get("required", 0.0)) / 60.0),
+		])
 	if reqs.has("branch") and not bool(reqs["branch"].get("met", true)):
 		lines.append("Choose a prestige path")
 	elif reqs.has("branch_perk") and not bool(reqs["branch_perk"].get("met", true)):
@@ -1593,8 +1604,8 @@ func _refresh_dragon_hud() -> void:
 		var ab: Array = _DragonSystem.ABILITIES[ab_key]
 		var btn := Button.new()
 		var cd: float = _DragonSystem.ability_cooldown_remaining(GameState, ab_key)
-		btn.custom_minimum_size = Vector2(0, 24)
-		btn.add_theme_font_size_override("font_size", 9)
+		btn.custom_minimum_size = Vector2(0, GameTheme.scale_touch(30))
+		btn.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
 		if cd > 0.0:
 			btn.text = "%s %ds" % [str(ab[2]).substr(0, 8), int(ceil(cd))]
 			btn.disabled = true
@@ -2036,7 +2047,7 @@ func _build_config_tab() -> void:
 		AudioManager.apply_from_state(GameState)
 	)
 	_add_config_header("DISPLAY")
-	_add_cycle_row("Text scale", ["100%", "125%"], GameState.ui_text_scale, func(i):
+	_add_cycle_row("Text scale", ["100%", "125%", "150%"], GameState.ui_text_scale, func(i):
 		GameState.ui_text_scale = i
 		_apply_header_theme()
 		_apply_overlay_theme()
@@ -2056,29 +2067,11 @@ func _build_config_tab() -> void:
 		GameState.show_particles = i == 0
 		SaveManager.save_game()
 	)
-	_add_config_header("RETENTION")
-	_add_cycle_row("Notifications", ["OFF", "ON"], 1 if GameState.notifications_enabled else 0, func(i):
-		var on: bool = i == 1
-		GameState.notifications_enabled = on
-		if on:
-			Notifications.request_permission()
+	_add_config_header("PRIVACY")
+	_add_cycle_row("Analytics", ["OFF", "DEVICE"], 1 if GameState.telemetry_consent else 0, func(i):
+		Telemetry.set_local_consent(i == 1)
 		SaveManager.save_game()
 	)
-	_add_cycle_row("Analytics", ["OFF", "ON"], 1 if GameState.telemetry_consent else 0, func(i):
-		GameState.telemetry_consent = i == 1
-		SaveManager.save_game()
-	)
-	if CloudSave.is_signed_in():
-		var cloud_lbl := Label.new()
-		cloud_lbl.text = "Cloud save: signed in"
-		cloud_lbl.add_theme_color_override("font_color", GameTheme.TEXT_MUTED)
-		_config_body.add_child(cloud_lbl)
-	else:
-		var cloud_btn := Button.new()
-		cloud_btn.text = "Sign in (cloud backup)"
-		_apply_config_action_button(cloud_btn)
-		cloud_btn.pressed.connect(func(): CloudSave.sign_in())
-		_config_body.add_child(cloud_btn)
 	_add_config_header("STORE")
 	_add_iap_row("Remove ads", Monetization.PRODUCT_REMOVE_ADS, "Hides ads permanently")
 	_add_iap_row("Starter pack", Monetization.PRODUCT_STARTER, "Cash + Influence boost")
@@ -2089,20 +2082,25 @@ func _build_config_tab() -> void:
 	restore.pressed.connect(func(): Monetization.restore())
 	_config_body.add_child(restore)
 	_add_config_header("DATA")
+	var diagnostics := Button.new()
+	diagnostics.text = "Crash diagnostics"
+	_apply_config_action_button(diagnostics)
+	diagnostics.pressed.connect(CrashReporter.show_report)
+	_config_body.add_child(diagnostics)
 	var menu := Button.new()
 	menu.text = "Save & Main Menu"
 	_apply_config_action_button(menu)
 	menu.pressed.connect(_on_menu)
 	_config_body.add_child(menu)
 	var reset_tut := Button.new()
-	reset_tut.text = "Reset Tutorial"
+	reset_tut.text = "Replay Tutorial Hints"
 	_apply_config_action_button(reset_tut)
 	reset_tut.pressed.connect(func(): GameState.reset_tutorial(); _build_config_tab())
 	_config_body.add_child(reset_tut)
 	var del := Button.new()
-	del.text = "Delete Save"
+	del.text = "Reset All Progress…"
 	_apply_config_action_button(del)
-	del.pressed.connect(func(): SaveManager.delete_save(); get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+	del.pressed.connect(_confirm_reset_progress)
 	_config_body.add_child(del)
 	var note := Label.new()
 	note.text = "Auto-save every %ds" % int(GameConfig.AUTOSAVE_INTERVAL)
@@ -2118,6 +2116,10 @@ func _apply_config_action_button(btn: Button) -> void:
 		GameTheme.apply_ink_chip_button(btn, false, 14, GameTheme.TEXT)
 	else:
 		GameTheme.apply_menu_button(btn, false)
+
+
+func _confirm_reset_progress() -> void:
+	ResetProgressDialog.open(self)
 
 
 func _add_list_section_header(parent: Control, title: String) -> void:

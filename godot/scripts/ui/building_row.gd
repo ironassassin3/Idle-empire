@@ -38,9 +38,10 @@ func _ready() -> void:
 	# from the global ×1/×10/Max chip in the masthead.
 	_buy10.visible = false
 	_buy_max.visible = false
-	_buy1.custom_minimum_size = Vector2(118, 56)
+	_buy1.custom_minimum_size = Vector2(
+		GameTheme.scale_touch(132), GameTheme.scale_touch(64))
 	_buy1.add_theme_font_override("font", GameFonts.heading())
-	_buy1.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_buy1.add_theme_font_size_override("font_size", GameTheme.scaled_font(16))
 	_apply_label_scale()
 	_buy1.pressed.connect(_on_buy_primary)
 	_buy10.pressed.connect(func(): buy_pressed.emit(building_index, 10))
@@ -77,12 +78,19 @@ func _on_any_purchase(key: String) -> void:
 
 
 func _apply_label_scale() -> void:
-	GameTheme.apply_row_title(_name, 16)
-	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
-	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(10))
-	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	GameTheme.apply_row_title(_name, 18)
+	# At 150% text on a 720-wide phone an unwrapped name/description set the
+	# info column's min width and shoved the BUY button off screen.
+	_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_name.clip_text = true
+	for lbl in [_desc, _special]:
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_desc.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
+	_desc.add_theme_color_override("font_color", GameTheme.TEXT_FLAVOR)
+	_special.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_owned.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_income.add_theme_font_override("font", GameFonts.mono(false))
-	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	_income.add_theme_font_size_override("font_size", GameTheme.scaled_font(14))
 	_income.add_theme_color_override("font_color", GameTheme.GREEN)
 
 
@@ -92,7 +100,56 @@ func _apply_special_line() -> void:
 		_special.text = ""
 		return
 	_special.visible = true
-	_special.text = "* %s" % _building.special
+	var live := _live_special_math(_building)
+	_special.text = "* %s" % (_building.special if live.is_empty() else live)
+
+
+## Playtest 2026-09-15: every passive states what it boosts, whether it stacks
+## (adds per unit) or compounds (multiplies per unit), and its current total.
+## Empty = nothing owned yet; the static description (which also names the
+## stacking rule) shows instead.
+static func _live_special_math(b: Building) -> String:
+	var n := b.owned
+	if n <= 0:
+		return ""
+	match b.icon_key:
+		"dealer":
+			var per := GameConfig.CLICK_DEALER_BONUS
+			var total := per * n
+			# format_money drops trailing zeros ("$0.1"); cents read as money.
+			var total_s := "$%.2f" % total if total < 1000.0 else FormatUtil.format_money(total)
+			return "Click bonus, stacks: %d × $%.2f = +%s per click" % [n, per, total_s]
+		"racket":
+			var mult := BuildingDefs.racket_dealer_multiplier(n)
+			var capped := " (CAP)" if mult >= BuildingDefs.RACKET_CAP else ""
+			return "Dealer income, stacks: 1 + (%d × 0.05) = ×%.2f%s" % [n, mult, capped]
+		"chop":
+			return "Earns income + 8%%/sec chance of a 2s bonus (+%s)" % FormatUtil.format_money(
+				b.income_per_second() * 2.0)
+		"betting":
+			return "Earns income + jackpot every 60–150s: 30s of income (+%s)" % FormatUtil.format_money(
+				b.income_per_second() * 30.0)
+		"pawn":
+			if BuildingDefs.pawn_reduction_for(n) >= 0.5:
+				return "Upgrade costs, stacks: −50% (cap reached)"
+			return "Upgrade costs, stacks: %d × 2%% = −%d%%" % [n, n * 2]
+		"loan":
+			var offices := mini(n, 2)
+			return "Interest, stacks to 2 offices: %d × 0.05%% = +%.2f%% balance/min" % [
+				offices, 0.05 * offices]
+		"casino":
+			return "Manager income, stacks: 1 + (%d × 0.10) = ×%.2f (when hired)" % [
+				n, BuildingDefs.casino_bonus_for(n)]
+		"club":
+			return "Heat, stacks: %d × 0.5 = −%.1f heat/sec" % [n, 0.5 * n]
+		"dock":
+			return "All passive income, compounds: 1.015^%d = ×%.3f" % [
+				n, BuildingDefs.dock_income_mult(n)]
+		"arms":
+			return "Influence, stacks: %d × 0.1 = +%.1f Influence/hour" % [n, 0.1 * n]
+		"hq":
+			return "All income, compounds: 1.06^%d = ×%.2f" % [n, BuildingDefs.hq_income_mult(n)]
+	return ""
 
 
 # Rule 10 (Stage & Ledger): progress-to-afford underbar while APPROACHING.
@@ -174,8 +231,9 @@ func _refresh() -> void:
 		_special.visible = not compact and not _building.special.is_empty()
 		_income.visible = not compact
 		_owned.visible = not compact
-		custom_minimum_size.y = 64.0 if compact else 0.0
-		_buy1.custom_minimum_size = Vector2(118, 48 if compact else 56)
+		custom_minimum_size.y = GameTheme.scale_touch(64) if compact else 0.0
+		_buy1.custom_minimum_size = Vector2(
+			GameTheme.scale_touch(132), GameTheme.scale_touch(56 if compact else 64))
 	var advisor_idx := _ManagerSystem.building_advisor_index(GameState)
 	var is_advised := advisor_idx == building_index
 	var prefix := _ManagerSystem.building_advisor_prefix(GameState, building_index)
@@ -191,7 +249,10 @@ func _refresh() -> void:
 	)
 	_owned.text = "Owned: %d" % _building.owned
 	_income.text = "%s/s" % FormatUtil.format_money(_building.income_per_second())
-	var qty := GameState.effective_buy_qty(building_index)
+	# Max with nothing affordable returns 0, and a 0-qty cost is $0 — which the
+	# whole row then read as READY (bright, purple, "$0"). Price and affordance
+	# both fall back to one unit so the button tells the truth (playtest 2026-09-15).
+	var qty := maxi(GameState.effective_buy_qty(building_index), 1)
 	var cost_qty := _building.cost_for_n(qty)
 	_buy1.text = "BUY %s\n%s" % [GameState.buy_mult_label(), FormatUtil.format_money(cost_qty)]
 	_buy10.text = "×10\n%s" % FormatUtil.format_money(_building.cost_for_n(10))

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 import time
 
 SAVE_PATH   = "save.json"
@@ -140,6 +141,11 @@ def apply_save_data(state, data: dict) -> None:
     state._coins_caught      = int(data.get('coins_caught', 0))
     state._prestige_count    = int(data.get('prestige_count', 0))
     import src.prestige as _prestige_mod
+    state._prestige_cycle_time = float(data.get(
+        'prestige_cycle_time',
+        min(state._play_time, _prestige_mod.POST_PRESTIGE_MIN_RUN_SECS)
+        if state._prestige_count > 0 else 0.0,
+    ))
     state._next_prestige_earnings = float(data.get('next_prestige_earnings',
                                                    _prestige_mod.FIRST_PRESTIGE_EARNINGS))
     state._daily_streak      = int(data.get('daily_streak', 1))
@@ -391,7 +397,12 @@ def apply_save_data(state, data: dict) -> None:
 
 # ─── Save ────────────────────────────────────────────────────────────────────
 
-def save_game(state) -> None:
+def save_game(state) -> bool:
+    """Write the save atomically.
+
+    Returns False (and warns on stderr) on failure, matching
+    godot/scripts/autoload/save_manager.gd.
+    """
     data = {
         'balance':           state.balance,
         'lifetime_earnings': state.lifetime_earnings,
@@ -402,6 +413,7 @@ def save_game(state) -> None:
         'play_time':         getattr(state, '_play_time', 0.0),
         'coins_caught':      getattr(state, '_coins_caught', 0),
         'prestige_count':    getattr(state, '_prestige_count', 0),
+        'prestige_cycle_time': float(getattr(state, '_prestige_cycle_time', 0.0)),
         'next_prestige_earnings': getattr(state, '_next_prestige_earnings', 0.0),
         'daily_streak':      getattr(state, '_daily_streak', 1),
         'last_login_date':   time.strftime('%Y-%m-%d'),
@@ -491,8 +503,11 @@ def save_game(state) -> None:
         if os.path.exists(SAVE_PATH):
             shutil.copy2(SAVE_PATH, BACKUP_PATH)
         os.replace(tmp_path, SAVE_PATH)
-    except OSError:
-        pass
+    except OSError as exc:
+        # Never crash the game over a save, but never fail silently either.
+        print(f"Save failed: {exc}", file=sys.stderr)
+        return False
+    return True
 
 
 # ─── Load ────────────────────────────────────────────────────────────────────

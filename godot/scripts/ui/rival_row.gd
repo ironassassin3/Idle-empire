@@ -41,12 +41,13 @@ func _ready() -> void:
 
 
 func _apply_label_scale() -> void:
-	GameTheme.apply_row_title(_name, 15)
-	_badge.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
-	_leader.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
-	_trait.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
-	_stats.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
-	_flavor.add_theme_font_size_override("font_size", GameTheme.scaled_font(11))
+	GameTheme.apply_row_title(_name, 17)
+	_badge.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_leader.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_trait.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_stats.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_flavor.add_theme_font_size_override("font_size", GameTheme.scaled_font(13))
+	_flavor.add_theme_color_override("font_color", GameTheme.TEXT_FLAVOR)
 
 
 func _refresh() -> void:
