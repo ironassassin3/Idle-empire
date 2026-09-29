@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 import time
 
 SAVE_PATH   = "save.json"
@@ -396,7 +397,12 @@ def apply_save_data(state, data: dict) -> None:
 
 # ─── Save ────────────────────────────────────────────────────────────────────
 
-def save_game(state) -> None:
+def save_game(state) -> bool:
+    """Write the save atomically.
+
+    Returns False (and warns on stderr) on failure, matching
+    godot/scripts/autoload/save_manager.gd.
+    """
     data = {
         'balance':           state.balance,
         'lifetime_earnings': state.lifetime_earnings,
@@ -497,8 +503,11 @@ def save_game(state) -> None:
         if os.path.exists(SAVE_PATH):
             shutil.copy2(SAVE_PATH, BACKUP_PATH)
         os.replace(tmp_path, SAVE_PATH)
-    except OSError:
-        pass
+    except OSError as exc:
+        # Never crash the game over a save, but never fail silently either.
+        print(f"Save failed: {exc}", file=sys.stderr)
+        return False
+    return True
 
 
 # ─── Load ────────────────────────────────────────────────────────────────────

@@ -924,7 +924,7 @@ class PlayingState(GameState):
         self._autosave_timer -= dt
         if self._autosave_timer <= 0:
             self._autosave_timer = _AUTOSAVE_INTERVAL
-            save_game(self)
+            ui.save_or_warn(self)
 
     # ─── Draw ─────────────────────────────────────────────────────────────────
     def draw(self, surface):

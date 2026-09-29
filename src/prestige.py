@@ -587,8 +587,8 @@ class PrestigeManager:
         except Exception:
             pass
 
-        from src.save_load import save_game
-        save_game(state)
+        from src.ui import save_or_warn
+        save_or_warn(state)
 
         return True
 

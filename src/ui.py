@@ -225,6 +225,15 @@ _NOTIF_START_Y = HEADER_H + TAB_H + 6   # below command center + tab bar
 _notification_stack: list[dict] = []
 
 
+def save_or_warn(state) -> bool:
+    """Save, and tell the player on screen if it failed (save_game also logs)."""
+    from src.save_load import save_game
+    if save_game(state):
+        return True
+    push_notification("SAVE FAILED\nProgress was not saved. Check disk space.", theme.RED)
+    return False
+
+
 def push_notification(text: str, color=None) -> None:
     """Add a notification to the top-right stack. Thread-safe-ish (single-threaded game).
 
@@ -2883,14 +2892,14 @@ def handle_settings_click(state, pos: tuple, rect: pygame.Rect) -> None:
                                  lambda v: "Enabled" if v else "Disabled"):
         if r.collidepoint(pos):
             _an.set_enabled(opt)
-            save_game(state); return
+            save_or_warn(state); return
     y += row_h + fonts['xs'].get_height() + sd(4)
     # Reset tutorial
     tut_r = pygame.Rect(x0, y, sd(150), sd(32))
     if tut_r.collidepoint(pos):
         state._tutorial_step = 0; state._tutorial_age = 0.0
         state._tutorial_age_step4 = 0.0; state._shown_milestones = set()
-        save_game(state); return
+        save_or_warn(state); return
     y += sd(32) + sd(12)
     # Delete save
     del_r = pygame.Rect(x0, y, sd(150), sd(32))
